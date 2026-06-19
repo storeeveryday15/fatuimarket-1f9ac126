@@ -59,6 +59,7 @@ function AdminPage() {
   const [support, setSupport] = useState<Support[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [filter, setFilter] = useState<string>("all");
+  const [reviewFilter, setReviewFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [search, setSearch] = useState("");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [shotUrl, setShotUrl] = useState<string | null>(null);
@@ -171,10 +172,13 @@ function AdminPage() {
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tab === "orders" ? "Search code, email, UID, player…" : "Search username or email…"} className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tab === "orders" ? "Search code, email, UID, player…" : tab === "reviews" ? "Search reviews by customer name…" : "Search username or email…"} className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm" />
           </div>
           {tab === "orders" && ["all", ...STATUSES].map((s) => (
             <button key={s} onClick={() => setFilter(s)} className={`rounded-full border px-3 py-1 text-xs ${filter === s ? "border-[var(--neon)] text-foreground" : "border-border text-muted-foreground hover:border-foreground/30"}`}>{s.replace(/_/g, " ")}</button>
+          ))}
+          {tab === "reviews" && (["all","pending","approved","rejected"] as const).map((s) => (
+            <button key={s} onClick={() => setReviewFilter(s)} className={`rounded-full border px-3 py-1 text-xs capitalize ${reviewFilter === s ? "border-[var(--neon)] text-foreground" : "border-border text-muted-foreground hover:border-foreground/30"}`}>{s} {s !== "all" && `(${reviews.filter(r => r.status === s).length})`}</button>
           ))}
         </div>
       )}
@@ -225,31 +229,35 @@ function AdminPage() {
       )}
 
       {tab === "reviews" && (
-        <ReviewsAdmin
-          reviews={reviews.filter((r) => {
-            if (!search.trim()) return true;
-            const q = search.toLowerCase();
-            return (
-              r.full_name.toLowerCase().includes(q) ||
-              r.display_name.toLowerCase().includes(q) ||
-              r.review.toLowerCase().includes(q) ||
-              (r.product_slug ?? "").toLowerCase().includes(q)
-            );
-          })}
-          onChange={async (id, patch) => {
-            const { error } = await supabase.from("reviews").update(patch).eq("id", id);
-            if (error) return toast.error(error.message);
-            toast.success("Review updated");
-            load();
-          }}
-          onDelete={async (id) => {
-            if (!confirm("Delete this review?")) return;
-            const { error } = await supabase.from("reviews").delete().eq("id", id);
-            if (error) return toast.error(error.message);
-            toast.success("Review deleted");
-            load();
-          }}
-        />
+        <>
+          <ReviewsStats reviews={reviews} />
+          <ReviewsAdmin
+            reviews={reviews.filter((r) => {
+              if (reviewFilter !== "all" && r.status !== reviewFilter) return false;
+              if (!search.trim()) return true;
+              const q = search.toLowerCase();
+              return (
+                r.full_name.toLowerCase().includes(q) ||
+                r.display_name.toLowerCase().includes(q) ||
+                r.review.toLowerCase().includes(q) ||
+                (r.product_slug ?? "").toLowerCase().includes(q)
+              );
+            })}
+            onChange={async (id, patch) => {
+              const { error } = await supabase.from("reviews").update(patch).eq("id", id);
+              if (error) return toast.error(error.message);
+              toast.success("Review updated");
+              load();
+            }}
+            onDelete={async (id) => {
+              if (!confirm("Delete this review?")) return;
+              const { error } = await supabase.from("reviews").delete().eq("id", id);
+              if (error) return toast.error(error.message);
+              toast.success("Review deleted");
+              load();
+            }}
+          />
+        </>
       )}
 
       {activeOrder && (
@@ -457,6 +465,30 @@ function ReviewsAdmin({ reviews, onChange, onDelete }: {
           {reviews.length === 0 && <tr><td colSpan={6} className="px-3 py-10 text-center text-sm text-muted-foreground">No reviews.</td></tr>}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function ReviewsStats({ reviews }: { reviews: Review[] }) {
+  const approved = reviews.filter((r) => r.status === "approved");
+  const pending = reviews.filter((r) => r.status === "pending").length;
+  const rejected = reviews.filter((r) => r.status === "rejected").length;
+  const avg = approved.length ? approved.reduce((s, r) => s + r.rating, 0) / approved.length : 0;
+  return (
+    <div className="mt-4 grid gap-3 sm:grid-cols-4">
+      <Stat label="Total reviews" value={reviews.length.toString()} />
+      <Stat label="Pending" value={pending.toString()} highlight />
+      <Stat label="Approved" value={approved.length.toString()} />
+      <div className="surface-card p-4">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">Avg rating · Rejected</div>
+        <div className="mt-1 flex items-center gap-3">
+          <div className="flex items-center gap-1 text-2xl font-bold">
+            {avg.toFixed(1)}
+            <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+          </div>
+          <div className="text-xs text-muted-foreground">· {rejected} rejected</div>
+        </div>
+      </div>
     </div>
   );
 }

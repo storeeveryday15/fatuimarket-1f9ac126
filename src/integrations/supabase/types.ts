@@ -260,6 +260,7 @@ export type Database = {
           product_slug: string | null
           rating: number | null
           review: string | null
+          verified: boolean | null
         }
         Insert: {
           created_at?: string | null
@@ -268,6 +269,7 @@ export type Database = {
           product_slug?: string | null
           rating?: number | null
           review?: string | null
+          verified?: never
         }
         Update: {
           created_at?: string | null
@@ -276,6 +278,7 @@ export type Database = {
           product_slug?: string | null
           rating?: number | null
           review?: string | null
+          verified?: never
         }
         Relationships: []
       }

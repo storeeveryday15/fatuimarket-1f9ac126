@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Star } from "lucide-react";
+import { Star, BadgeCheck } from "lucide-react";
 
 type PublicReview = {
   id: string;
@@ -9,6 +9,7 @@ type PublicReview = {
   rating: number;
   review: string;
   created_at: string;
+  verified: boolean | null;
 };
 
 export function ReviewsList({ productSlug, limit = 12, refreshKey = 0 }: { productSlug?: string; limit?: number; refreshKey?: number }) {
@@ -21,7 +22,7 @@ export function ReviewsList({ productSlug, limit = 12, refreshKey = 0 }: { produ
       setLoading(true);
       let q = supabase
         .from("reviews_public" as never)
-        .select("id, product_slug, display_name, rating, review, created_at")
+        .select("id, product_slug, display_name, rating, review, created_at, verified")
         .order("created_at", { ascending: false })
         .limit(limit);
       if (productSlug) q = q.eq("product_slug", productSlug);
@@ -48,14 +49,21 @@ export function ReviewsList({ productSlug, limit = 12, refreshKey = 0 }: { produ
       </div>
       <div className="grid gap-3">
         {reviews.map((r) => (
-          <div key={r.id} className="surface-card p-4">
+          <div key={r.id} className="surface-card p-4 transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-elegant)] animate-in fade-in slide-in-from-bottom-1 duration-300">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[image:var(--gradient-primary)] text-xs font-bold text-primary-foreground">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[image:var(--gradient-primary)] text-sm font-bold text-primary-foreground shadow-[var(--shadow-glow)]">
                   {r.display_name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-sm font-semibold">{r.display_name}</div>
+                  <div className="flex items-center gap-1.5 text-sm font-semibold">
+                    {r.display_name}
+                    {r.verified && (
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-success/15 px-1.5 py-0.5 text-[10px] font-semibold text-success" title="Verified purchase">
+                        <BadgeCheck className="h-3 w-3" /> Verified
+                      </span>
+                    )}
+                  </div>
                   <div className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</div>
                 </div>
               </div>
