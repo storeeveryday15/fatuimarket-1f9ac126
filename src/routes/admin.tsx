@@ -59,6 +59,7 @@ function AdminPage() {
   const [support, setSupport] = useState<Support[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [filter, setFilter] = useState<string>("all");
+  const [reviewFilter, setReviewFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [search, setSearch] = useState("");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [shotUrl, setShotUrl] = useState<string | null>(null);
