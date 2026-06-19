@@ -13,6 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { z } from "zod";
+import { ReviewForm } from "@/components/review-form";
+import { ReviewsList } from "@/components/reviews-list";
 
 export const Route = createFileRoute("/products/$slug")({
   loader: ({ params }) => {
@@ -276,8 +278,40 @@ function ProductPage() {
           </div>
         </aside>
       </div>
+
+      <section className="mt-16 grid gap-8 lg:grid-cols-[1fr,400px]">
+        <div>
+          <h2 className="text-2xl font-bold">Customer reviews</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Real feedback from {product.name} buyers.</p>
+          <div className="mt-5">
+            <ReviewsListWithRefresh slug={product.slug} />
+          </div>
+        </div>
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <h3 className="text-lg font-semibold">Leave a review</h3>
+          <p className="mt-1 text-xs text-muted-foreground">Only your first name + last initial is shown publicly.</p>
+          <div className="mt-3">
+            <ReviewFormWithRefresh slug={product.slug} />
+          </div>
+        </div>
+      </section>
     </div>
   );
+}
+
+function ReviewsListWithRefresh({ slug }: { slug: string }) {
+  const [k, setK] = useState(0);
+  // expose setter via a custom event to keep wiring local
+  useEffect(() => {
+    const handler = () => setK((v) => v + 1);
+    window.addEventListener("fm:reviews:refresh", handler);
+    return () => window.removeEventListener("fm:reviews:refresh", handler);
+  }, []);
+  return <ReviewsList productSlug={slug} refreshKey={k} />;
+}
+
+function ReviewFormWithRefresh({ slug }: { slug: string }) {
+  return <ReviewForm productSlug={slug} onSubmitted={() => window.dispatchEvent(new Event("fm:reviews:refresh"))} />;
 }
 
 function Row({ label, value }: { label: string; value: string }) {

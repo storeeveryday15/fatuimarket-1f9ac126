@@ -3,6 +3,8 @@ import { PRODUCTS } from "@/lib/products";
 import heroBg from "@/assets/hero-bg.jpg";
 import { Zap, ShieldCheck, Clock, Headphones, ArrowRight, Sparkles } from "lucide-react";
 import { LiveOrdersTicker } from "@/components/live-orders-ticker";
+import { ReviewsList } from "@/components/reviews-list";
+import { ReviewForm } from "@/components/review-form";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -132,6 +134,26 @@ function Home() {
                 <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Customer reviews */}
+      <section className="container mx-auto max-w-7xl px-4 pb-24">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold md:text-4xl">What customers say</h2>
+            <p className="mt-2 text-muted-foreground">Real reviews from real gamers.</p>
+          </div>
+        </div>
+        <div className="mt-8 grid gap-8 lg:grid-cols-[1fr,400px]">
+          <ReviewsList limit={8} />
+          <div>
+            <h3 className="text-lg font-semibold">Share your experience</h3>
+            <p className="mt-1 text-xs text-muted-foreground">Only your first name + last initial is shown publicly.</p>
+            <div className="mt-3">
+              <ReviewForm />
+            </div>
           </div>
         </div>
       </section>

@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, MessageSquare, Users, Package, Search, Eye } from "lucide-react";
+import { ShieldCheck, MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Fatui Market" }] }),
@@ -34,6 +34,7 @@ type Order = {
 
 type Support = { id: string; name: string | null; contact: string | null; message: string; status: string; created_at: string };
 type Profile = { id: string; username: string | null; email: string | null; display_name: string | null; created_at: string };
+type Review = { id: string; user_id: string | null; product_slug: string | null; full_name: string; display_name: string; rating: number; review: string; status: string; created_at: string };
 
 const STATUSES = ["pending_payment", "pending_verification", "processing", "completed", "rejected"] as const;
 
@@ -52,10 +53,11 @@ const STATUS_STYLES: Record<string, string> = {
 
 function AdminPage() {
   const [ready, setReady] = useState(false);
-  const [tab, setTab] = useState<"dashboard" | "orders" | "users" | "support">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "orders" | "users" | "support" | "reviews">("dashboard");
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
   const [support, setSupport] = useState<Support[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
@@ -63,14 +65,16 @@ function AdminPage() {
   const navigate = useNavigate();
 
   const load = async () => {
-    const [{ data: o }, { data: s }, { data: p }] = await Promise.all([
+    const [{ data: o }, { data: s }, { data: p }, { data: r }] = await Promise.all([
       supabase.from("orders").select("*").order("created_at", { ascending: false }),
       supabase.from("support_messages").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("reviews").select("*").order("created_at", { ascending: false }),
     ]);
     setOrders((o ?? []) as Order[]);
     setSupport((s ?? []) as Support[]);
     setUsers((p ?? []) as Profile[]);
+    setReviews((r ?? []) as Review[]);
   };
 
   useEffect(() => {
@@ -160,9 +164,10 @@ function AdminPage() {
         <TabBtn active={tab === "orders"} onClick={() => setTab("orders")}>Orders ({orders.length})</TabBtn>
         <TabBtn active={tab === "users"} onClick={() => setTab("users")}><Users className="mr-1.5 inline h-4 w-4" /> Users ({users.length})</TabBtn>
         <TabBtn active={tab === "support"} onClick={() => setTab("support")}><MessageSquare className="mr-1.5 inline h-4 w-4" /> Support ({support.filter(s => s.status === "open").length})</TabBtn>
+        <TabBtn active={tab === "reviews"} onClick={() => setTab("reviews")}><Star className="mr-1.5 inline h-4 w-4" /> Reviews ({reviews.length})</TabBtn>
       </div>
 
-      {(tab === "orders" || tab === "users") && (
+      {(tab === "orders" || tab === "users" || tab === "reviews") && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -217,6 +222,34 @@ function AdminPage() {
           ))}
           {support.length === 0 && <div className="surface-card p-10 text-center text-sm text-muted-foreground">No messages yet.</div>}
         </div>
+      )}
+
+      {tab === "reviews" && (
+        <ReviewsAdmin
+          reviews={reviews.filter((r) => {
+            if (!search.trim()) return true;
+            const q = search.toLowerCase();
+            return (
+              r.full_name.toLowerCase().includes(q) ||
+              r.display_name.toLowerCase().includes(q) ||
+              r.review.toLowerCase().includes(q) ||
+              (r.product_slug ?? "").toLowerCase().includes(q)
+            );
+          })}
+          onChange={async (id, patch) => {
+            const { error } = await supabase.from("reviews").update(patch).eq("id", id);
+            if (error) return toast.error(error.message);
+            toast.success("Review updated");
+            load();
+          }}
+          onDelete={async (id) => {
+            if (!confirm("Delete this review?")) return;
+            const { error } = await supabase.from("reviews").delete().eq("id", id);
+            if (error) return toast.error(error.message);
+            toast.success("Review deleted");
+            load();
+          }}
+        />
       )}
 
       {activeOrder && (
@@ -372,3 +405,58 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 }
 
 
+
+function ReviewsAdmin({ reviews, onChange, onDelete }: {
+  reviews: Review[];
+  onChange: (id: string, patch: Partial<Review>) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <div className="mt-4 overflow-x-auto rounded-xl border border-border">
+      <table className="w-full text-sm">
+        <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th className="px-3 py-3">Reviewer</th>
+            <th className="px-3 py-3">Rating</th>
+            <th className="px-3 py-3">Review</th>
+            <th className="px-3 py-3">Product</th>
+            <th className="px-3 py-3">Status</th>
+            <th className="px-3 py-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {reviews.map((r) => (
+            <tr key={r.id} className="border-t border-border align-top">
+              <td className="px-3 py-3">
+                <div className="font-medium">{r.full_name}</div>
+                <div className="text-[11px] text-muted-foreground">Public: {r.display_name}</div>
+                <div className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</div>
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star key={i} className={`h-3.5 w-3.5 ${i <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40"}`} />
+                  ))}
+                </div>
+              </td>
+              <td className="px-3 py-3 max-w-md"><div className="line-clamp-3 whitespace-pre-wrap">{r.review}</div></td>
+              <td className="px-3 py-3 text-xs text-muted-foreground">{r.product_slug ?? "site"}</td>
+              <td className="px-3 py-3">
+                <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${r.status === "approved" ? "bg-success/15 text-success" : r.status === "rejected" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning"}`}>{r.status}</span>
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex flex-col gap-1">
+                  <button onClick={() => onChange(r.id, { status: "approved" })} className="rounded-md bg-success/15 px-2 py-1 text-[11px] font-semibold text-success hover:bg-success/25">Approve</button>
+                  <button onClick={() => onChange(r.id, { status: "pending" })} className="rounded-md bg-warning/15 px-2 py-1 text-[11px] font-semibold text-warning hover:bg-warning/25">Pending</button>
+                  <button onClick={() => onChange(r.id, { status: "rejected" })} className="rounded-md bg-destructive/15 px-2 py-1 text-[11px] font-semibold text-destructive hover:bg-destructive/25">Reject</button>
+                  <button onClick={() => onDelete(r.id)} className="inline-flex items-center justify-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] hover:bg-secondary"><Trash2 className="h-3 w-3" /> Delete</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+          {reviews.length === 0 && <tr><td colSpan={6} className="px-3 py-10 text-center text-sm text-muted-foreground">No reviews.</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+}

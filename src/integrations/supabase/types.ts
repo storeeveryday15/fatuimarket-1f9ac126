@@ -149,6 +149,45 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          created_at: string
+          display_name: string
+          full_name: string
+          id: string
+          product_slug: string | null
+          rating: number
+          review: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          full_name: string
+          id?: string
+          product_slug?: string | null
+          rating: number
+          review: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          full_name?: string
+          id?: string
+          product_slug?: string | null
+          rating?: number
+          review?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       support_messages: {
         Row: {
           contact: string | null
@@ -210,6 +249,33 @@ export type Database = {
           order_code: string | null
           product_name: string | null
           tier_label: string | null
+        }
+        Relationships: []
+      }
+      reviews_public: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          id: string | null
+          product_slug: string | null
+          rating: number | null
+          review: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          product_slug?: string | null
+          rating?: number | null
+          review?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          product_slug?: string | null
+          rating?: number | null
+          review?: string | null
         }
         Relationships: []
       }
