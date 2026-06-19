@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrackRouteImport } from './routes/track'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RefundRouteImport } from './routes/refund'
@@ -23,6 +24,11 @@ import { Route as OrdersCodeRouteImport } from './routes/orders.$code'
 import { Route as ApiPublicNotifyOrderRouteImport } from './routes/api/public/notify-order'
 import { Route as ApiPublicClaimAdminRouteImport } from './routes/api/public/claim-admin'
 
+const TrackRoute = TrackRouteImport.update({
+  id: '/track',
+  path: '/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/refund': typeof RefundRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/track': typeof TrackRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/refund': typeof RefundRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/track': typeof TrackRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/refund': typeof RefundRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/track': typeof TrackRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/refund'
     | '/reset-password'
     | '/terms'
+    | '/track'
     | '/orders/$code'
     | '/products/$slug'
     | '/api/public/claim-admin'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/refund'
     | '/reset-password'
     | '/terms'
+    | '/track'
     | '/orders/$code'
     | '/products/$slug'
     | '/api/public/claim-admin'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/refund'
     | '/reset-password'
     | '/terms'
+    | '/track'
     | '/orders/$code'
     | '/products/$slug'
     | '/api/public/claim-admin'
@@ -193,6 +205,7 @@ export interface RootRouteChildren {
   RefundRoute: typeof RefundRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  TrackRoute: typeof TrackRoute
   OrdersCodeRoute: typeof OrdersCodeRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
   ApiPublicClaimAdminRoute: typeof ApiPublicClaimAdminRoute
@@ -201,6 +214,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/track': {
+      id: '/track'
+      path: '/track'
+      fullPath: '/track'
+      preLoaderRoute: typeof TrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -305,6 +325,7 @@ const rootRouteChildren: RootRouteChildren = {
   RefundRoute: RefundRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  TrackRoute: TrackRoute,
   OrdersCodeRoute: OrdersCodeRoute,
   ProductsSlugRoute: ProductsSlugRoute,
   ApiPublicClaimAdminRoute: ApiPublicClaimAdminRoute,
