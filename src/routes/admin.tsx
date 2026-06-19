@@ -224,6 +224,34 @@ function AdminPage() {
         </div>
       )}
 
+      {tab === "reviews" && (
+        <ReviewsAdmin
+          reviews={reviews.filter((r) => {
+            if (!search.trim()) return true;
+            const q = search.toLowerCase();
+            return (
+              r.full_name.toLowerCase().includes(q) ||
+              r.display_name.toLowerCase().includes(q) ||
+              r.review.toLowerCase().includes(q) ||
+              (r.product_slug ?? "").toLowerCase().includes(q)
+            );
+          })}
+          onChange={async (id, patch) => {
+            const { error } = await supabase.from("reviews").update(patch).eq("id", id);
+            if (error) return toast.error(error.message);
+            toast.success("Review updated");
+            load();
+          }}
+          onDelete={async (id) => {
+            if (!confirm("Delete this review?")) return;
+            const { error } = await supabase.from("reviews").delete().eq("id", id);
+            if (error) return toast.error(error.message);
+            toast.success("Review deleted");
+            load();
+          }}
+        />
+      )}
+
       {activeOrder && (
         <OrderDrawer order={activeOrder} screenshotUrl={shotUrl} onClose={() => setActiveOrder(null)} onAction={updateOrder} />
       )}
