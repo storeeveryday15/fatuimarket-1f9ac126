@@ -172,10 +172,13 @@ function AdminPage() {
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tab === "orders" ? "Search code, email, UID, player…" : "Search username or email…"} className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tab === "orders" ? "Search code, email, UID, player…" : tab === "reviews" ? "Search reviews by customer name…" : "Search username or email…"} className="w-full rounded-lg border border-input bg-background py-2 pl-9 pr-3 text-sm" />
           </div>
           {tab === "orders" && ["all", ...STATUSES].map((s) => (
             <button key={s} onClick={() => setFilter(s)} className={`rounded-full border px-3 py-1 text-xs ${filter === s ? "border-[var(--neon)] text-foreground" : "border-border text-muted-foreground hover:border-foreground/30"}`}>{s.replace(/_/g, " ")}</button>
+          ))}
+          {tab === "reviews" && (["all","pending","approved","rejected"] as const).map((s) => (
+            <button key={s} onClick={() => setReviewFilter(s)} className={`rounded-full border px-3 py-1 text-xs capitalize ${reviewFilter === s ? "border-[var(--neon)] text-foreground" : "border-border text-muted-foreground hover:border-foreground/30"}`}>{s} {s !== "all" && `(${reviews.filter(r => r.status === s).length})`}</button>
           ))}
         </div>
       )}
@@ -226,31 +229,35 @@ function AdminPage() {
       )}
 
       {tab === "reviews" && (
-        <ReviewsAdmin
-          reviews={reviews.filter((r) => {
-            if (!search.trim()) return true;
-            const q = search.toLowerCase();
-            return (
-              r.full_name.toLowerCase().includes(q) ||
-              r.display_name.toLowerCase().includes(q) ||
-              r.review.toLowerCase().includes(q) ||
-              (r.product_slug ?? "").toLowerCase().includes(q)
-            );
-          })}
-          onChange={async (id, patch) => {
-            const { error } = await supabase.from("reviews").update(patch).eq("id", id);
-            if (error) return toast.error(error.message);
-            toast.success("Review updated");
-            load();
-          }}
-          onDelete={async (id) => {
-            if (!confirm("Delete this review?")) return;
-            const { error } = await supabase.from("reviews").delete().eq("id", id);
-            if (error) return toast.error(error.message);
-            toast.success("Review deleted");
-            load();
-          }}
-        />
+        <>
+          <ReviewsStats reviews={reviews} />
+          <ReviewsAdmin
+            reviews={reviews.filter((r) => {
+              if (reviewFilter !== "all" && r.status !== reviewFilter) return false;
+              if (!search.trim()) return true;
+              const q = search.toLowerCase();
+              return (
+                r.full_name.toLowerCase().includes(q) ||
+                r.display_name.toLowerCase().includes(q) ||
+                r.review.toLowerCase().includes(q) ||
+                (r.product_slug ?? "").toLowerCase().includes(q)
+              );
+            })}
+            onChange={async (id, patch) => {
+              const { error } = await supabase.from("reviews").update(patch).eq("id", id);
+              if (error) return toast.error(error.message);
+              toast.success("Review updated");
+              load();
+            }}
+            onDelete={async (id) => {
+              if (!confirm("Delete this review?")) return;
+              const { error } = await supabase.from("reviews").delete().eq("id", id);
+              if (error) return toast.error(error.message);
+              toast.success("Review deleted");
+              load();
+            }}
+          />
+        </>
       )}
 
       {activeOrder && (
