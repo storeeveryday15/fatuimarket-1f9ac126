@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, MessageSquare, Users, Package, Search, Eye } from "lucide-react";
+import { ShieldCheck, MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — Fatui Market" }] }),
@@ -34,6 +34,7 @@ type Order = {
 
 type Support = { id: string; name: string | null; contact: string | null; message: string; status: string; created_at: string };
 type Profile = { id: string; username: string | null; email: string | null; display_name: string | null; created_at: string };
+type Review = { id: string; user_id: string | null; product_slug: string | null; full_name: string; display_name: string; rating: number; review: string; status: string; created_at: string };
 
 const STATUSES = ["pending_payment", "pending_verification", "processing", "completed", "rejected"] as const;
 
@@ -52,10 +53,11 @@ const STATUS_STYLES: Record<string, string> = {
 
 function AdminPage() {
   const [ready, setReady] = useState(false);
-  const [tab, setTab] = useState<"dashboard" | "orders" | "users" | "support">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "orders" | "users" | "support" | "reviews">("dashboard");
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
   const [support, setSupport] = useState<Support[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
@@ -63,14 +65,16 @@ function AdminPage() {
   const navigate = useNavigate();
 
   const load = async () => {
-    const [{ data: o }, { data: s }, { data: p }] = await Promise.all([
+    const [{ data: o }, { data: s }, { data: p }, { data: r }] = await Promise.all([
       supabase.from("orders").select("*").order("created_at", { ascending: false }),
       supabase.from("support_messages").select("*").order("created_at", { ascending: false }),
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("reviews").select("*").order("created_at", { ascending: false }),
     ]);
     setOrders((o ?? []) as Order[]);
     setSupport((s ?? []) as Support[]);
     setUsers((p ?? []) as Profile[]);
+    setReviews((r ?? []) as Review[]);
   };
 
   useEffect(() => {
