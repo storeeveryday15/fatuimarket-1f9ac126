@@ -164,9 +164,10 @@ function AdminPage() {
         <TabBtn active={tab === "orders"} onClick={() => setTab("orders")}>Orders ({orders.length})</TabBtn>
         <TabBtn active={tab === "users"} onClick={() => setTab("users")}><Users className="mr-1.5 inline h-4 w-4" /> Users ({users.length})</TabBtn>
         <TabBtn active={tab === "support"} onClick={() => setTab("support")}><MessageSquare className="mr-1.5 inline h-4 w-4" /> Support ({support.filter(s => s.status === "open").length})</TabBtn>
+        <TabBtn active={tab === "reviews"} onClick={() => setTab("reviews")}><Star className="mr-1.5 inline h-4 w-4" /> Reviews ({reviews.length})</TabBtn>
       </div>
 
-      {(tab === "orders" || tab === "users") && (
+      {(tab === "orders" || tab === "users" || tab === "reviews") && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
