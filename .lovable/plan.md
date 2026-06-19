@@ -1,36 +1,40 @@
-## Root cause
-`fatuimarket@gmail.com` exists in `auth.users` and is email-confirmed (last successful login 2026-06-17). Supabase returns "Invalid login credentials" only when email or password don't match — this is a wrong-password situation, not a config issue. Signup and login already share the same project, email auth is on, and the auth screen already shows the exact Supabase error message in a toast (line 84 of `src/routes/auth.tsx`).
+## Customer Review System
 
-The actionable fix is a password-reset flow so the user (and future users) can recover.
+### Database (new migration)
+New table `public.reviews`:
+- `id` uuid PK, `user_id` uuid (nullable, FK to auth.users), `product_slug` text (nullable — null = site-wide review)
+- `full_name` text (private, server-only)
+- `display_name` text (generated/stored: first name + first initial of last name, e.g. "Rahul S.")
+- `rating` int (1–5, validated)
+- `review` text (max 1000 chars)
+- `status` text default `'approved'` (`approved` | `pending` | `rejected`) — admin can moderate
+- `created_at`, `updated_at`
 
-## Changes
+GRANTs + RLS:
+- `GRANT SELECT` to `anon` and `authenticated` — but only via a column-safe approach: create a **view** `public.reviews_public` that selects only `id, display_name, rating, review, product_slug, created_at` (never `full_name` or `user_id`). Grant SELECT on the view to `anon`/`authenticated`. Keep base table SELECT restricted to admins + owner.
+- INSERT policy on base table: `authenticated` can insert their own row (`user_id = auth.uid()`).
+- UPDATE/DELETE: owner can edit/delete own; admin can do all (via `has_role`).
+- Trigger `before insert/update`: compute `display_name` from `full_name` server-side so client cannot spoof it. Logic: split on whitespace → `first + ' ' + upper(left(last,1)) + '.'`; if single name, just `first`.
 
-### 1. `src/routes/auth.tsx`
-- Add a **"Forgot password?"** link under the password field, visible only in sign-in mode.
-- Clicking it switches to a small inline "Reset password" view that:
-  - Takes an email
-  - Calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: \`${window.location.origin}/reset-password\` })`
-  - Shows success toast: "Check your email for a reset link"
-  - Surfaces any Supabase error verbatim in a toast
-- Add a "Back to sign in" link from that view.
-- Keep the existing exact-error toast for sign-in/sign-up (already present).
+### Frontend
+1. **`src/components/review-form.tsx`** — Form (full name, rating stars 1–5, review textarea) using react-hook-form + zod. Requires sign-in; shows "Sign in to leave a review" CTA otherwise. Submits to `reviews` table via browser supabase client.
+2. **`src/components/reviews-list.tsx`** — Reads from `reviews_public` view, shows display_name, star rating, review text, date. Supports optional `productSlug` prop to filter.
+3. **Integration**:
+   - `src/routes/products.$slug.tsx` — add reviews section (list + form) per product.
+   - `src/routes/index.tsx` — add a "What customers say" section showing latest approved site-wide reviews.
+4. **Admin** — add "Reviews" tab to `src/routes/admin.tsx`: table of all reviews (incl. full_name visible to admin only), with Approve/Reject/Delete actions and search by name.
 
-### 2. New `src/routes/reset-password.tsx` (public route)
-- Public route (NOT under `_authenticated/`) so the recovery link works.
-- On mount, Supabase's recovery link puts a session in the URL hash; the existing client auto-detects it. We verify with `supabase.auth.getUser()`; if no user, show "Reset link expired — request a new one" with a link back to `/auth`.
-- Form: new password + confirm password (min 6 chars, must match).
-- Submit calls `supabase.auth.updateUser({ password })`. On success, toast and redirect to `/`.
-- Shows the exact Supabase error in a toast on failure.
-- `head()` with title "Reset password — Fatui Market".
+### Privacy guarantee
+`full_name` never leaves the server for public consumers — public reads go through the `reviews_public` view which omits the column entirely. Only the admin tab (RLS-gated by `has_role('admin')`) sees full names.
 
-### 3. No DB or backend changes
-- No migration needed.
-- No changes to admin email, secrets, or notifications.
+### Out of scope
+- Photo uploads in reviews
+- Verified-purchase badge
+- Helpful/unhelpful voting
+- Email notifications on new reviews (can add later if wanted)
 
-## Out of scope
-- Email branding for the reset email (uses default Supabase template until you set up custom auth emails).
-- Rate limiting beyond Supabase's built-in.
-
-## Files
-- Edited: `src/routes/auth.tsx`
-- New: `src/routes/reset-password.tsx`
+### Files
+- New migration: `supabase/migrations/<ts>_reviews.sql`
+- New: `src/components/review-form.tsx`, `src/components/reviews-list.tsx`
+- Edited: `src/routes/products.$slug.tsx`, `src/routes/index.tsx`, `src/routes/admin.tsx`
+- Regenerated: `src/integrations/supabase/types.ts`
