@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { useRequireAuth } from "@/hooks/use-require-auth";
 import { toast } from "sonner";
 import { Star } from "lucide-react";
 
@@ -13,15 +12,29 @@ const schema = z.object({
 });
 
 export function ReviewForm({ productSlug, onSubmitted }: { productSlug?: string; onSubmitted?: () => void }) {
-  const { status, user } = useRequireAuth();
+  const [authState, setAuthState] = useState<{ status: "loading" | "authed" | "guest"; userId?: string }>({ status: "loading" });
   const [fullName, setFullName] = useState("");
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [review, setReview] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  if (status === "loading") return <div className="text-sm text-muted-foreground">Loading…</div>;
-  if (status !== "authenticated" || !user) {
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      if (data.user) setAuthState({ status: "authed", userId: data.user.id });
+      else setAuthState({ status: "guest" });
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (session?.user) setAuthState({ status: "authed", userId: session.user.id });
+      else setAuthState({ status: "guest" });
+    });
+    return () => { active = false; sub.subscription.unsubscribe(); };
+  }, []);
+
+  if (authState.status === "loading") return <div className="text-sm text-muted-foreground">Loading…</div>;
+  if (authState.status !== "authed" || !authState.userId) {
     return (
       <div className="surface-card p-5 text-sm">
         <p className="text-muted-foreground">Sign in to share your experience.</p>
@@ -39,7 +52,7 @@ export function ReviewForm({ productSlug, onSubmitted }: { productSlug?: string;
     }
     setSubmitting(true);
     const { error } = await supabase.from("reviews").insert({
-      user_id: user.id,
+      user_id: authState.userId,
       product_slug: productSlug ?? null,
       full_name: parsed.data.full_name,
       rating: parsed.data.rating,
