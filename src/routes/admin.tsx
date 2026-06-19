@@ -468,3 +468,27 @@ function ReviewsAdmin({ reviews, onChange, onDelete }: {
     </div>
   );
 }
+
+function ReviewsStats({ reviews }: { reviews: Review[] }) {
+  const approved = reviews.filter((r) => r.status === "approved");
+  const pending = reviews.filter((r) => r.status === "pending").length;
+  const rejected = reviews.filter((r) => r.status === "rejected").length;
+  const avg = approved.length ? approved.reduce((s, r) => s + r.rating, 0) / approved.length : 0;
+  return (
+    <div className="mt-4 grid gap-3 sm:grid-cols-4">
+      <Stat label="Total reviews" value={reviews.length.toString()} />
+      <Stat label="Pending" value={pending.toString()} highlight />
+      <Stat label="Approved" value={approved.length.toString()} />
+      <div className="surface-card p-4">
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">Avg rating · Rejected</div>
+        <div className="mt-1 flex items-center gap-3">
+          <div className="flex items-center gap-1 text-2xl font-bold">
+            {avg.toFixed(1)}
+            <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+          </div>
+          <div className="text-xs text-muted-foreground">· {rejected} rejected</div>
+        </div>
+      </div>
+    </div>
+  );
+}
