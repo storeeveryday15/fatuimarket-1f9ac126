@@ -405,3 +405,58 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 }
 
 
+
+function ReviewsAdmin({ reviews, onChange, onDelete }: {
+  reviews: Review[];
+  onChange: (id: string, patch: Partial<Review>) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <div className="mt-4 overflow-x-auto rounded-xl border border-border">
+      <table className="w-full text-sm">
+        <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th className="px-3 py-3">Reviewer</th>
+            <th className="px-3 py-3">Rating</th>
+            <th className="px-3 py-3">Review</th>
+            <th className="px-3 py-3">Product</th>
+            <th className="px-3 py-3">Status</th>
+            <th className="px-3 py-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {reviews.map((r) => (
+            <tr key={r.id} className="border-t border-border align-top">
+              <td className="px-3 py-3">
+                <div className="font-medium">{r.full_name}</div>
+                <div className="text-[11px] text-muted-foreground">Public: {r.display_name}</div>
+                <div className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</div>
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star key={i} className={`h-3.5 w-3.5 ${i <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/40"}`} />
+                  ))}
+                </div>
+              </td>
+              <td className="px-3 py-3 max-w-md"><div className="line-clamp-3 whitespace-pre-wrap">{r.review}</div></td>
+              <td className="px-3 py-3 text-xs text-muted-foreground">{r.product_slug ?? "site"}</td>
+              <td className="px-3 py-3">
+                <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${r.status === "approved" ? "bg-success/15 text-success" : r.status === "rejected" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning"}`}>{r.status}</span>
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex flex-col gap-1">
+                  <button onClick={() => onChange(r.id, { status: "approved" })} className="rounded-md bg-success/15 px-2 py-1 text-[11px] font-semibold text-success hover:bg-success/25">Approve</button>
+                  <button onClick={() => onChange(r.id, { status: "pending" })} className="rounded-md bg-warning/15 px-2 py-1 text-[11px] font-semibold text-warning hover:bg-warning/25">Pending</button>
+                  <button onClick={() => onChange(r.id, { status: "rejected" })} className="rounded-md bg-destructive/15 px-2 py-1 text-[11px] font-semibold text-destructive hover:bg-destructive/25">Reject</button>
+                  <button onClick={() => onDelete(r.id)} className="inline-flex items-center justify-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] hover:bg-secondary"><Trash2 className="h-3 w-3" /> Delete</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+          {reviews.length === 0 && <tr><td colSpan={6} className="px-3 py-10 text-center text-sm text-muted-foreground">No reviews.</td></tr>}
+        </tbody>
+      </table>
+    </div>
+  );
+}
