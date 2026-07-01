@@ -85,11 +85,41 @@ function ProductPage() {
   const [zone, setZone] = useState("");
   const [email, setEmail] = useState("");
   const [placing, setPlacing] = useState(false);
+  const [coupon, setCoupon] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [useWallet, setUseWallet] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [hasUsedWelcome, setHasUsedWelcome] = useState(true);
 
-  useEffect(() => { if (user?.email && !email) setEmail(user.email); }, [user, email]);
+  const isGiftCard = !product.needsPlayerId;
+  const showEmailInput = isGiftCard || !user;
+
+  useEffect(() => { if (user?.email) setEmail(user.email); }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("wallet_balance,has_used_welcome_offer").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        const p = data as { wallet_balance?: number; has_used_welcome_offer?: boolean } | null;
+        setWalletBalance(Number(p?.wallet_balance ?? 0));
+        setHasUsedWelcome(!!p?.has_used_welcome_offer);
+      });
+  }, [user]);
 
   const inrAmount = useMemo(() => getINR(selected), [selected]);
   const usdAmount = useMemo(() => selected.price.toFixed(2), [selected]);
+
+  const discountInr = region === "IN" && couponApplied ? 5 : 0;
+  const walletApplyInr = region === "IN" && useWallet ? Math.min(walletBalance, Math.max(inrAmount - discountInr, 0)) : 0;
+  const finalInr = Math.max(inrAmount - discountInr - walletApplyInr, 0);
+
+  const applyCoupon = () => {
+    if (coupon.trim().toUpperCase() !== "WELCOME2FATUI") { toast.error("Invalid coupon"); return; }
+    if (hasUsedWelcome) { toast.error("Welcome offer already used."); return; }
+    if (region !== "IN") { toast.error("Coupon valid on INR orders only"); return; }
+    setCouponApplied(true);
+    toast.success("₹5 welcome discount applied");
+  };
 
   const needsId = product.needsPlayerId;
   const needsZone = product.slug === "mobile-legends";
@@ -98,7 +128,7 @@ function ProductPage() {
     if (!playerName.trim()) return false;
     if (needsId && !playerId.trim()) return false;
     if (needsZone && !zone.trim()) return false;
-    if (!email.trim()) return false;
+    if (showEmailInput && !email.trim()) return false;
     return true;
   })();
 
@@ -111,7 +141,7 @@ function ProductPage() {
       player_name: playerName,
       game_id: needsId ? playerId : "n/a",
       server_id: needsZone ? zone : undefined,
-      email,
+      email: email || user.email || "",
     });
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
 
@@ -122,7 +152,7 @@ function ProductPage() {
       const { error } = await supabase.from("orders").insert({
         order_code: code,
         user_id: user.id,
-        customer_email: email.trim(),
+        customer_email: (email || user.email || "").trim(),
         customer_contact: null,
         game_id,
         server_id: needsZone ? zone.trim() : null,
@@ -130,13 +160,16 @@ function ProductPage() {
         product_slug: product.slug,
         product_name: product.name,
         tier_label: selected.label,
-        amount_inr: region === "IN" ? inrAmount : null,
+        amount_inr: region === "IN" ? finalInr : null,
         amount_usd: region !== "IN" ? Number(usdAmount) : null,
         currency: region === "IN" ? "INR" : "USD",
         region,
         payment_method: region === "IN" ? "upi" : "card",
         status: "pending_payment",
-      });
+        coupon_code: couponApplied ? "WELCOME2FATUI" : null,
+        discount_inr: discountInr,
+        wallet_used_inr: walletApplyInr,
+      } as never);
       if (error) throw error;
       fetch("/api/public/notify-order", {
         method: "POST",
@@ -210,12 +243,46 @@ function ProductPage() {
                     <input required value={zone} onChange={(e) => setZone(e.target.value)} placeholder="e.g. 2345" className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
                   </div>
                 )}
-                <div className="md:col-span-2">
-                  <label className="text-xs font-medium text-muted-foreground">Delivery email</label>
-                  <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
-                </div>
+                {showEmailInput && (
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">Delivery email</label>
+                    <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                  </div>
+                )}
+                {!showEmailInput && user && (
+                  <div className="md:col-span-2 rounded-lg border border-dashed border-border bg-background/40 px-3 py-2 text-xs text-muted-foreground">
+                    Delivery email: <span className="font-medium text-foreground">{user.email}</span>
+                  </div>
+                )}
               </div>
             </section>
+
+            {region === "IN" && (
+              <section className="surface-card p-5">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Offers &amp; wallet</h2>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Coupon code</label>
+                    <div className="mt-1 flex gap-2">
+                      <input value={coupon} disabled={couponApplied || hasUsedWelcome} onChange={(e) => setCoupon(e.target.value)} placeholder={hasUsedWelcome ? "Welcome offer already used" : "WELCOME2FATUI"} className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm disabled:opacity-60" />
+                      {couponApplied ? (
+                        <button type="button" onClick={() => { setCouponApplied(false); setCoupon(""); }} className="rounded-lg border border-border px-3 py-2 text-xs">Remove</button>
+                      ) : (
+                        <button type="button" disabled={hasUsedWelcome} onClick={applyCoupon} className="rounded-lg bg-[image:var(--gradient-primary)] px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Apply</button>
+                      )}
+                    </div>
+                    {couponApplied && <div className="mt-1 text-[11px] text-success">✓ ₹5 off applied</div>}
+                  </div>
+                  <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-background/40 p-3 text-sm">
+                    <input type="checkbox" checked={useWallet} disabled={walletBalance <= 0} onChange={(e) => setUseWallet(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--neon)]" />
+                    <div>
+                      <div className="font-medium">Use wallet balance</div>
+                      <div className="text-[11px] text-muted-foreground">Available: ₹{walletBalance.toFixed(2)}</div>
+                    </div>
+                  </label>
+                </div>
+              </section>
+            )}
 
             <section className="surface-card p-5">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">2 · Select {product.currency.toLowerCase()}</h2>
@@ -251,11 +318,13 @@ function ProductPage() {
               <Row label="Player" value={playerName || "—"} />
               {needsId && <Row label={product.idLabel ?? "UID"} value={playerId || "—"} />}
               {needsZone && <Row label="Zone" value={zone || "—"} />}
-              <Row label="Email" value={email || "—"} />
+              <Row label="Email" value={email || user?.email || "—"} />
+              {region === "IN" && discountInr > 0 && <Row label="Coupon" value={`− ₹${discountInr}`} />}
+              {region === "IN" && walletApplyInr > 0 && <Row label="Wallet" value={`− ₹${walletApplyInr.toFixed(2)}`} />}
               <div className="my-2 h-px bg-border" />
               <div className="flex items-end justify-between">
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">Total</span>
-                <span className="text-3xl font-bold gradient-text">{region === "IN" ? `₹${inrAmount}` : `$${usdAmount}`}</span>
+                <span className="text-3xl font-bold gradient-text">{region === "IN" ? `₹${finalInr.toFixed(2)}` : `$${usdAmount}`}</span>
               </div>
             </div>
 

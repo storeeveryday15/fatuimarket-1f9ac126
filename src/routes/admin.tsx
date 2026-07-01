@@ -36,7 +36,7 @@ type Support = { id: string; name: string | null; contact: string | null; messag
 type Profile = { id: string; username: string | null; email: string | null; display_name: string | null; created_at: string };
 type Review = { id: string; user_id: string | null; product_slug: string | null; full_name: string; display_name: string; rating: number; review: string; status: string; created_at: string };
 
-const STATUSES = ["pending_payment", "pending_verification", "processing", "completed", "rejected"] as const;
+const STATUSES = ["pending_payment", "pending_verification", "completed", "rejected", "refunded", "cancelled", "failed", "expired"] as const;
 
 const STATUS_STYLES: Record<string, string> = {
   pending_payment: "bg-warning/15 text-warning",
@@ -49,6 +49,8 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: "bg-destructive/15 text-destructive",
   refunded: "bg-muted text-muted-foreground",
   cancelled: "bg-destructive/15 text-destructive",
+  failed: "bg-destructive/10 text-destructive/80",
+  expired: "bg-muted text-muted-foreground",
 };
 
 function AdminPage() {
@@ -92,6 +94,7 @@ function AdminPage() {
       const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
       if (!role) { toast.error("Admin access required"); navigate({ to: "/" }); return; }
       setReady(true);
+      try { await supabase.rpc("expire_stale_orders" as never); } catch { /* ignore */ }
       await load();
     })();
   }, [navigate]);
@@ -321,9 +324,9 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
               <td className="px-3 py-3">
                 <div className="flex flex-col gap-1">
                   <button onClick={() => onOpen(o)} className="inline-flex items-center justify-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] hover:bg-secondary"><Eye className="h-3 w-3" /> View</button>
-                  <button onClick={() => onQuickStatus(o.id, "processing", "processing")} className="rounded-md bg-purple-500/15 px-2 py-1 text-[11px] font-semibold text-purple-500 hover:bg-purple-500/25">Processing</button>
                   <button onClick={() => onQuickStatus(o.id, "completed", "completed")} className="rounded-md bg-success/15 px-2 py-1 text-[11px] font-semibold text-success hover:bg-success/25">Complete</button>
                   <button onClick={() => onQuickStatus(o.id, "rejected", "rejected")} className="rounded-md bg-destructive/15 px-2 py-1 text-[11px] font-semibold text-destructive hover:bg-destructive/25">Reject</button>
+                  <button onClick={() => onQuickStatus(o.id, "refunded")} className="rounded-md bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-secondary">Refund</button>
                 </div>
               </td>
             </tr>
@@ -380,10 +383,10 @@ function OrderDrawer({ order, screenshotUrl, onClose, onAction }: {
           <button onClick={saveNotes} className="mt-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary">Save notes</button>
         </div>
         <div className="mt-6 grid grid-cols-2 gap-2">
-          <button onClick={() => onAction(order.id, { status: "pending_verification" })} className="rounded-lg bg-blue-500/15 px-3 py-2 text-sm font-semibold text-blue-500">Pending</button>
-          <button onClick={() => onAction(order.id, { status: "processing" }, "processing")} className="rounded-lg bg-purple-500/15 px-3 py-2 text-sm font-semibold text-purple-500">Processing</button>
           <button onClick={() => onAction(order.id, { status: "completed" }, "completed")} className="rounded-lg bg-success/15 px-3 py-2 text-sm font-semibold text-success">Complete</button>
           <button onClick={() => onAction(order.id, { status: "rejected", rejected_at: new Date().toISOString() }, "rejected")} className="rounded-lg bg-destructive/15 px-3 py-2 text-sm font-semibold text-destructive">Reject</button>
+          <button onClick={() => onAction(order.id, { status: "refunded" })} className="rounded-lg bg-muted px-3 py-2 text-sm font-semibold text-muted-foreground">Refund</button>
+          <button onClick={() => onAction(order.id, { status: "cancelled" })} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive/80">Cancel</button>
         </div>
       </div>
     </div>

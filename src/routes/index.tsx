@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PRODUCTS } from "@/lib/products";
 import heroBg from "@/assets/hero-bg.jpg";
-import { Zap, ShieldCheck, Clock, Headphones, ArrowRight, Sparkles } from "lucide-react";
+import { Zap, ShieldCheck, Clock, ArrowRight, Sparkles, Users } from "lucide-react";
 import { LiveOrdersTicker } from "@/components/live-orders-ticker";
 import { ReviewsList } from "@/components/reviews-list";
 import { ReviewForm } from "@/components/review-form";
+import { BannerSlider } from "@/components/banner-slider";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,24 +32,27 @@ function Home() {
           className="absolute inset-0 h-full w-full object-cover opacity-50 dark:opacity-60"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
-        <div className="container relative mx-auto max-w-7xl px-4 py-24 md:py-32">
+        <div className="container relative mx-auto max-w-7xl px-4 py-14 md:py-20">
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
             <Sparkles className="h-3.5 w-3.5 text-[var(--neon)]" />
             Trusted by 50,000+ gamers
           </div>
-          <h1 className="mt-5 max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
+          <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
             Fatui <span className="gradient-text">Market</span>
-            <br />
-            top up in seconds.
           </h1>
 
-          {/* Blurred live orders ticker */}
+          {/* Blurred live orders ticker beneath the wordmark */}
           <LiveOrdersTicker />
 
-          <p className="mt-5 max-w-xl text-base text-muted-foreground md:text-lg">
+          {/* Rotating banner slider */}
+          <div className="mt-6">
+            <BannerSlider />
+          </div>
+
+          <p className="mt-6 max-w-xl text-sm text-muted-foreground md:text-base">
             Instant delivery for Mobile Legends, Free Fire, PUBG, Valorant, Steam Wallet and Google Play. Pay with UPI (India) or Card / PayPal (international).
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap gap-3">
             <a
               href="#products"
               className="inline-flex items-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform hover:scale-[1.02]"
@@ -63,7 +67,7 @@ function Home() {
             </Link>
           </div>
 
-          <div className="mt-14 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4">
             {FEATURES.map((f) => (
               <div key={f.title} className="surface-card p-4">
                 <f.icon className="h-5 w-5 text-[var(--neon)]" />
@@ -164,8 +168,8 @@ function Home() {
 const FEATURES = [
   { icon: Zap, title: "Instant delivery", desc: "Most orders complete in under 60 seconds." },
   { icon: ShieldCheck, title: "Secure payments", desc: "PCI-compliant gateways and SSL." },
-  { icon: Clock, title: "24/7 availability", desc: "Top up anytime, day or night." },
-  { icon: Headphones, title: "WhatsApp support", desc: "Real humans, real fast." },
+  { icon: Clock, title: "24/7 support", desc: "Real humans, real fast — any time." },
+  { icon: Users, title: "Real customers", desc: "Verified reviews from actual buyers." },
 ];
 
 const STEPS = [

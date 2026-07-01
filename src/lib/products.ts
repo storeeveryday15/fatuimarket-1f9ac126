@@ -172,11 +172,23 @@ export const WHATSAPP_NUMBER = "917679393645";
 export const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
   "Hi Fatui Market, I need help with my order."
 )}`;
+export const WHATSAPP_CHANNEL_LINK = "https://whatsapp.com/channel/0029VbD2uz34Y9ljxvkbLS3A";
 export const CONTACT_PHONE = "+91 76793 93645";
 export const CONTACT_EMAIL = "fatuimarket@gmail.com";
 export const FACEBOOK_LINK = "https://www.facebook.com/share/192oekurGU/";
 export const INSTAGRAM_LINK = "https://www.instagram.com/everyday_store_official?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==";
 export const TELEGRAM_LINK = "https://t.me/fatuimarket";
+
+// Coupon + cashback
+export const WELCOME_COUPON = "WELCOME2FATUI";
+export const WELCOME_DISCOUNT_INR = 5;
+export function computeCashbackINR(amountInr: number): number {
+  if (!amountInr || amountInr <= 0) return 0;
+  if (amountInr >= 1000) return 30;
+  if (amountInr >= 500) return 10;
+  if (amountInr >= 60) return 5;
+  return 2;
+}
 
 export const UPI_ID = "7679393645@kotakbank";
 export const UPI_MERCHANT = "Lakpa Tamang";

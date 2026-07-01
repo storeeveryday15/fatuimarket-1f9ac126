@@ -8,16 +8,8 @@ type FeedRow = {
   amount_inr: number | null;
   currency: string;
   created_at: string;
+  status?: string;
 };
-
-const FALLBACK: FeedRow[] = [
-  { order_code: "FM-7K3QX9", product_name: "Mobile Legends", tier_label: "💎 102 + 10 Diamonds", amount_inr: 176.97, currency: "INR", created_at: new Date(Date.now() - 1000 * 60 * 2).toISOString() },
-  { order_code: "FM-A4M8P2", product_name: "Free Fire", tier_label: "520 Diamonds", amount_inr: 415, currency: "INR", created_at: new Date(Date.now() - 1000 * 60 * 6).toISOString() },
-  { order_code: "FM-Q9V2N7", product_name: "Mobile Legends", tier_label: "🎫 Weekly Diamond Pass", amount_inr: 150.55, currency: "INR", created_at: new Date(Date.now() - 1000 * 60 * 11).toISOString() },
-  { order_code: "FM-XR5T1H", product_name: "PUBG Mobile", tier_label: "660 UC", amount_inr: 830, currency: "INR", created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString() },
-  { order_code: "FM-B2KW8L", product_name: "Mobile Legends", tier_label: "💎 504 + 66 Diamonds", amount_inr: 919.77, currency: "INR", created_at: new Date(Date.now() - 1000 * 60 * 24).toISOString() },
-  { order_code: "FM-D3HP6E", product_name: "Steam Wallet", tier_label: "$20 Steam Code", amount_inr: 1785, currency: "INR", created_at: new Date(Date.now() - 1000 * 60 * 33).toISOString() },
-];
 
 function timeAgo(iso: string) {
   const d = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -28,31 +20,28 @@ function timeAgo(iso: string) {
 }
 
 export function LiveOrdersTicker() {
-  const [rows, setRows] = useState<FeedRow[]>(FALLBACK);
+  const [rows, setRows] = useState<FeedRow[]>([]);
 
-  useEffect(() => {
-    let mounted = true;
-    supabase
+  const fetchRows = async () => {
+    const { data } = await supabase
       .from("public_orders_feed")
       .select("*")
-      .limit(15)
-      .then(({ data }) => {
-        if (mounted && data && data.length) setRows(data as FeedRow[]);
-      });
+      .limit(20);
+    if (!data) return;
+    const completed = (data as FeedRow[]).filter((r) => !r.status || ["completed", "delivered"].includes(r.status));
+    setRows(completed.length ? completed : (data as FeedRow[]));
+  };
 
+  useEffect(() => {
+    fetchRows();
     const ch = supabase
       .channel("ticker-orders")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "orders" }, () => {
-        supabase.from("public_orders_feed").select("*").limit(15).then(({ data }) => {
-          if (mounted && data) setRows(data as FeedRow[]);
-        });
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => fetchRows())
       .subscribe();
-    return () => {
-      mounted = false;
-      supabase.removeChannel(ch);
-    };
+    return () => { supabase.removeChannel(ch); };
   }, []);
+
+  if (rows.length === 0) return null;
 
   const loop = [...rows, ...rows];
 
@@ -65,14 +54,14 @@ export function LiveOrdersTicker() {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
         </span>
-        Live orders
+        Live orders · completed
       </div>
       <div className="ticker-track flex gap-3 px-4 will-change-transform">
         {loop.map((r, i) => (
           <div
             key={`${r.order_code}-${i}`}
             className="flex shrink-0 items-center gap-3 rounded-full border border-border/50 bg-background/40 px-4 py-2 text-xs"
-            style={{ filter: "blur(2.2px)", opacity: 0.85 }}
+            style={{ filter: "blur(2px)", opacity: 0.85 }}
           >
             <span className="font-mono text-[var(--neon)]">{r.order_code}</span>
             <span className="text-muted-foreground">•</span>
