@@ -318,11 +318,13 @@ function ProductPage() {
               <Row label="Player" value={playerName || "—"} />
               {needsId && <Row label={product.idLabel ?? "UID"} value={playerId || "—"} />}
               {needsZone && <Row label="Zone" value={zone || "—"} />}
-              <Row label="Email" value={email || "—"} />
+              <Row label="Email" value={email || user?.email || "—"} />
+              {region === "IN" && discountInr > 0 && <Row label="Coupon" value={`− ₹${discountInr}`} />}
+              {region === "IN" && walletApplyInr > 0 && <Row label="Wallet" value={`− ₹${walletApplyInr.toFixed(2)}`} />}
               <div className="my-2 h-px bg-border" />
               <div className="flex items-end justify-between">
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">Total</span>
-                <span className="text-3xl font-bold gradient-text">{region === "IN" ? `₹${inrAmount}` : `$${usdAmount}`}</span>
+                <span className="text-3xl font-bold gradient-text">{region === "IN" ? `₹${finalInr.toFixed(2)}` : `$${usdAmount}`}</span>
               </div>
             </div>
 
