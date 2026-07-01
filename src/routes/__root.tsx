@@ -16,6 +16,7 @@ import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 import { WhatsappFloat } from "../components/whatsapp-button";
 import { ChatWidget } from "../components/chat-widget";
+import { WhatsappPopup } from "../components/whatsapp-popup";
 import { Toaster } from "sonner";
 
 function NotFoundComponent() {
@@ -138,6 +139,7 @@ function RootComponent() {
           <SiteFooter />
           <WhatsappFloat />
           <ChatWidget />
+          <WhatsappPopup />
           <Toaster richColors position="top-right" />
         </div>
       </ThemeProvider>
