@@ -37,11 +37,18 @@ export type Database = {
           admin_notes: string | null
           amount_inr: number | null
           amount_usd: number | null
+          cashback_credited: boolean
+          cashback_inr: number
           completed_at: string | null
+          coupon_code: string | null
           created_at: string
           currency: string
           customer_contact: string | null
           customer_email: string | null
+          discount_inr: number
+          expired_at: string | null
+          expires_at: string | null
+          failed_at: string | null
           game_id: string | null
           id: string
           notes: string | null
@@ -51,6 +58,7 @@ export type Database = {
           processing_at: string | null
           product_name: string
           product_slug: string
+          reason: string | null
           region: string
           rejected_at: string | null
           screenshot_url: string | null
@@ -60,16 +68,24 @@ export type Database = {
           updated_at: string
           user_id: string | null
           utr: string | null
+          wallet_used_inr: number
         }
         Insert: {
           admin_notes?: string | null
           amount_inr?: number | null
           amount_usd?: number | null
+          cashback_credited?: boolean
+          cashback_inr?: number
           completed_at?: string | null
+          coupon_code?: string | null
           created_at?: string
           currency?: string
           customer_contact?: string | null
           customer_email?: string | null
+          discount_inr?: number
+          expired_at?: string | null
+          expires_at?: string | null
+          failed_at?: string | null
           game_id?: string | null
           id?: string
           notes?: string | null
@@ -79,6 +95,7 @@ export type Database = {
           processing_at?: string | null
           product_name: string
           product_slug: string
+          reason?: string | null
           region?: string
           rejected_at?: string | null
           screenshot_url?: string | null
@@ -88,16 +105,24 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           utr?: string | null
+          wallet_used_inr?: number
         }
         Update: {
           admin_notes?: string | null
           amount_inr?: number | null
           amount_usd?: number | null
+          cashback_credited?: boolean
+          cashback_inr?: number
           completed_at?: string | null
+          coupon_code?: string | null
           created_at?: string
           currency?: string
           customer_contact?: string | null
           customer_email?: string | null
+          discount_inr?: number
+          expired_at?: string | null
+          expires_at?: string | null
+          failed_at?: string | null
           game_id?: string | null
           id?: string
           notes?: string | null
@@ -107,6 +132,7 @@ export type Database = {
           processing_at?: string | null
           product_name?: string
           product_slug?: string
+          reason?: string | null
           region?: string
           rejected_at?: string | null
           screenshot_url?: string | null
@@ -116,6 +142,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           utr?: string | null
+          wallet_used_inr?: number
         }
         Relationships: []
       }
@@ -126,8 +153,11 @@ export type Database = {
           created_at: string
           display_name: string | null
           email: string | null
+          has_used_welcome_offer: boolean
+          hide_popup: boolean
           id: string
           username: string | null
+          wallet_balance: number
         }
         Insert: {
           contact?: string | null
@@ -135,8 +165,11 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          has_used_welcome_offer?: boolean
+          hide_popup?: boolean
           id: string
           username?: string | null
+          wallet_balance?: number
         }
         Update: {
           contact?: string | null
@@ -144,8 +177,11 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          has_used_welcome_offer?: boolean
+          hide_popup?: boolean
           id?: string
           username?: string | null
+          wallet_balance?: number
         }
         Relationships: []
       }
@@ -239,6 +275,44 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_transactions: {
+        Row: {
+          amount_inr: number
+          created_at: string
+          description: string | null
+          id: string
+          order_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount_inr: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount_inr?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       public_orders_feed: {
@@ -284,6 +358,8 @@ export type Database = {
       }
     }
     Functions: {
+      compute_cashback_inr: { Args: { amount: number }; Returns: number }
+      expire_stale_orders: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
