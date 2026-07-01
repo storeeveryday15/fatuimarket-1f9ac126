@@ -85,11 +85,41 @@ function ProductPage() {
   const [zone, setZone] = useState("");
   const [email, setEmail] = useState("");
   const [placing, setPlacing] = useState(false);
+  const [coupon, setCoupon] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [useWallet, setUseWallet] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [hasUsedWelcome, setHasUsedWelcome] = useState(true);
 
-  useEffect(() => { if (user?.email && !email) setEmail(user.email); }, [user, email]);
+  const isGiftCard = !product.needsPlayerId;
+  const showEmailInput = isGiftCard || !user;
+
+  useEffect(() => { if (user?.email) setEmail(user.email); }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("wallet_balance,has_used_welcome_offer").eq("id", user.id).maybeSingle()
+      .then(({ data }) => {
+        const p = data as { wallet_balance?: number; has_used_welcome_offer?: boolean } | null;
+        setWalletBalance(Number(p?.wallet_balance ?? 0));
+        setHasUsedWelcome(!!p?.has_used_welcome_offer);
+      });
+  }, [user]);
 
   const inrAmount = useMemo(() => getINR(selected), [selected]);
   const usdAmount = useMemo(() => selected.price.toFixed(2), [selected]);
+
+  const discountInr = region === "IN" && couponApplied ? 5 : 0;
+  const walletApplyInr = region === "IN" && useWallet ? Math.min(walletBalance, Math.max(inrAmount - discountInr, 0)) : 0;
+  const finalInr = Math.max(inrAmount - discountInr - walletApplyInr, 0);
+
+  const applyCoupon = () => {
+    if (coupon.trim().toUpperCase() !== "WELCOME2FATUI") { toast.error("Invalid coupon"); return; }
+    if (hasUsedWelcome) { toast.error("Welcome offer already used."); return; }
+    if (region !== "IN") { toast.error("Coupon valid on INR orders only"); return; }
+    setCouponApplied(true);
+    toast.success("₹5 welcome discount applied");
+  };
 
   const needsId = product.needsPlayerId;
   const needsZone = product.slug === "mobile-legends";
@@ -98,7 +128,7 @@ function ProductPage() {
     if (!playerName.trim()) return false;
     if (needsId && !playerId.trim()) return false;
     if (needsZone && !zone.trim()) return false;
-    if (!email.trim()) return false;
+    if (showEmailInput && !email.trim()) return false;
     return true;
   })();
 
@@ -111,7 +141,7 @@ function ProductPage() {
       player_name: playerName,
       game_id: needsId ? playerId : "n/a",
       server_id: needsZone ? zone : undefined,
-      email,
+      email: email || user.email || "",
     });
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
 
@@ -122,7 +152,7 @@ function ProductPage() {
       const { error } = await supabase.from("orders").insert({
         order_code: code,
         user_id: user.id,
-        customer_email: email.trim(),
+        customer_email: (email || user.email || "").trim(),
         customer_contact: null,
         game_id,
         server_id: needsZone ? zone.trim() : null,
@@ -130,13 +160,16 @@ function ProductPage() {
         product_slug: product.slug,
         product_name: product.name,
         tier_label: selected.label,
-        amount_inr: region === "IN" ? inrAmount : null,
+        amount_inr: region === "IN" ? finalInr : null,
         amount_usd: region !== "IN" ? Number(usdAmount) : null,
         currency: region === "IN" ? "INR" : "USD",
         region,
         payment_method: region === "IN" ? "upi" : "card",
         status: "pending_payment",
-      });
+        coupon_code: couponApplied ? "WELCOME2FATUI" : null,
+        discount_inr: discountInr,
+        wallet_used_inr: walletApplyInr,
+      } as never);
       if (error) throw error;
       fetch("/api/public/notify-order", {
         method: "POST",
