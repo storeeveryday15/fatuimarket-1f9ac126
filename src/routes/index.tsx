@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PRODUCTS } from "@/lib/products";
 import heroBg from "@/assets/hero-bg.jpg";
-import { Zap, ShieldCheck, Clock, Headphones, ArrowRight, Sparkles, Users } from "lucide-react";
+import { Zap, ShieldCheck, Clock, ArrowRight, Sparkles, Users } from "lucide-react";
 import { LiveOrdersTicker } from "@/components/live-orders-ticker";
 import { ReviewsList } from "@/components/reviews-list";
 import { ReviewForm } from "@/components/review-form";
