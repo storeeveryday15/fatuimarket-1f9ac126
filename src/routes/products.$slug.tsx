@@ -243,12 +243,46 @@ function ProductPage() {
                     <input required value={zone} onChange={(e) => setZone(e.target.value)} placeholder="e.g. 2345" className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
                   </div>
                 )}
-                <div className="md:col-span-2">
-                  <label className="text-xs font-medium text-muted-foreground">Delivery email</label>
-                  <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
-                </div>
+                {showEmailInput && (
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">Delivery email</label>
+                    <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                  </div>
+                )}
+                {!showEmailInput && user && (
+                  <div className="md:col-span-2 rounded-lg border border-dashed border-border bg-background/40 px-3 py-2 text-xs text-muted-foreground">
+                    Delivery email: <span className="font-medium text-foreground">{user.email}</span>
+                  </div>
+                )}
               </div>
             </section>
+
+            {region === "IN" && (
+              <section className="surface-card p-5">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Offers &amp; wallet</h2>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Coupon code</label>
+                    <div className="mt-1 flex gap-2">
+                      <input value={coupon} disabled={couponApplied || hasUsedWelcome} onChange={(e) => setCoupon(e.target.value)} placeholder={hasUsedWelcome ? "Welcome offer already used" : "WELCOME2FATUI"} className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm disabled:opacity-60" />
+                      {couponApplied ? (
+                        <button type="button" onClick={() => { setCouponApplied(false); setCoupon(""); }} className="rounded-lg border border-border px-3 py-2 text-xs">Remove</button>
+                      ) : (
+                        <button type="button" disabled={hasUsedWelcome} onClick={applyCoupon} className="rounded-lg bg-[image:var(--gradient-primary)] px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50">Apply</button>
+                      )}
+                    </div>
+                    {couponApplied && <div className="mt-1 text-[11px] text-success">✓ ₹5 off applied</div>}
+                  </div>
+                  <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-background/40 p-3 text-sm">
+                    <input type="checkbox" checked={useWallet} disabled={walletBalance <= 0} onChange={(e) => setUseWallet(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--neon)]" />
+                    <div>
+                      <div className="font-medium">Use wallet balance</div>
+                      <div className="text-[11px] text-muted-foreground">Available: ₹{walletBalance.toFixed(2)}</div>
+                    </div>
+                  </label>
+                </div>
+              </section>
+            )}
 
             <section className="surface-card p-5">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">2 · Select {product.currency.toLowerCase()}</h2>
