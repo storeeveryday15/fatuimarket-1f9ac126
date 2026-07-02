@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, MessageCircle } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/fatui-logo.asset.json";
 import { WHATSAPP_CHANNEL_LINK } from "@/lib/products";
 import { supabase } from "@/integrations/supabase/client";
 
