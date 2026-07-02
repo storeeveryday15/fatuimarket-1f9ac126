@@ -87,6 +87,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Fatui Market — Instant Game Top-Up & Digital Codes" },
       { name: "description", content: "Top up Mobile Legends, Free Fire, PUBG Mobile, Valorant, Steam Wallet and Google Play instantly. Secure payments, 24/7 WhatsApp support." },
       { name: "author", content: "Fatui Market" },
+      { name: "google-site-verification", content: "mmM6_QyH-wOtFJMNuQ2_6X-XEPrS4AHxST5tJXQCsSc" },
       { property: "og:title", content: "Fatui Market — Instant Game Top-Up & Digital Codes" },
       { property: "og:description", content: "Top up Mobile Legends, Free Fire, PUBG Mobile, Valorant, Steam Wallet and Google Play instantly. Secure payments, 24/7 WhatsApp support." },
       { property: "og:type", content: "website" },
