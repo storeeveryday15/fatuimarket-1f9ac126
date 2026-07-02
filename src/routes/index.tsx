@@ -8,12 +8,15 @@ import { ReviewForm } from "@/components/review-form";
 import { BannerSlider } from "@/components/banner-slider";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
+      head: () => ({
     meta: [
       { title: "Fatui Market — Instant Game Top-Up & Digital Codes" },
       { name: "description", content: "Instant diamonds, UC, VP, Steam Wallet and Google Play codes. Trusted by gamers worldwide." },
       { property: "og:title", content: "Fatui Market — Instant Game Top-Up" },
       { property: "og:description", content: "Top up your favorite games in seconds." },
+    ],
+    links: [
+      { rel: "preload", as: "image", href: heroBg, fetchpriority: "high" },
     ],
   }),
   component: Home,
@@ -29,6 +32,7 @@ function Home() {
           alt=""
           width={1920}
           height={1080}
+          fetchPriority="high"
           className="absolute inset-0 h-full w-full object-cover opacity-50 dark:opacity-60"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
