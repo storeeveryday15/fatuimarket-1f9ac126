@@ -32,6 +32,7 @@ function Home() {
           alt=""
           width={1920}
           height={1080}
+          fetchpriority="high"
           className="absolute inset-0 h-full w-full object-cover opacity-50 dark:opacity-60"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
