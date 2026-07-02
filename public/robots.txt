@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Disallow auth and admin surfaces from crawling
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /api/
+
+Sitemap: https://fatuimarket.lovable.app/sitemap.xml
