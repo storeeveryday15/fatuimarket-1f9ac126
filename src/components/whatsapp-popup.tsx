@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, MessageCircle } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/fatui-logo.asset.json";
 import { WHATSAPP_CHANNEL_LINK } from "@/lib/products";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -51,7 +51,7 @@ export function WhatsappPopup() {
           <X className="h-4 w-4" />
         </button>
         <div className="flex flex-col items-center text-center">
-          <img src={logo} alt="Fatui Market" className="h-14 w-14 rounded-xl" />
+          <img src={logo.url} alt="Fatui Market" className="h-14 w-14 rounded-xl" />
           <h2 className="mt-4 text-xl font-bold">Join Our WhatsApp Channel</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Get giveaway updates, discounts, restocks and exclusive offers.
