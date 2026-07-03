@@ -1,29 +1,30 @@
-The premium MLBB hero was already built in the previous turn inside `src/components/banner-slider.tsx` and mounted as the first section of the homepage. This plan verifies it matches every requirement in your latest brief and applies a few small polish tweaks — no rebuild.
+## Fix Live Visitor Stats + Email OTP (not magic link)
 
-## What already exists (verified against your brief)
+### 1. Live Visitor Stats always 0
 
-- Slide 1 background: your uploaded MLBB wallpaper (`hero-mlbb.jpg` asset), no AI art.
-- Full-width, 24px rounded corners (`rounded-3xl`), responsive heights (260px mobile → 500px desktop).
-- Dark black→purple gradient overlay (~55%) + extra purple-950 top gradient for readability.
-- Large "FATUI MARKET" watermark, bottom-right, ~12% opacity, white with blur/glow.
-- Left content: 🛡 Trusted by Gamers badge, "MOBILE LEGENDS DIAMONDS" title, subtitle "Cheapest Weekly Pass • Starlight • Twilight Pass", feature row (⚡ Instant Delivery, 🛡 Safe & Secure, 🎧 24/7 Support), primary "Top Up Now →" (gradient glow) + secondary "Browse Top-ups".
-- Carousel: Embla + Autoplay, 5s auto-advance, touch swipe + mouse drag, arrows, animated dots (active dot widens), infinite loop, pause on interaction, 8s resume timer.
-- Animations: Ken Burns zoom on active slide, text slide-in from left (`hero-content-in`), button hover glow, smooth fade/slide transitions.
-- Mobile: text centered, buttons scale to full width, 260px height preserved.
-- Theme: black / purple / blue Fatui palette using existing design tokens.
+Root cause: a recent security migration reverted `get_visitor_stats` to `SECURITY DEFINER` and revoked `EXECUTE` from `anon`. Guests (the majority of homepage viewers) get an empty response, so the widget shows 0/0/0. The `site_visitors` INSERT/UPDATE policies also require `last_seen_at` within a ±30s window, which is fine, but guests can't read the aggregates back.
 
-## Small polish this plan will apply
+Fix (single migration):
+- `GRANT EXECUTE ON FUNCTION public.get_visitor_stats() TO anon;` so the public counter works for logged-out users too.
+- Keep `get_order_stats` / `get_leaderboard` authenticated-only (unchanged) — those aren't the widget.
+- Verify the heartbeat upsert path works for anon (RLS already allows it with a valid `session_id` and fresh timestamp — the client already sends both).
+- No component changes needed; `LiveVisitors` already polls + subscribes to Realtime on `site_visitors`.
 
-1. **Dot animation** — add a subtle scale pulse to the active dot in addition to width growth (currently only width animates).
-2. **Button hover glow** — strengthen the primary CTA's glow with a soft `box-shadow` transition (currently uses `--shadow-glow` only on rest state).
-3. **Reduced-motion guard** — respect `prefers-reduced-motion` to disable Ken Burns and content slide-in for accessibility.
-4. **Watermark tuning** — nudge opacity to 12% and add a slight `text-shadow` glow so it reads as premium at all sizes.
-5. **Alt/ARIA sweep** — add descriptive `aria-label` on arrows ("Previous slide" / "Next slide") and confirm each slide's `aria-label` reads "1 of 3", etc.
+### 2. Supabase is still sending magic-link emails instead of a 6-digit code
 
-## Technical notes
+Root cause: the code calls `supabase.auth.signInWithOtp` correctly, but the Supabase Auth **email template** for "Magic Link" still uses `{{ .ConfirmationURL }}`. When the template contains a confirmation URL, Supabase sends the link version; to send just the numeric code, the template must reference `{{ .Token }}` (and no URL).
 
-- Files touched: `src/components/banner-slider.tsx` (polish only), `src/styles.css` (reduced-motion + dot pulse keyframe).
-- No new dependencies. No changes to `src/routes/index.tsx` — carousel is already the first section.
-- No AI artwork generated; MLBB slide continues to use your uploaded wallpaper via the existing `.asset.json` pointer.
+Fix: scaffold Lovable-managed auth email templates so the "Magic Link / OTP" email renders only the 6-digit `{{ .Token }}` with no login button. This uses `email_domain--scaffold_auth_email_templates`, then brand the template to match the dark purple Fatui Market theme. Also confirms the OTP expiry is 10 minutes (Supabase default for email OTP is 3600s; we'll set it to 600s via `configure_auth` if the tool exposes it, otherwise document that the code already expires in the OTP's TTL window and note the setting).
 
-If you'd rather I leave it fully as-is (no polish), say the word and I'll close this out untouched.
+No code changes to `src/routes/auth.tsx` — the flow already:
+- calls `signInWithOtp({ email, options: { shouldCreateUser: true } })`
+- shows the 6-slot OTP input and verifies via `verifyOtp({ type: "email", token })`
+- keeps Google sign-in above the email form
+
+### Technical steps
+1. Migration: `GRANT EXECUTE ON FUNCTION public.get_visitor_stats() TO anon;`
+2. Check email domain status; if a domain exists, scaffold auth email templates and brand the magic-link/OTP template to show only `{{ .Token }}`. If no domain exists, prompt the user to set one up (required for Lovable-managed auth emails that omit the confirmation URL).
+3. Verify in preview: guest opens homepage → header chip shows a non-zero online count; requesting an email code delivers a 6-digit numeric code with no clickable link.
+
+### Note
+Removing the confirmation URL from the auth email requires a configured email sender domain in Lovable Cloud. If you don't have one yet, I'll walk you through the one-click setup dialog as part of step 2.
