@@ -287,13 +287,28 @@ function ProductPage() {
                 {needsId && (
                   <div className={needsZone ? "" : "md:col-span-2"}>
                     <label className="text-xs font-medium text-muted-foreground">{product.idLabel ?? "Game UID"}</label>
-                    <input required value={playerId} onChange={(e) => setPlayerId(e.target.value)} placeholder={product.idPlaceholder} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                    <div className="mt-1 flex gap-2">
+                      <input required value={playerId} onChange={(e) => setPlayerId(e.target.value)} placeholder={product.idPlaceholder} className="flex-1 rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                      <button type="button" onClick={copyUid} title="Copy UID" className="inline-flex items-center gap-1 rounded-lg border border-border bg-background/60 px-3 text-xs hover:border-foreground/30">
+                        <Copy className="h-3.5 w-3.5" /> Copy
+                      </button>
+                    </div>
                   </div>
                 )}
                 {needsZone && (
                   <div>
                     <label className="text-xs font-medium text-muted-foreground">Zone / Server ID</label>
                     <input required value={zone} onChange={(e) => setZone(e.target.value)} placeholder="e.g. 2345" className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                  </div>
+                )}
+                {needsServer && (
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">Server / Region</label>
+                    <select required value={serverRegion} onChange={(e) => setServerRegion(e.target.value)} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring">
+                      {product.servers!.map((s) => (
+                        <option key={s.id} value={s.id}>{s.label}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
                 {showEmailInput && (
