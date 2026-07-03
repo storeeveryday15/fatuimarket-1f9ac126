@@ -105,6 +105,30 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" },
     ],
+    scripts: [{
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            name: "Fatui Market",
+            url: "https://fatuimarket.lovable.app",
+            logo: "https://fatuimarket.lovable.app/__l5e/assets-v1/d5212832-d4bb-43d2-80da-ee5f8c0d4a0f/fatui-logo.jpeg",
+            sameAs: [
+              "https://www.facebook.com/share/192oekurGU/",
+              "https://www.instagram.com/everyday_store_official",
+              "https://t.me/fatuimarket",
+            ],
+          },
+          {
+            "@type": "WebSite",
+            name: "Fatui Market",
+            url: "https://fatuimarket.lovable.app",
+          },
+        ],
+      }),
+    }],
   }),
   shellComponent: RootShell,
   component: RootComponent,
