@@ -1,14 +1,16 @@
 import logo from "@/assets/fatui-logo.asset.json";
-import ff from "@/assets/game-ff.jpg";
-import pubg from "@/assets/game-pubg.jpg";
-import valorant from "@/assets/game-valorant.jpg";
+import ff from "@/assets/game-ff.jpg.asset.json";
+import pubg from "@/assets/game-pubg.jpg.asset.json";
+import valorant from "@/assets/game-valorant.jpg.asset.json";
 import steam from "@/assets/game-steam.jpg";
-import gplay from "@/assets/game-gplay.jpg";
+import gplay from "@/assets/game-gplay.jpg.asset.json";
 import wuwa from "@/assets/game-wuwa.jpg.asset.json";
 import genshin from "@/assets/game-genshin.jpg.asset.json";
 import lads from "@/assets/game-lads.jpg.asset.json";
 import hok from "@/assets/game-hok.jpg.asset.json";
 import razer from "@/assets/game-razer.jpg.asset.json";
+import mlbb from "@/assets/game-mlbb.jpg.asset.json";
+import roblox from "@/assets/game-roblox.jpg.asset.json";
 
 export const LOGO_URL = logo.url;
 
