@@ -63,6 +63,7 @@ export type Database = {
           rejected_at: string | null
           screenshot_url: string | null
           server_id: string | null
+          server_region: string | null
           status: string
           tier_label: string
           updated_at: string
@@ -100,6 +101,7 @@ export type Database = {
           rejected_at?: string | null
           screenshot_url?: string | null
           server_id?: string | null
+          server_region?: string | null
           status?: string
           tier_label: string
           updated_at?: string
@@ -137,6 +139,7 @@ export type Database = {
           rejected_at?: string | null
           screenshot_url?: string | null
           server_id?: string | null
+          server_region?: string | null
           status?: string
           tier_label?: string
           updated_at?: string

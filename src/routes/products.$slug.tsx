@@ -5,9 +5,11 @@ import {
   getProduct,
   getINR,
   generateOrderCode,
+  whatsappLinkFor,
   type Denomination,
+  type Server,
 } from "@/lib/products";
-import { ArrowLeft, Check, Globe, ArrowRight } from "lucide-react";
+import { ArrowLeft, Check, Globe, ArrowRight, Copy, Share2, MessageCircle, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -107,9 +109,11 @@ function ProductPage() {
   const navigate = useNavigate();
   const [region, setRegion] = useDetectedRegion();
   const [selected, setSelected] = useState<Denomination>(product.denominations[0]);
+  const [qty, setQty] = useState(1);
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState("");
   const [zone, setZone] = useState("");
+  const [serverRegion, setServerRegion] = useState<string>(product.servers?.[0]?.id ?? "");
   const [email, setEmail] = useState("");
   const [placing, setPlacing] = useState(false);
   const [coupon, setCoupon] = useState("");
@@ -133,8 +137,8 @@ function ProductPage() {
       });
   }, [user]);
 
-  const inrAmount = useMemo(() => getINR(selected), [selected]);
-  const usdAmount = useMemo(() => selected.price.toFixed(2), [selected]);
+  const inrAmount = useMemo(() => getINR(selected) * qty, [selected, qty]);
+  const usdAmount = useMemo(() => (selected.price * qty).toFixed(2), [selected, qty]);
 
   const discountInr = region === "IN" && couponApplied ? 5 : 0;
   const walletApplyInr = region === "IN" && useWallet ? Math.min(walletBalance, Math.max(inrAmount - discountInr, 0)) : 0;
@@ -150,14 +154,39 @@ function ProductPage() {
 
   const needsId = product.needsPlayerId;
   const needsZone = product.slug === "mobile-legends";
+  const needsServer = !!product.needsServer && !!product.servers?.length;
 
   const filled = (() => {
     if (!playerName.trim()) return false;
     if (needsId && !playerId.trim()) return false;
     if (needsZone && !zone.trim()) return false;
+    if (needsServer && !serverRegion) return false;
     if (showEmailInput && !email.trim()) return false;
     return true;
   })();
+
+  const copyUid = async () => {
+    if (!playerId.trim()) return toast.error("Enter your UID first");
+    try { await navigator.clipboard.writeText(playerId.trim()); toast.success("UID copied"); } catch { toast.error("Copy failed"); }
+  };
+
+  const shareProduct = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const shareData = { title: `${product.name} — Fatui Market`, text: product.tagline, url };
+    try {
+      const nav: Navigator | undefined = typeof navigator !== "undefined" ? navigator : undefined;
+      if (nav && typeof nav.share === "function") {
+        await nav.share(shareData);
+      } else if (nav?.clipboard) {
+        await nav.clipboard.writeText(url);
+        toast.success("Product link copied");
+      }
+    } catch { /* user cancelled */ }
+  };
+
+  const whatsappUrl = whatsappLinkFor(
+    `Hi Fatui Market, I want to buy ${product.name} — ${selected.label}${qty > 1 ? ` × ${qty}` : ""}.`
+  );
 
   const continueToPayment = async () => {
     if (status !== "authed" || !user) {
@@ -183,10 +212,11 @@ function ProductPage() {
         customer_contact: null,
         game_id,
         server_id: needsZone ? zone.trim() : null,
+        server_region: needsServer ? serverRegion : null,
         player_name: playerName.trim(),
         product_slug: product.slug,
         product_name: product.name,
-        tier_label: selected.label,
+        tier_label: qty > 1 ? `${selected.label} × ${qty}` : selected.label,
         amount_inr: region === "IN" ? finalInr : null,
         amount_usd: region !== "IN" ? Number(usdAmount) : null,
         currency: region === "IN" ? "INR" : "USD",
@@ -258,13 +288,28 @@ function ProductPage() {
                 {needsId && (
                   <div className={needsZone ? "" : "md:col-span-2"}>
                     <label className="text-xs font-medium text-muted-foreground">{product.idLabel ?? "Game UID"}</label>
-                    <input required value={playerId} onChange={(e) => setPlayerId(e.target.value)} placeholder={product.idPlaceholder} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                    <div className="mt-1 flex gap-2">
+                      <input required value={playerId} onChange={(e) => setPlayerId(e.target.value)} placeholder={product.idPlaceholder} className="flex-1 rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                      <button type="button" onClick={copyUid} title="Copy UID" className="inline-flex items-center gap-1 rounded-lg border border-border bg-background/60 px-3 text-xs hover:border-foreground/30">
+                        <Copy className="h-3.5 w-3.5" /> Copy
+                      </button>
+                    </div>
                   </div>
                 )}
                 {needsZone && (
                   <div>
                     <label className="text-xs font-medium text-muted-foreground">Zone / Server ID</label>
                     <input required value={zone} onChange={(e) => setZone(e.target.value)} placeholder="e.g. 2345" className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                  </div>
+                )}
+                {needsServer && (
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">Server / Region</label>
+                    <select required value={serverRegion} onChange={(e) => setServerRegion(e.target.value)} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring">
+                      {product.servers!.map((s: Server) => (
+                        <option key={s.id} value={s.id}>{s.label}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
                 {showEmailInput && (
@@ -323,6 +368,21 @@ function ProductPage() {
                   );
                 })}
               </div>
+              <div className="mt-5 flex items-center justify-between rounded-xl border border-border bg-background/40 p-3">
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground">Quantity</div>
+                  <div className="text-[11px] text-muted-foreground">Multiple packs of the same tier</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:border-foreground/30" aria-label="Decrease">
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="min-w-[2ch] text-center text-sm font-semibold">{qty}</span>
+                  <button type="button" onClick={() => setQty((q) => Math.min(20, q + 1))} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:border-foreground/30" aria-label="Increase">
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
             </section>
 
             <section className="surface-card p-5 border border-dashed border-[var(--neon)]/40">
@@ -338,10 +398,11 @@ function ProductPage() {
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Order summary</h3>
             <div className="mt-4 space-y-3 text-sm">
               <Row label="Product" value={product.name} />
-              <Row label="Item" value={selected.label} />
+              <Row label="Item" value={qty > 1 ? `${selected.label} × ${qty}` : selected.label} />
               <Row label="Player" value={playerName || "—"} />
               {needsId && <Row label={product.idLabel ?? "UID"} value={playerId || "—"} />}
               {needsZone && <Row label="Zone" value={zone || "—"} />}
+              {needsServer && <Row label="Server" value={product.servers?.find((s: Server) => s.id === serverRegion)?.label ?? "—"} />}
               <Row label="Email" value={email || user?.email || "—"} />
               {region === "IN" && discountInr > 0 && <Row label="Coupon" value={`− ₹${discountInr}`} />}
               {region === "IN" && walletApplyInr > 0 && <Row label="Wallet" value={`− ₹${walletApplyInr.toFixed(2)}`} />}
@@ -355,6 +416,15 @@ function ProductPage() {
             <button type="button" disabled={placing || !filled} onClick={continueToPayment} className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform hover:scale-[1.01] disabled:opacity-50">
               {placing ? "Creating order…" : <>Continue to payment <ArrowRight className="h-4 w-4" /></>}
             </button>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20">
+                <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+              </a>
+              <button type="button" onClick={shareProduct} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background/40 px-3 py-2.5 text-xs font-semibold hover:border-foreground/30">
+                <Share2 className="h-3.5 w-3.5" /> Share
+              </button>
+            </div>
 
             <p className="mt-4 text-center text-[11px] text-muted-foreground">
               By placing this order you agree to our <Link to="/terms" className="underline hover:text-foreground">Terms</Link> and <Link to="/refund" className="underline hover:text-foreground">Refund Policy</Link>.
