@@ -336,25 +336,6 @@ export type Database = {
       }
     }
     Views: {
-      leaderboard_v: {
-        Row: {
-          country: string | null
-          level: string | null
-          masked_username: string | null
-          rank: number | null
-          total_orders: number | null
-          total_spent_inr: number | null
-        }
-        Relationships: []
-      }
-      order_stats_v: {
-        Row: {
-          success_rate: number | null
-          successful: number | null
-          total_relevant: number | null
-        }
-        Relationships: []
-      }
       public_orders_feed: {
         Row: {
           amount_inr: number | null
@@ -393,14 +374,6 @@ export type Database = {
           rating?: number | null
           review?: string | null
           verified?: never
-        }
-        Relationships: []
-      }
-      visitor_stats_v: {
-        Row: {
-          online: number | null
-          today: number | null
-          total: number | null
         }
         Relationships: []
       }
