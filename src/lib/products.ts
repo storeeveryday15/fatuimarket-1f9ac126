@@ -354,6 +354,28 @@ export const PRODUCTS: Product[] = [
       { id: "rz-300", label: "🟢 300 USD Razer Gold", ...inr(27320, 300) },
     ],
   },
+
+  // 12) Roblox
+  {
+    slug: "roblox",
+    name: "Roblox",
+    publisher: "Roblox Corp",
+    currency: "Robux",
+    tagline: "Instant Robux top-up to your Roblox account.",
+    image: roblox.url,
+    accent: "from-red-500 to-rose-700",
+    needsPlayerId: true,
+    idLabel: "Roblox Username",
+    idPlaceholder: "Enter your Roblox username",
+    denominations: [
+      { id: "rbx-80",    label: "🎮 80 Robux",    ...inr(99,   1.09) },
+      { id: "rbx-400",   label: "🎮 400 Robux",   ...inr(499,  5.49) },
+      { id: "rbx-800",   label: "🎮 800 Robux",   ...inr(999,  10.99) },
+      { id: "rbx-1700",  label: "🎮 1700 Robux",  ...inr(1999, 21.99) },
+      { id: "rbx-4500",  label: "🎮 4500 Robux",  ...inr(4999, 54.99) },
+      { id: "rbx-10000", label: "🎮 10000 Robux", ...inr(10999, 109.99) },
+    ],
+  },
 ];
 
 export const getProduct = (slug: string) =>
