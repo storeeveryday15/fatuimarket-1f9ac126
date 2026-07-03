@@ -46,6 +46,19 @@ function Home() {
         <LiveOrdersTicker />
       </section>
 
+      {/* Real-time order stats */}
+      <section className="container mx-auto max-w-7xl px-4 pt-8">
+        <OrderStats />
+      </section>
+
+      {/* Top customers + recent purchases */}
+      <section className="container mx-auto max-w-7xl px-4 py-12 md:py-16">
+        <div className="grid gap-6 lg:grid-cols-[1.2fr,1fr]">
+          <TopCustomers />
+          <RecentPurchases />
+        </div>
+      </section>
+
       {/* Products */}
       <section id="products" className="container mx-auto max-w-7xl px-4 py-16 md:py-20">
         <div className="flex items-end justify-between gap-4">
