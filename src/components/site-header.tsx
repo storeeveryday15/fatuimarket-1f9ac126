@@ -5,6 +5,7 @@ import { useTheme } from "./theme-provider";
 import { cn } from "@/lib/utils";
 import { LOGO_URL } from "@/lib/products";
 import { supabase } from "@/integrations/supabase/client";
+import { LiveVisitors } from "@/components/live-visitors";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -77,6 +78,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <div className="hidden sm:block"><LiveVisitors /></div>
           {userEmail ? (
             <button
               onClick={signOut}

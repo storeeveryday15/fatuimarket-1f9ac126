@@ -5,6 +5,9 @@ import { LiveOrdersTicker } from "@/components/live-orders-ticker";
 import { ReviewsList } from "@/components/reviews-list";
 import { ReviewForm } from "@/components/review-form";
 import { BannerSlider } from "@/components/banner-slider";
+import { TopCustomers } from "@/components/top-customers";
+import { OrderStats } from "@/components/order-stats";
+import { RecentPurchases } from "@/components/recent-purchases";
 
 export const Route = createFileRoute("/")({
   head: () => ({
