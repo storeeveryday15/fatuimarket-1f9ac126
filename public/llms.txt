@@ -1,0 +1,27 @@
+# Fatui Market
+
+> Instant game top-up and digital codes store. Buy diamonds, UC, VP, Steam Wallet, and Google Play codes for Mobile Legends, Free Fire, PUBG, Valorant, and more. Indian customers pay via UPI; international customers pay with Card or PayPal.
+
+Fatui Market is a digital top-up platform built for gamers. We deliver currency directly to player accounts within minutes, support UPI QR codes for India, and offer order tracking, wallet cashback, and customer reviews. All purchases are secured and verified before processing.
+
+## Pages
+
+- [Home](/): Browse top-up products, view live completed orders, read customer reviews, and apply coupon codes.
+- [Contact](/contact): Get in touch via WhatsApp, phone, email, Facebook, Instagram, or Telegram.
+- [Track Order](/track): Look up your order status and see processing progress.
+- [Privacy Policy](/privacy): How we collect, use, and protect your data.
+- [Refund & Cancellation](/refund): Refund eligibility, timelines, and cancellation policy.
+- [Terms of Service](/terms): Rules, disclaimers, and user agreement.
+
+## Products
+
+- [Mobile Legends](/products/mobile-legends): MLBB diamonds and Weekly Diamond Pass top-ups.
+- [Free Fire](/products/free-fire): Free Fire diamonds top-ups.
+- [PUBG](/products/pubg): PUBG UC top-ups.
+- [Valorant](/products/valorant): Valorant Points top-ups.
+- [Steam Wallet](/products/steam-wallet): Steam Wallet code purchases.
+- [Google Play](/products/google-play): Google Play gift code purchases.
+
+## Optional
+
+- [Sitemap](/sitemap.xml): Machine-readable list of public URLs.
