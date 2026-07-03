@@ -417,6 +417,15 @@ function ProductPage() {
               {placing ? "Creating order…" : <>Continue to payment <ArrowRight className="h-4 w-4" /></>}
             </button>
 
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20">
+                <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+              </a>
+              <button type="button" onClick={shareProduct} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background/40 px-3 py-2.5 text-xs font-semibold hover:border-foreground/30">
+                <Share2 className="h-3.5 w-3.5" /> Share
+              </button>
+            </div>
+
             <p className="mt-4 text-center text-[11px] text-muted-foreground">
               By placing this order you agree to our <Link to="/terms" className="underline hover:text-foreground">Terms</Link> and <Link to="/refund" className="underline hover:text-foreground">Refund Policy</Link>.
             </p>
