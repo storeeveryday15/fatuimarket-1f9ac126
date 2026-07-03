@@ -1,14 +1,16 @@
 import logo from "@/assets/fatui-logo.asset.json";
-import ff from "@/assets/game-ff.jpg";
-import pubg from "@/assets/game-pubg.jpg";
-import valorant from "@/assets/game-valorant.jpg";
+import ff from "@/assets/game-ff.jpg.asset.json";
+import pubg from "@/assets/game-pubg.jpg.asset.json";
+import valorant from "@/assets/game-valorant.jpg.asset.json";
 import steam from "@/assets/game-steam.jpg";
-import gplay from "@/assets/game-gplay.jpg";
+import gplay from "@/assets/game-gplay.jpg.asset.json";
 import wuwa from "@/assets/game-wuwa.jpg.asset.json";
 import genshin from "@/assets/game-genshin.jpg.asset.json";
 import lads from "@/assets/game-lads.jpg.asset.json";
 import hok from "@/assets/game-hok.jpg.asset.json";
 import razer from "@/assets/game-razer.jpg.asset.json";
+import mlbb from "@/assets/game-mlbb.jpg.asset.json";
+import roblox from "@/assets/game-roblox.jpg.asset.json";
 
 export const LOGO_URL = logo.url;
 
@@ -77,7 +79,7 @@ export const PRODUCTS: Product[] = [
     publisher: "Moonton",
     currency: "Diamonds",
     tagline: "Instant MLBB diamond top-up to your account.",
-    image: logo.url,
+    image: mlbb.url,
     accent: "from-fuchsia-500 to-violet-600",
     needsPlayerId: true,
     idLabel: "User ID (Zone ID)",
@@ -163,7 +165,7 @@ export const PRODUCTS: Product[] = [
     publisher: "Garena",
     currency: "Diamonds",
     tagline: "Booyah faster with instant Free Fire diamond top-up.",
-    image: ff,
+    image: ff.url,
     accent: "from-orange-500 to-rose-600",
     needsPlayerId: true,
     idLabel: "Player ID",
@@ -242,7 +244,7 @@ export const PRODUCTS: Product[] = [
     publisher: "Tencent",
     currency: "UC",
     tagline: "Stock up on UC for skins, crates and the Royale Pass.",
-    image: pubg,
+    image: pubg.url,
     accent: "from-amber-500 to-orange-700",
     needsPlayerId: true,
     idLabel: "Character ID",
@@ -264,7 +266,7 @@ export const PRODUCTS: Product[] = [
     publisher: "Riot Games",
     currency: "VP",
     tagline: "Unlock skins, agents and battle pass with Valorant Points.",
-    image: valorant,
+    image: valorant.url,
     accent: "from-rose-500 to-red-700",
     needsPlayerId: true,
     idLabel: "Riot ID #Tag",
@@ -305,7 +307,7 @@ export const PRODUCTS: Product[] = [
     publisher: "Google",
     currency: "Gift Code",
     tagline: "Google Play codes delivered instantly to your email.",
-    image: gplay,
+    image: gplay.url,
     accent: "from-emerald-500 to-teal-600",
     needsPlayerId: false,
     denominations: [
@@ -350,6 +352,28 @@ export const PRODUCTS: Product[] = [
       { id: "rz-150", label: "🟢 150 USD Razer Gold", ...inr(13959, 150) },
       { id: "rz-200", label: "🟢 200 USD Razer Gold", ...inr(18352, 200) },
       { id: "rz-300", label: "🟢 300 USD Razer Gold", ...inr(27320, 300) },
+    ],
+  },
+
+  // 12) Roblox
+  {
+    slug: "roblox",
+    name: "Roblox",
+    publisher: "Roblox Corp",
+    currency: "Robux",
+    tagline: "Instant Robux top-up to your Roblox account.",
+    image: roblox.url,
+    accent: "from-red-500 to-rose-700",
+    needsPlayerId: true,
+    idLabel: "Roblox Username",
+    idPlaceholder: "Enter your Roblox username",
+    denominations: [
+      { id: "rbx-80",    label: "🎮 80 Robux",    ...inr(99,   1.09) },
+      { id: "rbx-400",   label: "🎮 400 Robux",   ...inr(499,  5.49) },
+      { id: "rbx-800",   label: "🎮 800 Robux",   ...inr(999,  10.99) },
+      { id: "rbx-1700",  label: "🎮 1700 Robux",  ...inr(1999, 21.99) },
+      { id: "rbx-4500",  label: "🎮 4500 Robux",  ...inr(4999, 54.99) },
+      { id: "rbx-10000", label: "🎮 10000 Robux", ...inr(10999, 109.99) },
     ],
   },
 ];
