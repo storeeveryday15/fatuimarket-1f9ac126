@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
+import mlbbSanrio from "@/assets/banner-mlbb-sanrio.jpg.asset.json";
+import genshin from "@/assets/banner-genshin.jpg.asset.json";
 
 type Banner = {
   title: string;
@@ -8,16 +10,27 @@ type Banner = {
   href: string;
   gradient: string;
   emoji: string;
+  image?: string;
 };
 
 const BANNERS: Banner[] = [
   {
-    title: "MLBB Diamonds",
-    subtitle: "Instant top-up with exclusive first-order discount",
-    cta: "Top up now",
+    title: "MLBB × Sanrio Skins",
+    subtitle: "Grab the comeback show skins with instant diamond top-up",
+    cta: "Top up MLBB",
     href: "/products/mobile-legends",
-    gradient: "from-fuchsia-600 via-purple-600 to-indigo-700",
+    gradient: "from-fuchsia-600/70 via-purple-700/60 to-indigo-900/70",
     emoji: "💎",
+    image: mlbbSanrio.url,
+  },
+  {
+    title: "Genshin Impact Genesis",
+    subtitle: "Recharge Genesis Crystals — UPI & PayPal accepted",
+    cta: "Recharge Genshin",
+    href: "/guides/genshin-impact-top-up",
+    gradient: "from-emerald-700/60 via-teal-800/50 to-slate-900/70",
+    emoji: "🌿",
+    image: genshin.url,
   },
   {
     title: "WELCOME2FATUI",
@@ -58,14 +71,35 @@ export function BannerSlider() {
           <a
             key={b.title}
             href={b.href}
-            className={`absolute inset-0 flex flex-col justify-center gap-3 bg-gradient-to-br ${b.gradient} p-6 sm:p-10 transition-opacity duration-700 ${idx === i ? "opacity-100" : "pointer-events-none opacity-0"}`}
+            className={`absolute inset-0 transition-opacity duration-700 ${idx === i ? "opacity-100" : "pointer-events-none opacity-0"}`}
           >
-            <div className="text-4xl sm:text-6xl">{b.emoji}</div>
-            <h3 className="text-2xl sm:text-4xl font-bold text-white drop-shadow-md">{b.title}</h3>
-            <p className="max-w-md text-sm sm:text-base text-white/90">{b.subtitle}</p>
-            <span className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-white/20 px-4 py-1.5 text-xs sm:text-sm font-semibold text-white backdrop-blur">
-              {b.cta} <ArrowRight className="h-3.5 w-3.5" />
-            </span>
+            {b.image && (
+              <img
+                src={b.image}
+                alt={b.title}
+                className="absolute inset-0 h-full w-full object-cover"
+                loading={idx === 0 ? "eager" : "lazy"}
+              />
+            )}
+            <div className={`absolute inset-0 bg-gradient-to-br ${b.gradient}`} />
+            {b.image && <div className="absolute inset-0 bg-black/30" />}
+            <div className="relative flex h-full flex-col justify-center gap-3 p-6 sm:p-10">
+              <div className="text-4xl sm:text-6xl drop-shadow-lg">{b.emoji}</div>
+              <h3 className="text-2xl sm:text-4xl font-bold text-white drop-shadow-md">{b.title}</h3>
+              <p className="max-w-md text-sm sm:text-base text-white/90 drop-shadow">{b.subtitle}</p>
+              <span className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-white/20 px-4 py-1.5 text-xs sm:text-sm font-semibold text-white backdrop-blur">
+                {b.cta} <ArrowRight className="h-3.5 w-3.5" />
+              </span>
+            </div>
+            {/* Watermark */}
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span className="select-none text-4xl sm:text-7xl font-black uppercase tracking-widest text-white/10 rotate-[-18deg]">
+                Fatui Market
+              </span>
+            </div>
+            <div className="pointer-events-none absolute bottom-2 right-3 text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/70">
+              © Fatui Market
+            </div>
           </a>
         ))}
       </div>
