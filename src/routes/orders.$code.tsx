@@ -8,7 +8,16 @@ import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 
 export const Route = createFileRoute("/orders/$code")({
-  head: ({ params }) => ({ meta: [{ title: `Order ${params.code} — Fatui Market` }] }),
+  head: ({ params }) => ({
+    meta: [
+      { title: `Order ${params.code} — Fatui Market` },
+      { name: "description", content: `View order ${params.code} details, payment status, and delivery progress on Fatui Market.` },
+      { property: "og:title", content: `Order ${params.code} — Fatui Market` },
+      { property: "og:description", content: `Check the status and details of your Fatui Market order ${params.code}.` },
+      { property: "og:url", content: `https://fatuimarket.lovable.app/orders/${params.code}` },
+    ],
+    links: [{ rel: "canonical", href: `https://fatuimarket.lovable.app/orders/${params.code}` }],
+  }),
   component: OrderPage,
 });
 

@@ -5,7 +5,16 @@ import { toast } from "sonner";
 import { ShieldCheck, MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "Admin — Fatui Market" }] }),
+  head: () => ({
+    meta: [
+      { title: "Admin — Fatui Market" },
+      { name: "description", content: "Fatui Market admin dashboard for managing orders, verifying payments, reviewing customer feedback, and monitoring store performance." },
+      { property: "og:title", content: "Admin — Fatui Market" },
+      { property: "og:description", content: "Manage orders, verify payments, review feedback, and monitor Fatui Market performance." },
+      { property: "og:url", content: "https://fatuimarket.lovable.app/admin" },
+    ],
+    links: [{ rel: "canonical", href: "https://fatuimarket.lovable.app/admin" }],
+  }),
   component: AdminPage,
 });
 
