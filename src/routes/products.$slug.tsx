@@ -7,6 +7,7 @@ import {
   generateOrderCode,
   whatsappLinkFor,
   type Denomination,
+  type Server,
 } from "@/lib/products";
 import { ArrowLeft, Check, Globe, ArrowRight, Copy, Share2, MessageCircle, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
