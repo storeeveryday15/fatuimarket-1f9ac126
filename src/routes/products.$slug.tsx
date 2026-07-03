@@ -398,10 +398,11 @@ function ProductPage() {
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Order summary</h3>
             <div className="mt-4 space-y-3 text-sm">
               <Row label="Product" value={product.name} />
-              <Row label="Item" value={selected.label} />
+              <Row label="Item" value={qty > 1 ? `${selected.label} × ${qty}` : selected.label} />
               <Row label="Player" value={playerName || "—"} />
               {needsId && <Row label={product.idLabel ?? "UID"} value={playerId || "—"} />}
               {needsZone && <Row label="Zone" value={zone || "—"} />}
+              {needsServer && <Row label="Server" value={product.servers?.find((s) => s.id === serverRegion)?.label ?? "—"} />}
               <Row label="Email" value={email || user?.email || "—"} />
               {region === "IN" && discountInr > 0 && <Row label="Coupon" value={`− ₹${discountInr}`} />}
               {region === "IN" && walletApplyInr > 0 && <Row label="Wallet" value={`− ₹${walletApplyInr.toFixed(2)}`} />}
