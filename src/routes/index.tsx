@@ -1,22 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PRODUCTS } from "@/lib/products";
-import heroBg from "@/assets/hero-bg.jpg";
-import { Zap, ShieldCheck, Clock, ArrowRight, Sparkles, Users } from "lucide-react";
+import { Zap, ShieldCheck, Clock, ArrowRight, Users } from "lucide-react";
 import { LiveOrdersTicker } from "@/components/live-orders-ticker";
 import { ReviewsList } from "@/components/reviews-list";
 import { ReviewForm } from "@/components/review-form";
 import { BannerSlider } from "@/components/banner-slider";
 
 export const Route = createFileRoute("/")({
-      head: () => ({
+  head: () => ({
     meta: [
       { title: "Fatui Market — Instant Game Top-Up & Digital Codes" },
       { name: "description", content: "Instant diamonds, UC, VP, Steam Wallet and Google Play codes. Trusted by gamers worldwide." },
       { property: "og:title", content: "Fatui Market — Instant Game Top-Up" },
       { property: "og:description", content: "Top up your favorite games in seconds." },
-    ],
-    links: [
-      { rel: "preload", as: "image", href: heroBg, fetchpriority: "high" },
     ],
   }),
   component: Home,
@@ -25,66 +21,30 @@ export const Route = createFileRoute("/")({
 function Home() {
   return (
     <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <img
-          src={heroBg}
-          alt=""
-          width={1920}
-          height={1080}
-          fetchPriority="high"
-          className="absolute inset-0 h-full w-full object-cover opacity-50 dark:opacity-60"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
-        <div className="container relative mx-auto max-w-7xl px-4 py-14 md:py-20">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5 text-[var(--neon)]" />
-            Trusted by 50,000+ gamers
-          </div>
-          <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl">
-            Fatui <span className="gradient-text">Market</span>
-          </h1>
+      {/* Hero carousel */}
+      <section className="container mx-auto max-w-7xl px-4 pt-6 md:pt-10">
+        <h1 className="sr-only">Fatui Market — Instant Game Top-Up</h1>
+        <BannerSlider />
 
-          {/* Blurred live orders ticker beneath the wordmark */}
-          <LiveOrdersTicker />
-
-          {/* Rotating banner slider */}
-          <div className="mt-6">
-            <BannerSlider />
-          </div>
-
-          <p className="mt-6 max-w-xl text-sm text-muted-foreground md:text-base">
-            Instant delivery for Mobile Legends, Free Fire, PUBG, Valorant, Steam Wallet and Google Play. Pay with UPI (India) or Card / PayPal (international).
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a
-              href="#products"
-              className="inline-flex items-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform hover:scale-[1.02]"
-            >
-              Browse top-ups <ArrowRight className="h-4 w-4" />
-            </a>
-            <Link
-              to="/contact"
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card/60 px-6 py-3 text-sm font-semibold text-foreground backdrop-blur hover:bg-secondary"
-            >
-              Contact support
-            </Link>
-          </div>
-
-          <div className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="surface-card p-4">
-                <f.icon className="h-5 w-5 text-[var(--neon)]" />
-                <div className="mt-2 text-sm font-semibold">{f.title}</div>
-                <div className="text-xs text-muted-foreground">{f.desc}</div>
-              </div>
-            ))}
-          </div>
+        {/* Feature strip */}
+        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {FEATURES.map((f) => (
+            <div key={f.title} className="surface-card p-4">
+              <f.icon className="h-5 w-5 text-[var(--neon)]" />
+              <div className="mt-2 text-sm font-semibold">{f.title}</div>
+              <div className="text-xs text-muted-foreground">{f.desc}</div>
+            </div>
+          ))}
         </div>
       </section>
 
+      {/* Live orders ticker */}
+      <section className="container mx-auto max-w-7xl px-4 pt-8">
+        <LiveOrdersTicker />
+      </section>
+
       {/* Products */}
-      <section id="products" className="container mx-auto max-w-7xl px-4 py-20">
+      <section id="products" className="container mx-auto max-w-7xl px-4 py-16 md:py-20">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-3xl font-bold md:text-4xl">Choose your game</h2>

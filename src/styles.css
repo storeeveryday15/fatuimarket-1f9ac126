@@ -169,3 +169,20 @@
   width: max-content;
 }
 .ticker-track:hover { animation-play-state: paused; }
+
+/* Hero Ken Burns */
+@keyframes hero-kenburns {
+  0%   { transform: scale(1.02) translate3d(0, 0, 0); }
+  100% { transform: scale(1.12) translate3d(-1%, -1%, 0); }
+}
+.hero-kenburns { animation: hero-kenburns 12s ease-out both; }
+
+@keyframes hero-content-in {
+  0%   { opacity: 0; transform: translateX(-24px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.hero-content-in { animation: hero-content-in 500ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-kenburns, .hero-content-in { animation: none !important; }
+}
