@@ -1,40 +1,63 @@
-## Customer Review System
+## Phase 1 — Product catalog overhaul
 
-### Database (new migration)
-New table `public.reviews`:
-- `id` uuid PK, `user_id` uuid (nullable, FK to auth.users), `product_slug` text (nullable — null = site-wide review)
-- `full_name` text (private, server-only)
-- `display_name` text (generated/stored: first name + first initial of last name, e.g. "Rahul S.")
-- `rating` int (1–5, validated)
-- `review` text (max 1000 chars)
-- `status` text default `'approved'` (`approved` | `pending` | `rejected`) — admin can moderate
-- `created_at`, `updated_at`
+Scope for this phase: rebuild the product data + product-page UX. Homepage sections (Best Sellers, Hot Deals, FAQ page, announcements, search bar, etc.) come in Phase 2. All existing systems stay intact — auth, Supabase, orders, wallet, cashback, admin, WhatsApp, UPI/PayPal region logic, reviews, tracking.
 
-GRANTs + RLS:
-- `GRANT SELECT` to `anon` and `authenticated` — but only via a column-safe approach: create a **view** `public.reviews_public` that selects only `id, display_name, rating, review, product_slug, created_at` (never `full_name` or `user_id`). Grant SELECT on the view to `anon`/`authenticated`. Keep base table SELECT restricted to admins + owner.
-- INSERT policy on base table: `authenticated` can insert their own row (`user_id = auth.uid()`).
-- UPDATE/DELETE: owner can edit/delete own; admin can do all (via `has_role`).
-- Trigger `before insert/update`: compute `display_name` from `full_name` server-side so client cannot spoof it. Logic: split on whitespace → `first + ' ' + upper(left(last,1)) + '.'`; if single name, just `first`.
+### 1. Rewrite `src/lib/products.ts`
 
-### Frontend
-1. **`src/components/review-form.tsx`** — Form (full name, rating stars 1–5, review textarea) using react-hook-form + zod. Requires sign-in; shows "Sign in to leave a review" CTA otherwise. Submits to `reviews` table via browser supabase client.
-2. **`src/components/reviews-list.tsx`** — Reads from `reviews_public` view, shows display_name, star rating, review text, date. Supports optional `productSlug` prop to filter.
-3. **Integration**:
-   - `src/routes/products.$slug.tsx` — add reviews section (list + form) per product.
-   - `src/routes/index.tsx` — add a "What customers say" section showing latest approved site-wide reviews.
-4. **Admin** — add "Reviews" tab to `src/routes/admin.tsx`: table of all reviews (incl. full_name visible to admin only), with Approve/Reject/Delete actions and search by name.
+Replace the `PRODUCTS` array with the 10 categories, in this order:
 
-### Privacy guarantee
-`full_name` never leaves the server for public consumers — public reads go through the `reviews_public` view which omits the column entirely. Only the admin tab (RLS-gated by `has_role('admin')`) sees full names.
+1. Mobile Legends (replace all denominations with your new list — 3D through 706D, WP variants, Weekly Elite, Twilight, Starlight, Starlight+)
+2. Wuthering Waves (Lunites packs + Lunite Subscription)
+3. Genshin Impact (Genesis Crystals + Welkin Moon)
+4. Free Fire (updated pricing you provided — replaces current FF list)
+5. Love and Deepspace (Crystals + Aurum Pass + Companionship Pack)
+6. Honor of Kings (Tokens + Weekly Card + Weekly Card Plus)
+7. PUBG Mobile (kept as-is per your answer)
+8. Valorant (kept as-is)
+9. Steam Wallet (kept as-is)
+10. Google Play Gift Cards (INR denominations ₹30 → ₹5000)
+11. Razer Gold Cards (all 18 USD denominations with your exact INR prices)
 
-### Out of scope
-- Photo uploads in reviews
-- Verified-purchase badge
-- Helpful/unhelpful voting
-- Email notifications on new reviews (can add later if wanted)
+Extend the `Product` type with:
+- `needsServer?: boolean`
+- `servers?: { id: string; label: string }[]`
 
-### Files
-- New migration: `supabase/migrations/<ts>_reviews.sql`
-- New: `src/components/review-form.tsx`, `src/components/reviews-list.tsx`
-- Edited: `src/routes/products.$slug.tsx`, `src/routes/index.tsx`, `src/routes/admin.tsx`
-- Regenerated: `src/integrations/supabase/types.ts`
+Server lists:
+- **Genshin**: Asia, America, Europe, TW/HK/MO
+- **Wuthering Waves**: SEA, Asia, America, Europe, HMT
+- **Love and Deepspace**: Asia, America, Europe
+- **Honor of Kings**: single global (no selector)
+
+MLBB stays on Zone ID (existing behavior). Google Play + Razer Gold + Steam = no player ID.
+
+### 2. Product page updates (`src/routes/products.$slug.tsx`)
+
+Add on top of existing flow:
+- **Server selector** (dropdown) when `product.needsServer` — required before Buy Now, saved into the order row (new column `server_region` on `orders`).
+- **Quantity selector** (1–10) that multiplies the selected pack price for the order summary + UPI QR amount.
+- **Copy UID** button next to the UID input (uses `navigator.clipboard`).
+- **Share Product** button (Web Share API with URL fallback to copy link).
+- **Contact on WhatsApp** button (prefilled message with product name + selected pack) alongside the existing Buy Now.
+- Keep the existing 2-step checkout, dynamic UPI QR, PayPal/card placeholder for non-IN, screenshot upload, cashback + coupon logic — untouched.
+
+### 3. Homepage grid (`src/routes/index.tsx`)
+
+Only change: the product grid renders the new 10 (+PUBG) categories automatically from `PRODUCTS`. No other homepage sections changed in this phase.
+
+### 4. Database
+
+One migration adding `server_region TEXT` to `public.orders` (nullable, no policy change).
+
+### 5. Admin + dashboard
+
+Show `server_region` in the admin order table and the customer's order detail view (read-only). No workflow changes.
+
+### Out of scope (deferred to Phase 2)
+
+Animated hero banner rebuild, search bar, Best Sellers carousel, Hot Deals, Recently Updated Prices, Announcements, FAQ page, wallet cashback banner refresh, loading animations pass. Refund/Terms/Privacy pages already exist and stay.
+
+### Technical notes
+
+- All prices stored as explicit `priceINR` + `price` (USD) on each denomination, matching current schema.
+- Razer/Google Play items use `needsPlayerId: false` and deliver as codes (existing Steam-style flow).
+- Product images: reuse existing MLBB/FF/PUBG/Valorant/Steam/Google Play images; generate 4 new hero images for Wuthering Waves, Genshin, Love and Deepspace, Honor of Kings, Razer Gold via imagegen.
