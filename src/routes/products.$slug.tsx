@@ -108,9 +108,11 @@ function ProductPage() {
   const navigate = useNavigate();
   const [region, setRegion] = useDetectedRegion();
   const [selected, setSelected] = useState<Denomination>(product.denominations[0]);
+  const [qty, setQty] = useState(1);
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState("");
   const [zone, setZone] = useState("");
+  const [serverRegion, setServerRegion] = useState<string>(product.servers?.[0]?.id ?? "");
   const [email, setEmail] = useState("");
   const [placing, setPlacing] = useState(false);
   const [coupon, setCoupon] = useState("");
@@ -134,8 +136,8 @@ function ProductPage() {
       });
   }, [user]);
 
-  const inrAmount = useMemo(() => getINR(selected), [selected]);
-  const usdAmount = useMemo(() => selected.price.toFixed(2), [selected]);
+  const inrAmount = useMemo(() => getINR(selected) * qty, [selected, qty]);
+  const usdAmount = useMemo(() => (selected.price * qty).toFixed(2), [selected, qty]);
 
   const discountInr = region === "IN" && couponApplied ? 5 : 0;
   const walletApplyInr = region === "IN" && useWallet ? Math.min(walletBalance, Math.max(inrAmount - discountInr, 0)) : 0;
@@ -151,14 +153,38 @@ function ProductPage() {
 
   const needsId = product.needsPlayerId;
   const needsZone = product.slug === "mobile-legends";
+  const needsServer = !!product.needsServer && !!product.servers?.length;
 
   const filled = (() => {
     if (!playerName.trim()) return false;
     if (needsId && !playerId.trim()) return false;
     if (needsZone && !zone.trim()) return false;
+    if (needsServer && !serverRegion) return false;
     if (showEmailInput && !email.trim()) return false;
     return true;
   })();
+
+  const copyUid = async () => {
+    if (!playerId.trim()) return toast.error("Enter your UID first");
+    try { await navigator.clipboard.writeText(playerId.trim()); toast.success("UID copied"); } catch { toast.error("Copy failed"); }
+  };
+
+  const shareProduct = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    const shareData = { title: `${product.name} — Fatui Market`, text: product.tagline, url };
+    try {
+      if (typeof navigator !== "undefined" && "share" in navigator) {
+        await (navigator as Navigator).share(shareData);
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success("Product link copied");
+      }
+    } catch { /* user cancelled */ }
+  };
+
+  const whatsappUrl = whatsappLinkFor(
+    `Hi Fatui Market, I want to buy ${product.name} — ${selected.label}${qty > 1 ? ` × ${qty}` : ""}.`
+  );
 
   const continueToPayment = async () => {
     if (status !== "authed" || !user) {
