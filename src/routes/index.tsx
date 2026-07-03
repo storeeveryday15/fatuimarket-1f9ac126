@@ -5,6 +5,9 @@ import { LiveOrdersTicker } from "@/components/live-orders-ticker";
 import { ReviewsList } from "@/components/reviews-list";
 import { ReviewForm } from "@/components/review-form";
 import { BannerSlider } from "@/components/banner-slider";
+import { TopCustomers } from "@/components/top-customers";
+import { OrderStats } from "@/components/order-stats";
+import { RecentPurchases } from "@/components/recent-purchases";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -41,6 +44,19 @@ function Home() {
       {/* Live orders ticker */}
       <section className="container mx-auto max-w-7xl px-4 pt-8">
         <LiveOrdersTicker />
+      </section>
+
+      {/* Real-time order stats */}
+      <section className="container mx-auto max-w-7xl px-4 pt-8">
+        <OrderStats />
+      </section>
+
+      {/* Top customers + recent purchases */}
+      <section className="container mx-auto max-w-7xl px-4 py-12 md:py-16">
+        <div className="grid gap-6 lg:grid-cols-[1.2fr,1fr]">
+          <TopCustomers />
+          <RecentPurchases />
+        </div>
       </section>
 
       {/* Products */}

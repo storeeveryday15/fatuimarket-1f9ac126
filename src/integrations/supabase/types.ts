@@ -227,6 +227,24 @@ export type Database = {
         }
         Relationships: []
       }
+      site_visitors: {
+        Row: {
+          first_seen_at: string
+          last_seen_at: string
+          session_id: string
+        }
+        Insert: {
+          first_seen_at?: string
+          last_seen_at?: string
+          session_id: string
+        }
+        Update: {
+          first_seen_at?: string
+          last_seen_at?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
       support_messages: {
         Row: {
           contact: string | null
@@ -363,6 +381,33 @@ export type Database = {
     Functions: {
       compute_cashback_inr: { Args: { amount: number }; Returns: number }
       expire_stale_orders: { Args: never; Returns: undefined }
+      get_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          country: string
+          level: string
+          masked_username: string
+          rank: number
+          total_orders: number
+          total_spent_inr: number
+        }[]
+      }
+      get_order_stats: {
+        Args: never
+        Returns: {
+          success_rate: number
+          successful: number
+          total_relevant: number
+        }[]
+      }
+      get_visitor_stats: {
+        Args: never
+        Returns: {
+          online: number
+          today: number
+          total: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
