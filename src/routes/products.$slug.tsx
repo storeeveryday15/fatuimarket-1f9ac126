@@ -5,9 +5,10 @@ import {
   getProduct,
   getINR,
   generateOrderCode,
+  whatsappLinkFor,
   type Denomination,
 } from "@/lib/products";
-import { ArrowLeft, Check, Globe, ArrowRight } from "lucide-react";
+import { ArrowLeft, Check, Globe, ArrowRight, Copy, Share2, MessageCircle, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
