@@ -161,8 +161,7 @@ function OrderPage() {
       <div className="surface-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Order ID</div>
-            <div className="font-mono text-xl font-bold text-[var(--neon)]">{order.order_code}</div>
+            <h1 className="font-mono text-xl font-bold text-[var(--neon)]">{order.order_code}</h1>
             <div className="mt-1 text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString()}</div>
           </div>
           <div className={`inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm font-semibold ${s.color}`}>
