@@ -306,7 +306,7 @@ function ProductPage() {
                   <div className="md:col-span-2">
                     <label className="text-xs font-medium text-muted-foreground">Server / Region</label>
                     <select required value={serverRegion} onChange={(e) => setServerRegion(e.target.value)} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring">
-                      {product.servers!.map((s) => (
+                      {product.servers!.map((s: Server) => (
                         <option key={s.id} value={s.id}>{s.label}</option>
                       ))}
                     </select>
