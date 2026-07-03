@@ -173,10 +173,11 @@ function ProductPage() {
     const url = typeof window !== "undefined" ? window.location.href : "";
     const shareData = { title: `${product.name} — Fatui Market`, text: product.tagline, url };
     try {
-      if (typeof navigator !== "undefined" && "share" in navigator) {
-        await (navigator as Navigator).share(shareData);
-      } else {
-        await navigator.clipboard.writeText(url);
+      const nav: Navigator | undefined = typeof navigator !== "undefined" ? navigator : undefined;
+      if (nav && typeof nav.share === "function") {
+        await nav.share(shareData);
+      } else if (nav?.clipboard) {
+        await nav.clipboard.writeText(url);
         toast.success("Product link copied");
       }
     } catch { /* user cancelled */ }
