@@ -22,6 +22,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as OrdersCodeRouteImport } from './routes/orders.$code'
+import { Route as GuidesGenshinImpactTopUpRouteImport } from './routes/guides.genshin-impact-top-up'
 import { Route as ApiPublicNotifyOrderRouteImport } from './routes/api/public/notify-order'
 import { Route as ApiPublicClaimAdminRouteImport } from './routes/api/public/claim-admin'
 
@@ -90,6 +91,12 @@ const OrdersCodeRoute = OrdersCodeRouteImport.update({
   path: '/orders/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuidesGenshinImpactTopUpRoute =
+  GuidesGenshinImpactTopUpRouteImport.update({
+    id: '/guides/genshin-impact-top-up',
+    path: '/guides/genshin-impact-top-up',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicNotifyOrderRoute = ApiPublicNotifyOrderRouteImport.update({
   id: '/api/public/notify-order',
   path: '/api/public/notify-order',
@@ -113,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
@@ -130,6 +138,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
@@ -148,6 +157,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
     | '/api/public/claim-admin'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
     | '/api/public/claim-admin'
@@ -201,6 +213,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
     | '/api/public/claim-admin'
@@ -219,6 +232,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
+  GuidesGenshinImpactTopUpRoute: typeof GuidesGenshinImpactTopUpRoute
   OrdersCodeRoute: typeof OrdersCodeRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
   ApiPublicClaimAdminRoute: typeof ApiPublicClaimAdminRoute
@@ -318,6 +332,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrdersCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guides/genshin-impact-top-up': {
+      id: '/guides/genshin-impact-top-up'
+      path: '/guides/genshin-impact-top-up'
+      fullPath: '/guides/genshin-impact-top-up'
+      preLoaderRoute: typeof GuidesGenshinImpactTopUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/notify-order': {
       id: '/api/public/notify-order'
       path: '/api/public/notify-order'
@@ -347,6 +368,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
+  GuidesGenshinImpactTopUpRoute: GuidesGenshinImpactTopUpRoute,
   OrdersCodeRoute: OrdersCodeRoute,
   ProductsSlugRoute: ProductsSlugRoute,
   ApiPublicClaimAdminRoute: ApiPublicClaimAdminRoute,
@@ -355,13 +377,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
