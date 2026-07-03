@@ -18,6 +18,29 @@ export const Route = createFileRoute("/contact")({
       { property: "og:title", content: "Contact — Fatui Market" },
       { property: "og:description", content: "We're here 24/7 to help with your top-up." },
     ],
+    scripts: [{
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        name: "Fatui Market",
+        telephone: "+917679393645",
+        email: "fatuimarket@gmail.com",
+        url: "https://fatuimarket.lovable.app/contact",
+        logo: "https://fatuimarket.lovable.app/__l5e/assets-v1/d5212832-d4bb-43d2-80da-ee5f8c0d4a0f/fatui-logo.jpeg",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: "Dhaka",
+          addressCountry: "BD",
+        },
+        openingHours: "Mo-Su 00:00-23:59",
+        sameAs: [
+          "https://www.facebook.com/share/192oekurGU/",
+          "https://www.instagram.com/everyday_store_official",
+          "https://t.me/fatuimarket",
+        ],
+      }),
+    }],
   }),
   component: Contact,
 });

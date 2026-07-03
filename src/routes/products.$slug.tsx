@@ -25,14 +25,39 @@ export const Route = createFileRoute("/products/$slug")({
   head: ({ params }) => {
     const p = getProduct(params.slug);
     if (!p) return { meta: [{ title: "Not found" }] };
+    const absImage = p.image.startsWith("http") ? p.image : `https://fatuimarket.lovable.app${p.image}`;
+    const prices = p.denominations.map((d) => d.price);
+    const low = Math.min(...prices);
+    const high = Math.max(...prices);
     return {
       meta: [
         { title: `${p.name} Top-Up — Fatui Market` },
         { name: "description", content: `Buy ${p.name} ${p.currency.toLowerCase()} instantly. ${p.tagline}` },
         { property: "og:title", content: `${p.name} Top-Up — Fatui Market` },
         { property: "og:description", content: p.tagline },
-        { property: "og:image", content: p.image },
+        { property: "og:image", content: absImage },
       ],
+      scripts: [{
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: p.name,
+          image: absImage,
+          description: p.tagline,
+          brand: {
+            "@type": "Brand",
+            name: p.publisher,
+          },
+          offers: {
+            "@type": "AggregateOffer",
+            lowPrice: low.toFixed(2),
+            highPrice: high.toFixed(2),
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+          },
+        }),
+      }],
     };
   },
   notFoundComponent: () => (
