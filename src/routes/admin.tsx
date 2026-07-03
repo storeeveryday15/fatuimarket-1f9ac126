@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShieldCheck, MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
+import { notifyOrder } from "@/lib/notify-order";
+
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -125,13 +127,10 @@ function AdminPage() {
     if (event) {
       const order = orders.find((x) => x.id === id);
       if (order) {
-        fetch("/api/public/notify-order", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ order_code: order.order_code, event }),
-        }).catch(() => {});
+        void notifyOrder(order.order_code, event);
       }
     }
+
     await load();
     if (activeOrder?.id === id) {
       const fresh = orders.find((o) => o.id === id);

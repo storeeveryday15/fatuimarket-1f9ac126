@@ -6,6 +6,8 @@ import { buildUpiLink, UPI_ID, UPI_MERCHANT, WHATSAPP_LINK } from "@/lib/product
 import { CheckCircle2, Clock, AlertCircle, Smartphone, Copy, Upload, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { notifyOrder } from "@/lib/notify-order";
+
 
 export const Route = createFileRoute("/orders/$code")({
   head: ({ params }) => ({
@@ -131,11 +133,8 @@ function OrderPage() {
       if (upErr) throw upErr;
       const { error: dbErr } = await supabase.from("orders").update({ screenshot_url: path, status: "pending_verification" }).eq("id", order.id);
       if (dbErr) throw dbErr;
-      fetch("/api/public/notify-order", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ order_code: order.order_code, event: "screenshot_uploaded" }),
-      }).catch(() => {});
+      void notifyOrder(order.order_code, "screenshot_uploaded");
+
       toast.success("Screenshot uploaded — awaiting verification");
       await fetchOrder();
     } catch (err: unknown) {

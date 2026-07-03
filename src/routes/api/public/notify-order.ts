@@ -27,6 +27,15 @@ export const Route = createFileRoute("/api/public/notify-order")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Require caller auth: Bearer token from Supabase session.
+        const authHeader = request.headers.get("authorization") ?? "";
+        const token = authHeader.toLowerCase().startsWith("bearer ")
+          ? authHeader.slice(7).trim()
+          : "";
+        if (!token) {
+          return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+        }
+
         let body: { order_code?: string; event?: EventType } = {};
         try { body = await request.json(); } catch { /* ignore */ }
         const code = body.order_code;
@@ -39,14 +48,36 @@ export const Route = createFileRoute("/api/public/notify-order")({
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        // Validate the caller
+        const { data: userRes, error: userErr } = await supabaseAdmin.auth.getUser(token);
+        if (userErr || !userRes?.user) {
+          return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+        }
+        const callerId = userRes.user.id;
+
+        // Check admin role
+        const { data: adminRow } = await supabaseAdmin
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", callerId)
+          .eq("role", "admin")
+          .maybeSingle();
+        const isAdmin = !!adminRow;
         const { data: order } = await supabaseAdmin
           .from("orders")
-          .select("order_code, product_name, tier_label, amount_inr, amount_usd, currency, region, customer_email, game_id, status, created_at, admin_notes")
+          .select("order_code, product_name, tier_label, amount_inr, amount_usd, currency, region, customer_email, game_id, status, created_at, admin_notes, user_id")
           .eq("order_code", code)
           .maybeSingle();
         if (!order) {
           return Response.json({ ok: false, error: "not found" }, { status: 404 });
         }
+
+        // Authorize: caller must own the order or be admin.
+        if (!isAdmin && order.user_id !== callerId) {
+          return Response.json({ ok: false, error: "forbidden" }, { status: 403 });
+        }
+
 
         const amount = order.currency === "INR" ? `₹${order.amount_inr}` : `$${order.amount_usd}`;
         const subject = `${SUBJECTS[event]} — ${order.order_code}`;

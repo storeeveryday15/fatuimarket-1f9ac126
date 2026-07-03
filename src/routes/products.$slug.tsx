@@ -15,6 +15,8 @@ import { useRequireAuth } from "@/hooks/use-require-auth";
 import { z } from "zod";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsList } from "@/components/reviews-list";
+import { notifyOrder } from "@/lib/notify-order";
+
 
 export const Route = createFileRoute("/products/$slug")({
   loader: ({ params }) => {
@@ -196,11 +198,8 @@ function ProductPage() {
         wallet_used_inr: walletApplyInr,
       } as never);
       if (error) throw error;
-      fetch("/api/public/notify-order", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ order_code: code, event: "created" }),
-      }).catch(() => {});
+      void notifyOrder(code, "created");
+
       toast.success(`Order ${code} created!`);
       navigate({ to: "/orders/$code", params: { code } });
     } catch (err: unknown) {
