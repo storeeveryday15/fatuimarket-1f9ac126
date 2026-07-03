@@ -64,18 +64,20 @@ export const Route = createFileRoute("/api/public/notify-order")({
           .eq("role", "admin")
           .maybeSingle();
         const isAdmin = !!adminRow;
-
-
-
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: order } = await supabaseAdmin
           .from("orders")
-          .select("order_code, product_name, tier_label, amount_inr, amount_usd, currency, region, customer_email, game_id, status, created_at, admin_notes")
+          .select("order_code, product_name, tier_label, amount_inr, amount_usd, currency, region, customer_email, game_id, status, created_at, admin_notes, user_id")
           .eq("order_code", code)
           .maybeSingle();
         if (!order) {
           return Response.json({ ok: false, error: "not found" }, { status: 404 });
         }
+
+        // Authorize: caller must own the order or be admin.
+        if (!isAdmin && order.user_id !== callerId) {
+          return Response.json({ ok: false, error: "forbidden" }, { status: 403 });
+        }
+
 
         const amount = order.currency === "INR" ? `₹${order.amount_inr}` : `$${order.amount_usd}`;
         const subject = `${SUBJECTS[event]} — ${order.order_code}`;
