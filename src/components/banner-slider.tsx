@@ -223,17 +223,17 @@ export function BannerSlider() {
         type="button"
         onClick={prev}
         aria-label="Previous slide"
-        className="absolute left-3 top-1/2 hidden sm:inline-flex -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white backdrop-blur transition hover:bg-black/60 h-10 w-10 md:h-12 md:w-12"
+        className="absolute left-2 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white backdrop-blur transition hover:bg-black/60 h-9 w-9 sm:h-10 sm:w-10 md:h-12 md:w-12 sm:left-3"
       >
-        <ChevronLeft className="h-5 w-5 md:h-6 md:w-6" />
+        <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
       </button>
       <button
         type="button"
         onClick={next}
         aria-label="Next slide"
-        className="absolute right-3 top-1/2 hidden sm:inline-flex -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white backdrop-blur transition hover:bg-black/60 h-10 w-10 md:h-12 md:w-12"
+        className="absolute right-2 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white backdrop-blur transition hover:bg-black/60 h-9 w-9 sm:h-10 sm:w-10 md:h-12 md:w-12 sm:right-3"
       >
-        <ChevronRight className="h-5 w-5 md:h-6 md:w-6" />
+        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />
       </button>
 
       {/* Dots */}
@@ -247,11 +247,12 @@ export function BannerSlider() {
               onClick={() => scrollTo(i)}
               aria-label={`Go to slide ${i + 1}`}
               aria-current={active}
-              className={`h-2 rounded-full transition-all duration-300 ${active ? "w-8 bg-white shadow-[0_0_12px_rgba(255,255,255,0.6)]" : "w-2 bg-white/40 hover:bg-white/70"}`}
+              className={`h-2 rounded-full transition-all duration-300 ${active ? "w-8 bg-white hero-dot-active" : "w-2 bg-white/40 hover:bg-white/70"}`}
             />
           );
         })}
       </div>
+
     </div>
   );
 }
