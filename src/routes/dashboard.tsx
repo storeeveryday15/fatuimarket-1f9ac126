@@ -4,7 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Package, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "My orders — Fatui Market" }] }),
+  head: () => ({
+    meta: [
+      { title: "My orders — Fatui Market" },
+      { name: "description", content: "View your Fatui Market order history, track current orders, and check payment status." },
+      { property: "og:title", content: "My orders — Fatui Market" },
+      { property: "og:description", content: "Track your game top-up orders and payment history at Fatui Market." },
+      { property: "og:url", content: "https://fatuimarket.lovable.app/dashboard" },
+    ],
+    links: [{ rel: "canonical", href: "https://fatuimarket.lovable.app/dashboard" }],
+  }),
   component: DashboardPage,
 });
 
