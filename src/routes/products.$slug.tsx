@@ -368,6 +368,21 @@ function ProductPage() {
                   );
                 })}
               </div>
+              <div className="mt-5 flex items-center justify-between rounded-xl border border-border bg-background/40 p-3">
+                <div>
+                  <div className="text-xs font-medium text-muted-foreground">Quantity</div>
+                  <div className="text-[11px] text-muted-foreground">Multiple packs of the same tier</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:border-foreground/30" aria-label="Decrease">
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="min-w-[2ch] text-center text-sm font-semibold">{qty}</span>
+                  <button type="button" onClick={() => setQty((q) => Math.min(20, q + 1))} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border hover:border-foreground/30" aria-label="Increase">
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
             </section>
 
             <section className="surface-card p-5 border border-dashed border-[var(--neon)]/40">
