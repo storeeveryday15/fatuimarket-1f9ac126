@@ -15,6 +15,8 @@ import { useRequireAuth } from "@/hooks/use-require-auth";
 import { z } from "zod";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsList } from "@/components/reviews-list";
+import { notifyOrder } from "@/lib/notify-order";
+
 
 export const Route = createFileRoute("/products/$slug")({
   loader: ({ params }) => {

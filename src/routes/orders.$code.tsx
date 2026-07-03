@@ -6,6 +6,8 @@ import { buildUpiLink, UPI_ID, UPI_MERCHANT, WHATSAPP_LINK } from "@/lib/product
 import { CheckCircle2, Clock, AlertCircle, Smartphone, Copy, Upload, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/use-require-auth";
+import { notifyOrder } from "@/lib/notify-order";
+
 
 export const Route = createFileRoute("/orders/$code")({
   head: ({ params }) => ({

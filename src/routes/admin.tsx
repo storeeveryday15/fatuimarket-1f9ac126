@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShieldCheck, MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
+import { notifyOrder } from "@/lib/notify-order";
+
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
