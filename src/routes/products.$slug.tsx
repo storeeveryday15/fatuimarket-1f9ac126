@@ -402,7 +402,7 @@ function ProductPage() {
               <Row label="Player" value={playerName || "—"} />
               {needsId && <Row label={product.idLabel ?? "UID"} value={playerId || "—"} />}
               {needsZone && <Row label="Zone" value={zone || "—"} />}
-              {needsServer && <Row label="Server" value={product.servers?.find((s) => s.id === serverRegion)?.label ?? "—"} />}
+              {needsServer && <Row label="Server" value={product.servers?.find((s: Server) => s.id === serverRegion)?.label ?? "—"} />}
               <Row label="Email" value={email || user?.email || "—"} />
               {region === "IN" && discountInr > 0 && <Row label="Coupon" value={`− ₹${discountInr}`} />}
               {region === "IN" && walletApplyInr > 0 && <Row label="Wallet" value={`− ₹${walletApplyInr.toFixed(2)}`} />}
