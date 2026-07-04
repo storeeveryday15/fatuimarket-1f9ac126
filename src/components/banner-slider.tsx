@@ -3,6 +3,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronLeft, ChevronRight, Zap, ShieldCheck, Headphones } from "lucide-react";
+import fatuiBrand from "@/assets/hero-fatui-brand.png.asset.json";
 import mlbb from "@/assets/hero-mlbb.jpg.asset.json";
 import genshin from "@/assets/hero-genshin.mp4.asset.json";
 import wuwa from "@/assets/hero-wuwa.jpg.asset.json";
@@ -18,6 +19,15 @@ type Slide = {
 };
 
 const SLIDES: Slide[] = [
+  {
+    key: "fatui-brand",
+    badge: "👑 Trusted by 50,000+ gamers",
+    titleTop: "FATUI",
+    titleBottom: "MARKET",
+    subtitle: "Top-up your favorite games instantly with the best prices and secure payments.",
+    primary: { label: "Browse Top-ups", to: "/" },
+    media: { kind: "image", src: fatuiBrand.url },
+  },
   {
     key: "mlbb",
     badge: "🛡 Trusted by Gamers",
