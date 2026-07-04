@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronLeft, ChevronRight, Zap, ShieldCheck, Headphones } from "lucide-react";
 import fatuiBrand from "@/assets/hero-fatui-brand.png.asset.json";
 import mlbb from "@/assets/hero-mlbb.jpg.asset.json";
-import genshin from "@/assets/hero-genshin.mp4.asset.json";
+import liveBanner from "@/assets/live-banner.mp4.asset.json";
 import wuwa from "@/assets/hero-wuwa.jpg.asset.json";
 
 type Slide = {
@@ -38,13 +38,13 @@ const SLIDES: Slide[] = [
     media: { kind: "image", src: mlbb.url },
   },
   {
-    key: "genshin",
-    badge: "✨ Featured",
-    titleTop: "GENESIS CRYSTALS",
-    titleBottom: "WELKIN MOON",
-    subtitle: "Instant Delivery • UID Only",
-    primary: { label: "Recharge Now", to: "/products/genshin-impact" },
-    media: { kind: "video", src: genshin.url },
+    key: "live",
+    badge: "🔴 Live",
+    titleTop: "LIVE",
+    titleBottom: "BANNER",
+    subtitle: "Watch the latest updates and exclusive deals in real time.",
+    primary: { label: "Watch Now", to: "#" },
+    media: { kind: "video", src: liveBanner.url },
   },
   {
     key: "wuwa",
