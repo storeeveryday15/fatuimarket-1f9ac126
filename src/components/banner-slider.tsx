@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronLeft, ChevronRight, Zap, ShieldCheck, Headphones } from "lucide-react";
 import fatuiBrand from "@/assets/hero-fatui-brand.png.asset.json";
 import mlbb from "@/assets/hero-mlbb.jpg.asset.json";
-import genshin from "@/assets/hero-genshin.mp4.asset.json";
+import liveBanner from "@/assets/live-banner.mp4.asset.json";
 import wuwa from "@/assets/hero-wuwa.jpg.asset.json";
 
 type Slide = {
