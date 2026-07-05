@@ -343,10 +343,25 @@ function ProductPage() {
                     {couponApplied && <div className="mt-1 text-[11px] text-success">✓ ₹5 off applied</div>}
                   </div>
                   <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-border bg-background/40 p-3 text-sm">
-                    <input type="checkbox" checked={useWallet} disabled={walletBalance <= 0} onChange={(e) => setUseWallet(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--neon)]" />
-                    <div>
-                      <div className="font-medium">Use wallet balance</div>
-                      <div className="text-[11px] text-muted-foreground">Available: ₹{walletBalance.toFixed(2)}</div>
+                    <input type="checkbox" checked={useWallet} onChange={(e) => setUseWallet(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--neon)]" />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-medium">Use wallet balance</div>
+                        <div className="text-[11px] text-muted-foreground">Available: ₹{walletBalance.toFixed(2)}</div>
+                      </div>
+                      {useWallet && walletBalance < Math.max(inrAmount - discountInr, 0) && (
+                        <div className="mt-2 flex items-center justify-between gap-2 rounded-md bg-background/60 p-2 text-[11px]">
+                          <span className="text-muted-foreground">
+                            {walletBalance <= 0 ? "Your wallet is empty." : "Insufficient balance for full payment."}
+                          </span>
+                          <Link
+                            to="/wallet"
+                            className="inline-flex items-center gap-1 rounded-md bg-[image:var(--gradient-primary)] px-2 py-1 text-[11px] font-semibold text-primary-foreground"
+                          >
+                            <Plus className="h-3 w-3" /> Top up
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   </label>
                 </div>
