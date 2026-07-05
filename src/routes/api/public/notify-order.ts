@@ -79,6 +79,14 @@ export const Route = createFileRoute("/api/public/notify-order")({
         }
 
 
+        const esc = (v: unknown) =>
+          String(v ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+
         const amount = order.currency === "INR" ? `₹${order.amount_inr}` : `$${order.amount_usd}`;
         const subject = `${SUBJECTS[event]} — ${order.order_code}`;
         const lines = [
@@ -115,7 +123,8 @@ export const Route = createFileRoute("/api/public/notify-order")({
         const resendKey = process.env.RESEND_API_KEY;
         const notifyEmail = process.env.ADMIN_EMAIL || process.env.NOTIFY_EMAIL || "fatuimarket@gmail.com";
         if (resendKey) {
-          const ownerHtml = `<h2>${subject}</h2><pre style="font-family:ui-monospace,monospace;background:#f6f8fa;padding:12px;border-radius:8px">${lines.join("\n")}</pre>`;
+          const ownerLinesHtml = lines.map((l) => esc(l)).join("\n");
+          const ownerHtml = `<h2>${esc(subject)}</h2><pre style="font-family:ui-monospace,monospace;background:#f6f8fa;padding:12px;border-radius:8px">${ownerLinesHtml}</pre>`;
           const send = async (to: string, subj: string, html: string) => {
             try {
               const r = await fetch("https://api.resend.com/emails", {
@@ -135,15 +144,15 @@ export const Route = createFileRoute("/api/public/notify-order")({
           if (order.customer_email) {
             const customerHtml = `
               <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px">
-                <h2 style="margin:0 0 8px">${SUBJECTS[event]}</h2>
-                <p style="color:#555">${CUSTOMER_INTRO[event]}</p>
+                <h2 style="margin:0 0 8px">${esc(SUBJECTS[event])}</h2>
+                <p style="color:#555">${esc(CUSTOMER_INTRO[event])}</p>
                 <div style="background:#f6f8fa;padding:14px;border-radius:10px;margin-top:12px">
-                  <div><b>Order ID:</b> ${order.order_code}</div>
-                  <div><b>Product:</b> ${order.product_name} — ${order.tier_label}</div>
-                  <div><b>Amount:</b> ${amount}</div>
-                  <div><b>Status:</b> ${order.status.replace(/_/g, " ")}</div>
+                  <div><b>Order ID:</b> ${esc(order.order_code)}</div>
+                  <div><b>Product:</b> ${esc(order.product_name)} — ${esc(order.tier_label)}</div>
+                  <div><b>Amount:</b> ${esc(amount)}</div>
+                  <div><b>Status:</b> ${esc(order.status.replace(/_/g, " "))}</div>
                 </div>
-                ${order.admin_notes ? `<p><b>Admin notes:</b> ${order.admin_notes}</p>` : ""}
+                ${order.admin_notes ? `<p><b>Admin notes:</b> ${esc(order.admin_notes)}</p>` : ""}
                 <p style="color:#777;font-size:12px;margin-top:24px">— Fatui Market</p>
               </div>`;
             results.email_customer = await send(order.customer_email, subject, customerHtml);
