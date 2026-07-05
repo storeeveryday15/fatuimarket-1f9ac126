@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../components/theme-provider";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
+import { AdsterraBanner } from "../components/adsterra-banner";
 import { WhatsappFloat } from "../components/whatsapp-button";
 import { ChatWidget } from "../components/chat-widget";
 import { WhatsappPopup } from "../components/whatsapp-popup";
