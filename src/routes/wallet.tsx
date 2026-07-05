@@ -25,7 +25,8 @@ type RazorpayCtor = new (opts: RazorpayCheckoutOptions) => RazorpayInstance;
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
     if (typeof window === "undefined") return resolve(false);
-    if (window.Razorpay) return resolve(true);
+    const w = window as unknown as { Razorpay?: RazorpayCtor };
+    if (w.Razorpay) return resolve(true);
     const s = document.createElement("script");
     s.src = "https://checkout.razorpay.com/v1/checkout.js";
     s.onload = () => resolve(true);
