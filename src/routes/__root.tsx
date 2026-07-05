@@ -14,7 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "../components/theme-provider";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
-import { AdsterraBanner } from "../components/adsterra-banner";
+
 import { AdsterraBanner2 } from "../components/adsterra-banner-2";
 import { WhatsappFloat } from "../components/whatsapp-button";
 import { ChatWidget } from "../components/chat-widget";
@@ -163,7 +163,7 @@ function RootComponent() {
           <main className="flex-1">
             <Outlet />
           </main>
-          <AdsterraBanner />
+          
           <AdsterraBanner2 />
           <SiteFooter />
           <WhatsappFloat />
