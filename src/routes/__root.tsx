@@ -164,6 +164,7 @@ function RootComponent() {
             <Outlet />
           </main>
           <AdsterraBanner />
+          <AdsterraBanner2 />
           <SiteFooter />
           <WhatsappFloat />
           <ChatWidget />
