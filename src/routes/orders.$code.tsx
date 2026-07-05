@@ -110,6 +110,9 @@ function OrderPage() {
   const [uploading, setUploading] = useState(false);
   const [shotPreview, setShotPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const createRzp = useServerFn(createRazorpayOrder);
+  const verifyRzp = useServerFn(verifyRazorpayPayment);
+  const [rzpLoading, setRzpLoading] = useState(false);
 
   const fetchOrder = async () => {
     const { data } = await supabase.from("orders").select("*").eq("order_code", code).maybeSingle();
@@ -190,9 +193,6 @@ function OrderPage() {
     fetchOrder();
   };
 
-  const createRzp = useServerFn(createRazorpayOrder);
-  const verifyRzp = useServerFn(verifyRazorpayPayment);
-  const [rzpLoading, setRzpLoading] = useState(false);
 
   const payWithRazorpay = async () => {
     if (!order || order.region !== "IN" || !order.amount_inr) {
