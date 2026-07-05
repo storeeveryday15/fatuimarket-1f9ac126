@@ -64,23 +64,13 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
 
     const rzp = (await res.json()) as { id: string; amount: number; currency: string };
 
-    // Persist the Razorpay order id so verification uses server-stored values, not client-supplied ones.
+    // Mark the payment method server-side. razorpay_order_id is re-validated
+    // in verifyRazorpayPayment via a live Razorpay API lookup, so we don't rely
+    // on the client echoing back a trusted value.
     await supabaseAdmin
       .from("orders")
-      .update({ payment_method: "razorpay", admin_notes_internal: null })
+      .update({ payment_method: "razorpay" })
       .eq("id", order.id);
-
-    // Store razorpay_order_id in admin_notes as a fallback if a dedicated column doesn't exist.
-    // Use a dedicated field if present; otherwise stash on the row via a JSON note.
-    await supabaseAdmin
-      .from("orders")
-      .update({ utr: null })
-      .eq("id", order.id);
-
-    // Save the razorpay order id via a side table would be ideal; here we store it in a note field.
-    // The verify step re-derives amount from the DB and re-checks the signature against the
-    // provided razorpay_order_id, but ALSO cross-checks that razorpay_order_id matches what
-    // Razorpay says the order is for (via API lookup) with the DB amount.
 
     return {
       order_id: rzp.id,
