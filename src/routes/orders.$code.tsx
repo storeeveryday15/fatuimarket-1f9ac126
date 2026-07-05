@@ -213,7 +213,7 @@ function OrderPage() {
         amount: rzpOrder.amount,
         currency: rzpOrder.currency,
         name: "Fatui Market",
-        description: `${order.product_name} — ${order.tier_label}`,
+        description: `Fatui Market Order ${order.order_code}`.replace(/[^\x20-\x7E]/g, "").slice(0, 255),
         order_id: rzpOrder.order_id,
         prefill: {
           name: order.player_name ?? undefined,

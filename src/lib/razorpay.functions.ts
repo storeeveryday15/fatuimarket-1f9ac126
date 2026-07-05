@@ -42,6 +42,7 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
     if (amountPaise < 100) throw new Error("Order amount is below minimum");
 
     const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
+    const toAscii = (s: string) => s.replace(/[^\x20-\x7E]/g, "").trim();
     const res = await fetch("https://api.razorpay.com/v1/orders", {
       method: "POST",
       headers: {
@@ -51,8 +52,11 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
       body: JSON.stringify({
         amount: amountPaise,
         currency: "INR",
-        receipt: order.order_code.slice(0, 40),
-        notes: { order_code: order.order_code, product: order.product_name ?? "" },
+        receipt: toAscii(order.order_code).slice(0, 40),
+        notes: {
+          order_code: toAscii(order.order_code),
+          product: toAscii(order.product_name ?? "").slice(0, 250),
+        },
       }),
     });
 
