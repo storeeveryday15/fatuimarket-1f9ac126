@@ -97,10 +97,11 @@ function WalletPage() {
     setProcessing(true);
     try {
       const ok = await loadRazorpayScript();
-      if (!ok || !window.Razorpay) throw new Error("Failed to load Razorpay");
+      const w = window as unknown as { Razorpay?: RazorpayCtor };
+      if (!ok || !w.Razorpay) throw new Error("Failed to load Razorpay");
       const rzpOrder = await createTopup({ data: { amount_inr: amount } });
 
-      const rzp = new window.Razorpay({
+      const rzp = new w.Razorpay({
         key: rzpOrder.key_id,
         amount: rzpOrder.amount,
         currency: rzpOrder.currency,
