@@ -1,12 +1,47 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { supabase } from "@/integrations/supabase/client";
 import { buildUpiLink, UPI_ID, UPI_MERCHANT, WHATSAPP_LINK } from "@/lib/products";
-import { CheckCircle2, Clock, AlertCircle, Smartphone, Copy, Upload, RefreshCw } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Smartphone, Copy, Upload, RefreshCw, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { notifyOrder } from "@/lib/notify-order";
+import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
+
+type RazorpayCheckoutOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  order_id: string;
+  prefill?: { name?: string; email?: string; contact?: string };
+  theme?: { color?: string };
+  handler: (response: {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+  }) => void;
+  modal?: { ondismiss?: () => void };
+};
+type RazorpayInstance = { open: () => void; on: (e: string, cb: (r: unknown) => void) => void };
+declare global {
+  interface Window { Razorpay?: new (opts: RazorpayCheckoutOptions) => RazorpayInstance }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if (window.Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
 
 
 export const Route = createFileRoute("/orders/$code")({
