@@ -203,16 +203,9 @@ function OrderPage() {
     try {
       const ok = await loadRazorpayScript();
       if (!ok || !window.Razorpay) throw new Error("Failed to load Razorpay");
-      const amountPaise = Math.round(Number(order.amount_inr) * 100);
-      if (amountPaise < 100) throw new Error("Amount too small");
 
       const rzpOrder = await createRzp({
-        data: {
-          amount: amountPaise,
-          currency: "INR",
-          receipt: order.order_code.slice(0, 40),
-          notes: { order_code: order.order_code, product: order.product_name },
-        },
+        data: { order_code: order.order_code },
       });
 
       const rzp = new window.Razorpay({
