@@ -324,6 +324,15 @@ function OrderPage() {
                 <a href={upiLink} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)]">
                   <Smartphone className="h-4 w-4" /> Pay ₹{order.amount_inr} with UPI
                 </a>
+                <button
+                  type="button"
+                  onClick={payWithRazorpay}
+                  disabled={rzpLoading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--neon)]/40 bg-[var(--neon)]/10 px-5 py-3 text-sm font-semibold text-[var(--neon)] hover:bg-[var(--neon)]/20 disabled:opacity-60"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {rzpLoading ? "Opening Razorpay…" : `Pay ₹${order.amount_inr} with Card / UPI / Netbanking`}
+                </button>
               </div>
             </div>
           </div>
