@@ -20,9 +20,7 @@ type RazorpayCheckoutOptions = {
   modal?: { ondismiss?: () => void };
 };
 type RazorpayInstance = { open: () => void; on: (e: string, cb: (r: unknown) => void) => void };
-declare global {
-  interface Window { Razorpay?: new (opts: RazorpayCheckoutOptions) => RazorpayInstance }
-}
+type RazorpayCtor = new (opts: RazorpayCheckoutOptions) => RazorpayInstance;
 
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
