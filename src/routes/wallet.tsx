@@ -273,6 +273,3 @@ function typeMeta(type: string) {
   }
 }
 
-// Suppress unused import warning if Link isn't used above.
-void Link;
-void useNavigate;
