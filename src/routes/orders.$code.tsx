@@ -1,12 +1,47 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { supabase } from "@/integrations/supabase/client";
 import { buildUpiLink, UPI_ID, UPI_MERCHANT, WHATSAPP_LINK } from "@/lib/products";
-import { CheckCircle2, Clock, AlertCircle, Smartphone, Copy, Upload, RefreshCw } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Smartphone, Copy, Upload, RefreshCw, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { notifyOrder } from "@/lib/notify-order";
+import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
+
+type RazorpayCheckoutOptions = {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  order_id: string;
+  prefill?: { name?: string; email?: string; contact?: string };
+  theme?: { color?: string };
+  handler: (response: {
+    razorpay_payment_id: string;
+    razorpay_order_id: string;
+    razorpay_signature: string;
+  }) => void;
+  modal?: { ondismiss?: () => void };
+};
+type RazorpayInstance = { open: () => void; on: (e: string, cb: (r: unknown) => void) => void };
+declare global {
+  interface Window { Razorpay?: new (opts: RazorpayCheckoutOptions) => RazorpayInstance }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if (window.Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
 
 
 export const Route = createFileRoute("/orders/$code")({
@@ -155,6 +190,88 @@ function OrderPage() {
     fetchOrder();
   };
 
+  const createRzp = useServerFn(createRazorpayOrder);
+  const verifyRzp = useServerFn(verifyRazorpayPayment);
+  const [rzpLoading, setRzpLoading] = useState(false);
+
+  const payWithRazorpay = async () => {
+    if (!order || order.region !== "IN" || !order.amount_inr) {
+      toast.error("Razorpay is available for INR orders");
+      return;
+    }
+    setRzpLoading(true);
+    try {
+      const ok = await loadRazorpayScript();
+      if (!ok || !window.Razorpay) throw new Error("Failed to load Razorpay");
+      const amountPaise = Math.round(Number(order.amount_inr) * 100);
+      if (amountPaise < 100) throw new Error("Amount too small");
+
+      const rzpOrder = await createRzp({
+        data: {
+          amount: amountPaise,
+          currency: "INR",
+          receipt: order.order_code.slice(0, 40),
+          notes: { order_code: order.order_code, product: order.product_name },
+        },
+      });
+
+      const rzp = new window.Razorpay({
+        key: rzpOrder.key_id,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        name: "Fatui Market",
+        description: `${order.product_name} — ${order.tier_label}`,
+        order_id: rzpOrder.order_id,
+        prefill: {
+          name: order.player_name ?? undefined,
+          email: order.customer_email ?? undefined,
+        },
+        theme: { color: "#10b981" },
+        handler: async (response) => {
+          try {
+            const result = await verifyRzp({
+              data: {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                order_code: order.order_code,
+              },
+            });
+            if (!result.verified) {
+              toast.error("Payment verification failed");
+              return;
+            }
+            const { error } = await supabase
+              .from("orders")
+              .update({
+                utr: response.razorpay_payment_id,
+                payment_method: "razorpay",
+                status: "pending_verification",
+              })
+              .eq("id", order.id);
+            if (error) throw error;
+            void notifyOrder(order.order_code, "screenshot_uploaded");
+            toast.success("Payment received — verifying");
+            await fetchOrder();
+          } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "Verification failed");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            toast.message("Payment cancelled");
+          },
+        },
+      });
+      rzp.on("payment.failed", () => toast.error("Payment failed. Please try again."));
+      rzp.open();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Could not start payment");
+    } finally {
+      setRzpLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-3xl px-4 py-10">
       <div className="surface-card p-6">
@@ -207,6 +324,15 @@ function OrderPage() {
                 <a href={upiLink} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)]">
                   <Smartphone className="h-4 w-4" /> Pay ₹{order.amount_inr} with UPI
                 </a>
+                <button
+                  type="button"
+                  onClick={payWithRazorpay}
+                  disabled={rzpLoading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--neon)]/40 bg-[var(--neon)]/10 px-5 py-3 text-sm font-semibold text-[var(--neon)] hover:bg-[var(--neon)]/20 disabled:opacity-60"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {rzpLoading ? "Opening Razorpay…" : `Pay ₹${order.amount_inr} with Card / UPI / Netbanking`}
+                </button>
               </div>
             </div>
           </div>
