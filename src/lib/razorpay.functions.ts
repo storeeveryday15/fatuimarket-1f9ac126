@@ -59,12 +59,6 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
         },
       }),
     });
-        amount: amountPaise,
-        currency: "INR",
-        receipt: order.order_code.slice(0, 40),
-        notes: { order_code: order.order_code, product: order.product_name ?? "" },
-      }),
-    });
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
