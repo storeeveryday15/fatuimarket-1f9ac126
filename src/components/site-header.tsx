@@ -9,6 +9,7 @@ import { LiveVisitors } from "@/components/live-visitors";
 
 const NAV = [
   { to: "/", label: "Home" },
+  { to: "/wallet", label: "Wallet" },
   { to: "/track", label: "Track Order" },
   { to: "/contact", label: "Contact" },
   { to: "/refund", label: "Refund" },
