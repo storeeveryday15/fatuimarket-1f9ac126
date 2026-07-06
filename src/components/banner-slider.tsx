@@ -4,6 +4,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronLeft, ChevronRight, Zap, ShieldCheck, Headphones } from "lucide-react";
 import fatuiBrand from "@/assets/hero-fatui-brand.png.asset.json";
+import fatuiHeroVideo from "@/assets/hero-fatui.mp4.asset.json";
 import mlbb from "@/assets/hero-mlbb.jpg.asset.json";
 import liveBanner from "@/assets/new-live-banner.mp4.asset.json";
 import wuwa from "@/assets/hero-wuwa.jpg.asset.json";
@@ -15,7 +16,9 @@ type Slide = {
   titleBottom: string;
   subtitle: string;
   primary: { label: string; to: string };
-  media: { kind: "image"; src: string } | { kind: "video"; src: string };
+  media:
+    | { kind: "image"; src: string }
+    | { kind: "video"; src: string; poster?: string; preload?: "auto" | "metadata" | "none" };
 };
 
 const SLIDES: Slide[] = [
@@ -26,7 +29,7 @@ const SLIDES: Slide[] = [
     titleBottom: "MARKET",
     subtitle: "Top-up your favorite games instantly with the best prices and secure payments.",
     primary: { label: "Browse Top-ups", to: "/" },
-    media: { kind: "image", src: fatuiBrand.url },
+    media: { kind: "video", src: fatuiHeroVideo.url, poster: fatuiBrand.url, preload: "auto" },
   },
   {
     key: "mlbb",
@@ -124,8 +127,33 @@ export function BannerSlider() {
 
   useEffect(() => () => { if (resumeTimer.current) clearTimeout(resumeTimer.current); }, []);
 
+  // Pause videos & autoplay when the banner isn't visible (battery saver)
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            autoplay.current.play();
+            const v = videoRefs.current[selected];
+            v?.play().catch(() => {});
+          } else {
+            autoplay.current.stop();
+            videoRefs.current.forEach((v) => v?.pause());
+          }
+        }
+      },
+      { threshold: 0.1 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [selected]);
+
   return (
     <div
+      ref={containerRef}
       role="region"
       aria-roledescription="carousel"
       aria-label="Featured top-ups"
@@ -163,10 +191,14 @@ export function BannerSlider() {
                       <video
                         ref={(el) => { videoRefs.current[i] = el; }}
                         src={s.media.src}
+                        poster={s.media.poster}
+                        autoPlay
                         muted
                         loop
                         playsInline
-                        preload="metadata"
+                        preload={s.media.preload ?? "metadata"}
+                        disablePictureInPicture
+                        controls={false}
                         className="h-full w-full object-cover object-center"
                       />
                     )}
