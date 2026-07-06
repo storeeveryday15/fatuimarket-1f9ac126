@@ -166,10 +166,14 @@ export function BannerSlider() {
                       <video
                         ref={(el) => { videoRefs.current[i] = el; }}
                         src={s.media.src}
+                        poster={s.media.poster}
+                        autoPlay
                         muted
                         loop
                         playsInline
-                        preload="metadata"
+                        preload={s.media.preload ?? "metadata"}
+                        disablePictureInPicture
+                        controls={false}
                         className="h-full w-full object-cover object-center"
                       />
                     )}
