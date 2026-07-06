@@ -68,7 +68,7 @@ function Home() {
           </div>
         </div>
 
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="stagger-grid mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {PRODUCTS.map((p) => {
             const minInr = Math.min(
               ...p.denominations.map((d) => d.priceINR ?? Math.round(d.price * 83))
@@ -78,7 +78,7 @@ function Home() {
                 key={p.slug}
                 to="/products/$slug"
                 params={{ slug: p.slug }}
-                className="group surface-card relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-elegant)]"
+                className="group surface-card card-lift ripple relative overflow-hidden"
               >
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <img
@@ -109,9 +109,10 @@ function Home() {
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Starting from</div>
                     <div className="text-base font-bold text-foreground">₹{minInr}</div>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-lg bg-[image:var(--gradient-primary)] px-3 py-2 text-xs font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform group-hover:translate-x-0.5">
+                  <span className="btn-shine soft-pulse inline-flex items-center gap-1 rounded-lg bg-[image:var(--gradient-primary)] bg-[length:200%_200%] px-3 py-2 text-xs font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform group-hover:translate-x-0.5">
                     Top Up <ArrowRight className="h-3.5 w-3.5" />
                   </span>
+
                 </div>
               </Link>
             );
