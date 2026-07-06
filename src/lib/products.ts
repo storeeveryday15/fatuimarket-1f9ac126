@@ -5,7 +5,7 @@ import valorant from "@/assets/game-valorant.jpg.asset.json";
 import steamAsset from "@/assets/game-steam.jpg.asset.json";
 const steam = steamAsset.url;
 import gplay from "@/assets/game-gplay.jpg.asset.json";
-import wuwa from "@/assets/game-wuwa.jpg.asset.json";
+import wuwa from "@/assets/game-wuwa-new.jpg.asset.json";
 import genshin from "@/assets/game-genshin.png.asset.json";
 import lads from "@/assets/game-lads.jpg.asset.json";
 import hok from "@/assets/game-mlbb.jpg.asset.json";
