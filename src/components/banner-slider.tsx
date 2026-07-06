@@ -4,6 +4,7 @@ import Autoplay from "embla-carousel-autoplay";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ChevronLeft, ChevronRight, Zap, ShieldCheck, Headphones } from "lucide-react";
 import fatuiBrand from "@/assets/hero-fatui-brand.png.asset.json";
+import fatuiHeroVideo from "@/assets/hero-fatui.mp4.asset.json";
 import mlbb from "@/assets/hero-mlbb.jpg.asset.json";
 import liveBanner from "@/assets/new-live-banner.mp4.asset.json";
 import wuwa from "@/assets/hero-wuwa.jpg.asset.json";
@@ -15,7 +16,9 @@ type Slide = {
   titleBottom: string;
   subtitle: string;
   primary: { label: string; to: string };
-  media: { kind: "image"; src: string } | { kind: "video"; src: string };
+  media:
+    | { kind: "image"; src: string }
+    | { kind: "video"; src: string; poster?: string; preload?: "auto" | "metadata" | "none" };
 };
 
 const SLIDES: Slide[] = [
@@ -26,7 +29,7 @@ const SLIDES: Slide[] = [
     titleBottom: "MARKET",
     subtitle: "Top-up your favorite games instantly with the best prices and secure payments.",
     primary: { label: "Browse Top-ups", to: "/" },
-    media: { kind: "image", src: fatuiBrand.url },
+    media: { kind: "video", src: fatuiHeroVideo.url, poster: fatuiBrand.url, preload: "auto" },
   },
   {
     key: "mlbb",
