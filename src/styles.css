@@ -189,7 +189,107 @@
 }
 .hero-dot-active { animation: hero-dot-pulse 2s ease-in-out infinite; }
 
-@media (prefers-reduced-motion: reduce) {
-  .hero-kenburns, .hero-content-in, .hero-dot-active { animation: none !important; }
+/* ---------- Premium micro-interactions ---------- */
+
+/* Fade + rise reveal */
+@keyframes fade-up {
+  0%   { opacity: 0; transform: translate3d(0, 14px, 0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); }
 }
+.animate-fade-up { animation: fade-up 600ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Staggered children reveal (used on product grids) */
+.stagger-grid > * { animation: fade-up 600ms cubic-bezier(0.22, 1, 0.36, 1) both; opacity: 0; }
+.stagger-grid > *:nth-child(1)  { animation-delay: 40ms; }
+.stagger-grid > *:nth-child(2)  { animation-delay: 90ms; }
+.stagger-grid > *:nth-child(3)  { animation-delay: 140ms; }
+.stagger-grid > *:nth-child(4)  { animation-delay: 190ms; }
+.stagger-grid > *:nth-child(5)  { animation-delay: 240ms; }
+.stagger-grid > *:nth-child(6)  { animation-delay: 290ms; }
+.stagger-grid > *:nth-child(7)  { animation-delay: 340ms; }
+.stagger-grid > *:nth-child(8)  { animation-delay: 390ms; }
+.stagger-grid > *:nth-child(9)  { animation-delay: 440ms; }
+.stagger-grid > *:nth-child(10) { animation-delay: 490ms; }
+.stagger-grid > *:nth-child(11) { animation-delay: 540ms; }
+.stagger-grid > *:nth-child(12) { animation-delay: 590ms; }
+.stagger-grid > *:nth-child(n+13) { animation-delay: 640ms; }
+
+/* Card lift + subtle tilt + neon halo on hover */
+.card-lift {
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 380ms ease,
+              filter 380ms ease;
+  will-change: transform;
+}
+.card-lift:hover {
+  transform: translate3d(0, -6px, 0) scale(1.02);
+  box-shadow:
+    0 24px 60px -20px color-mix(in oklab, var(--neon) 45%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--neon) 35%, transparent);
+}
+@media (hover: none) {
+  .card-lift:active { transform: translate3d(0, -2px, 0) scale(1.01); }
+}
+
+/* Animated gradient sweep for primary CTAs */
+@keyframes btn-shine {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.btn-shine {
+  background-size: 200% 200%;
+  animation: btn-shine 3.5s linear infinite;
+}
+
+/* Soft breathing glow for the "Top Up" pill */
+@keyframes soft-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--neon) 30%, transparent), var(--shadow-glow); }
+  50%      { box-shadow: 0 0 0 6px color-mix(in oklab, var(--neon) 0%, transparent), var(--shadow-glow); }
+}
+.soft-pulse { animation: soft-pulse 2.4s ease-in-out infinite; }
+
+/* Ripple on click (attach via wrapper class + JS-free CSS using :active pseudo) */
+.ripple { position: relative; overflow: hidden; isolation: isolate; }
+.ripple::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at var(--rx, 50%) var(--ry, 50%),
+              color-mix(in oklab, var(--neon) 55%, transparent) 0%, transparent 45%);
+  opacity: 0; transform: scale(0.6); transition: opacity 500ms ease, transform 500ms ease;
+  pointer-events: none;
+}
+.ripple:active::after { opacity: 0.5; transform: scale(1); transition-duration: 0ms; }
+
+/* Ambient floating orbs (background) */
+@keyframes float-orb {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -18px, 0); }
+}
+.float-orb { animation: float-orb 9s ease-in-out infinite; will-change: transform; }
+
+/* Star-rating pop */
+@keyframes star-pop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.star-pop { animation: star-pop 380ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Route change fade */
+@keyframes route-fade-in {
+  0%   { opacity: 0; transform: translate3d(0, 6px, 0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.route-fade-in { animation: route-fade-in 320ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-kenburns, .hero-content-in, .hero-dot-active,
+  .animate-fade-up, .stagger-grid > *, .card-lift,
+  .btn-shine, .soft-pulse, .float-orb, .star-pop, .route-fade-in {
+    animation: none !important;
+    transition: none !important;
+  }
+  .card-lift:hover { transform: none; }
+}
+
 
