@@ -127,8 +127,33 @@ export function BannerSlider() {
 
   useEffect(() => () => { if (resumeTimer.current) clearTimeout(resumeTimer.current); }, []);
 
+  // Pause videos & autoplay when the banner isn't visible (battery saver)
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            autoplay.current.play();
+            const v = videoRefs.current[selected];
+            v?.play().catch(() => {});
+          } else {
+            autoplay.current.stop();
+            videoRefs.current.forEach((v) => v?.pause());
+          }
+        }
+      },
+      { threshold: 0.1 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [selected]);
+
   return (
     <div
+      ref={containerRef}
       role="region"
       aria-roledescription="carousel"
       aria-label="Featured top-ups"
