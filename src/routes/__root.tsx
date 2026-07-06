@@ -16,9 +16,7 @@ import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
 
 import { AdsterraBanner2 } from "../components/adsterra-banner-2";
-import { WhatsappFloat } from "../components/whatsapp-button";
 import { ChatWidget } from "../components/chat-widget";
-import { WhatsappPopup } from "../components/whatsapp-popup";
 import { Toaster } from "sonner";
 
 function NotFoundComponent() {
