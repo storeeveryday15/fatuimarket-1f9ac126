@@ -113,7 +113,7 @@ function Contact() {
             <span className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white"><Instagram className="h-6 w-6" /></span>
             <div>
               <div className="font-semibold">Instagram</div>
-              <div className="text-sm text-muted-foreground">@everyday_store_official</div>
+              <div className="text-sm text-muted-foreground">@fatuimarket</div>
               <div className="mt-1 text-sm font-medium text-foreground">Follow us →</div>
             </div>
           </a>
