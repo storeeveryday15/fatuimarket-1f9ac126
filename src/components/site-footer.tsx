@@ -16,7 +16,7 @@ export function SiteFooter() {
       <div className="container mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-4">
         <div className="space-y-3">
           <div className="flex items-center gap-2 font-display text-lg font-bold">
-            <img src={LOGO_URL} alt="Fatui Market" className="h-9 w-9 rounded-xl object-cover" />
+            <img src={LOGO_URL} alt="Fatui Market" width={36} height={36} loading="lazy" decoding="async" className="h-9 w-9 rounded-xl object-cover" />
             Fatui Market
           </div>
           <p className="text-sm text-muted-foreground">

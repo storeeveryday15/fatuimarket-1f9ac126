@@ -85,8 +85,12 @@ function Home() {
                     src={p.image}
                     alt={`${p.name} top-up card`}
                     loading="lazy"
+                    decoding="async"
+                    width={800}
+                    height={600}
                     className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
                   />
+
                   {/* Dark overlay 50% for readable text on any art */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
                   <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur">

@@ -254,7 +254,7 @@ function ProductPage() {
         <div className="space-y-6">
           <div className="surface-card overflow-hidden">
             <div className="relative h-48 md:h-64">
-              <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+              <img src={product.image} alt={product.name} width={1200} height={900} decoding="async" fetchPriority="high" className="h-full w-full object-cover" />
               <div className={`absolute inset-0 bg-gradient-to-t ${product.accent} opacity-40 mix-blend-overlay`} />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
               <div className="absolute bottom-4 left-5">
@@ -449,7 +449,7 @@ function ProductPage() {
           <div className="mt-5 grid grid-cols-3 gap-2 text-center">
             {PRODUCTS.filter((p) => p.slug !== product.slug).slice(0, 3).map((p) => (
               <Link key={p.slug} to="/products/$slug" params={{ slug: p.slug }} className="surface-card overflow-hidden">
-                <img src={p.image} alt={p.name} loading="lazy" className="aspect-square w-full object-cover" />
+                <img src={p.image} alt={p.name} loading="lazy" decoding="async" width={400} height={400} className="aspect-square w-full object-cover" />
                 <div className="p-2 text-[11px] font-medium">{p.name}</div>
               </Link>
             ))}

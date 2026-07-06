@@ -48,7 +48,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 font-display text-lg font-bold">
-          <img src={LOGO_URL} alt="Fatui Market logo" className="h-9 w-9 rounded-xl object-cover shadow-[var(--shadow-glow)]" />
+          <img src={LOGO_URL} alt="Fatui Market logo" width={36} height={36} decoding="async" fetchPriority="high" className="h-9 w-9 rounded-xl object-cover shadow-[var(--shadow-glow)]" />
           <span>
             Fatui<span className="gradient-text"> Market</span>
           </span>
