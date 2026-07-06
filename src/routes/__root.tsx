@@ -164,9 +164,7 @@ function RootComponent() {
           
           <AdsterraBanner2 />
           <SiteFooter />
-          <WhatsappFloat />
           <ChatWidget />
-          <WhatsappPopup />
           <Toaster richColors position="top-right" />
         </div>
       </ThemeProvider>
