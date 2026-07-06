@@ -152,9 +152,13 @@ export function BannerSlider() {
                         src={s.media.src}
                         alt=""
                         loading={i === 0 ? "eager" : "lazy"}
+                        decoding={i === 0 ? "sync" : "async"}
+                        width={1920}
+                        height={1000}
                         {...(i === 0 ? { fetchPriority: "high" as const } : {})}
                         className="h-full w-full object-cover object-center"
                       />
+
                     ) : (
                       <video
                         ref={(el) => { videoRefs.current[i] = el; }}
