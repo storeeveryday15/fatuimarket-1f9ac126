@@ -36,7 +36,7 @@ export const Route = createFileRoute("/contact")({
         openingHours: "Mo-Su 00:00-23:59",
         sameAs: [
           "https://www.facebook.com/share/192oekurGU/",
-          "https://www.instagram.com/everyday_store_official",
+          "https://www.instagram.com/fatuimarket?igsh=bDhvNW44dGUwYXRo",
           "https://t.me/fatuimarket",
         ],
       }),
