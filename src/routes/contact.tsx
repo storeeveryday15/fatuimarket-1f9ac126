@@ -36,7 +36,7 @@ export const Route = createFileRoute("/contact")({
         openingHours: "Mo-Su 00:00-23:59",
         sameAs: [
           "https://www.facebook.com/share/192oekurGU/",
-          "https://www.instagram.com/everyday_store_official",
+          "https://www.instagram.com/fatuimarket?igsh=bDhvNW44dGUwYXRo",
           "https://t.me/fatuimarket",
         ],
       }),
@@ -113,7 +113,7 @@ function Contact() {
             <span className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white"><Instagram className="h-6 w-6" /></span>
             <div>
               <div className="font-semibold">Instagram</div>
-              <div className="text-sm text-muted-foreground">@everyday_store_official</div>
+              <div className="text-sm text-muted-foreground">@fatuimarket</div>
               <div className="mt-1 text-sm font-medium text-foreground">Follow us →</div>
             </div>
           </a>

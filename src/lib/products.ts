@@ -392,7 +392,7 @@ export const WHATSAPP_CHANNEL_LINK = "https://whatsapp.com/channel/0029VbD2uz34Y
 export const CONTACT_PHONE = "+91 76793 93645";
 export const CONTACT_EMAIL = "fatuimarket@gmail.com";
 export const FACEBOOK_LINK = "https://www.facebook.com/share/192oekurGU/";
-export const INSTAGRAM_LINK = "https://www.instagram.com/everyday_store_official?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==";
+export const INSTAGRAM_LINK = "https://www.instagram.com/fatuimarket?igsh=bDhvNW44dGUwYXRo";
 export const TELEGRAM_LINK = "https://t.me/fatuimarket";
 
 // Coupon + cashback
