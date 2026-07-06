@@ -119,7 +119,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
             logo: "https://fatuimarket.lovable.app/__l5e/assets-v1/d5212832-d4bb-43d2-80da-ee5f8c0d4a0f/fatui-logo.jpeg",
             sameAs: [
               "https://www.facebook.com/share/192oekurGU/",
-              "https://www.instagram.com/everyday_store_official",
+              "https://www.instagram.com/fatuimarket?igsh=bDhvNW44dGUwYXRo",
               "https://t.me/fatuimarket",
             ],
           },
