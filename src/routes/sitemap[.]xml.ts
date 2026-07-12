@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 import { PRODUCTS } from "@/lib/products";
+import { SEO_LANDINGS } from "@/lib/seo-landings";
 
 const BASE_URL = "https://fatuimarket.lovable.app";
 
@@ -23,10 +24,16 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/refund", changefreq: "monthly", priority: "0.5" },
           { path: "/privacy", changefreq: "monthly", priority: "0.5" },
           { path: "/guides/genshin-impact-top-up", changefreq: "monthly", priority: "0.8" },
+          { path: "/buy", changefreq: "weekly", priority: "0.8" },
           ...PRODUCTS.map((p) => ({
             path: `/products/${p.slug}`,
             changefreq: "weekly" as const,
             priority: "0.9",
+          })),
+          ...SEO_LANDINGS.map((l) => ({
+            path: `/buy/${l.slug}`,
+            changefreq: "weekly" as const,
+            priority: "0.8",
           })),
         ];
 
