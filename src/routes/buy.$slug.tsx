@@ -1,9 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { getSeoLanding, seoBaseUrl, SEO_LANDINGS } from "@/lib/seo-landings";
+import { getSeoLanding, seoBaseUrl, SEO_LANDINGS, type SeoLanding } from "@/lib/seo-landings";
 import { getProduct } from "@/lib/products";
 
 export const Route = createFileRoute("/buy/$slug")({
-  loader: ({ params }) => {
+  loader: ({ params }): { landing: SeoLanding } => {
     const landing = getSeoLanding(params.slug);
     if (!landing) throw notFound();
     return { landing };
