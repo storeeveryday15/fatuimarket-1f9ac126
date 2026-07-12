@@ -14,8 +14,8 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "Fatui Market — Instant Game Top-Up & Digital Codes" },
       { name: "description", content: "Instant diamonds, UC, VP, Steam Wallet and Google Play codes. Trusted by gamers worldwide." },
-      { property: "og:title", content: "Fatui Market — Instant Game Top-Up" },
-      { property: "og:description", content: "Top up your favorite games in seconds." },
+      { property: "og:title", content: "Fatui Market — Instant Game Top-Up & Digital Codes" },
+      { property: "og:description", content: "Instant diamonds, UC, VP, Steam Wallet and Google Play codes. Trusted by gamers worldwide." },
     ],
   }),
   component: Home,
