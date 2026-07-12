@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 import { PRODUCTS } from "@/lib/products";
+import { SEO_LANDINGS } from "@/lib/seo-landings";
 
 const BASE_URL = "https://fatuimarket.lovable.app";
 
