@@ -100,7 +100,8 @@ export const Route = createFileRoute("/buy/$slug")({
 });
 
 function SeoLandingPage() {
-  const { landing: l } = Route.useLoaderData();
+  const data = Route.useLoaderData() as { landing: SeoLanding };
+  const l = data.landing;
   const product = l.productSlug ? getProduct(l.productSlug) : undefined;
   const heroImage = l.image ?? product?.image;
   const imageAlt = l.imageAlt ?? `${l.h1} — Fatui Market`;
