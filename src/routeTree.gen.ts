@@ -28,9 +28,13 @@ import { Route as OrdersCodeRouteImport } from './routes/orders.$code'
 import { Route as GuidesGenshinImpactTopUpRouteImport } from './routes/guides.genshin-impact-top-up'
 import { Route as BuySlugRouteImport } from './routes/buy.$slug'
 import { Route as AdminSuppliersRouteImport } from './routes/admin/suppliers'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminProductsRouteImport } from './routes/admin/products'
+import { Route as AdminPricingRouteImport } from './routes/admin/pricing'
 import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
+import { Route as AdminCustomersRouteImport } from './routes/admin/customers'
 import { Route as AdminAssistantRouteImport } from './routes/admin/assistant'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as ApiPublicNotifyOrderRouteImport } from './routes/api/public/notify-order'
 import { Route as ApiPublicClaimAdminRouteImport } from './routes/api/public/claim-admin'
 
@@ -130,9 +134,19 @@ const AdminSuppliersRoute = AdminSuppliersRouteImport.update({
   path: '/suppliers',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminProductsRoute = AdminProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPricingRoute = AdminPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
@@ -140,9 +154,19 @@ const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminCustomersRoute = AdminCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminAssistantRoute = AdminAssistantRouteImport.update({
   id: '/assistant',
   path: '/assistant',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const ApiPublicNotifyOrderRoute = ApiPublicNotifyOrderRouteImport.update({
@@ -169,9 +193,13 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/wallet': typeof WalletRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assistant': typeof AdminAssistantRoute
+  '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/pricing': typeof AdminPricingRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
@@ -194,9 +222,13 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/wallet': typeof WalletRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assistant': typeof AdminAssistantRoute
+  '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/pricing': typeof AdminPricingRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
@@ -221,9 +253,13 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/wallet': typeof WalletRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assistant': typeof AdminAssistantRoute
+  '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/pricing': typeof AdminPricingRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
@@ -249,9 +285,13 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/wallet'
+    | '/admin/analytics'
     | '/admin/assistant'
+    | '/admin/customers'
     | '/admin/notifications'
+    | '/admin/pricing'
     | '/admin/products'
+    | '/admin/settings'
     | '/admin/suppliers'
     | '/buy/$slug'
     | '/guides/genshin-impact-top-up'
@@ -274,9 +314,13 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/wallet'
+    | '/admin/analytics'
     | '/admin/assistant'
+    | '/admin/customers'
     | '/admin/notifications'
+    | '/admin/pricing'
     | '/admin/products'
+    | '/admin/settings'
     | '/admin/suppliers'
     | '/buy/$slug'
     | '/guides/genshin-impact-top-up'
@@ -300,9 +344,13 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/wallet'
+    | '/admin/analytics'
     | '/admin/assistant'
+    | '/admin/customers'
     | '/admin/notifications'
+    | '/admin/pricing'
     | '/admin/products'
+    | '/admin/settings'
     | '/admin/suppliers'
     | '/buy/$slug'
     | '/guides/genshin-impact-top-up'
@@ -471,11 +519,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSuppliersRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/products': {
       id: '/admin/products'
       path: '/products'
       fullPath: '/admin/products'
       preLoaderRoute: typeof AdminProductsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/pricing': {
+      id: '/admin/pricing'
+      path: '/pricing'
+      fullPath: '/admin/pricing'
+      preLoaderRoute: typeof AdminPricingRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/notifications': {
@@ -485,11 +547,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNotificationsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/customers': {
+      id: '/admin/customers'
+      path: '/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AdminCustomersRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/assistant': {
       id: '/admin/assistant'
       path: '/assistant'
       fullPath: '/admin/assistant'
       preLoaderRoute: typeof AdminAssistantRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/api/public/notify-order': {
@@ -510,17 +586,25 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminAssistantRoute: typeof AdminAssistantRoute
+  AdminCustomersRoute: typeof AdminCustomersRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminPricingRoute: typeof AdminPricingRoute
   AdminProductsRoute: typeof AdminProductsRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSuppliersRoute: typeof AdminSuppliersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminAssistantRoute: AdminAssistantRoute,
+  AdminCustomersRoute: AdminCustomersRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminPricingRoute: AdminPricingRoute,
   AdminProductsRoute: AdminProductsRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
   AdminSuppliersRoute: AdminSuppliersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
