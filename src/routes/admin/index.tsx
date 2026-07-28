@@ -6,7 +6,7 @@ import { ShieldCheck, MessageSquare, Users, Package, Search, Eye, Star, Trash2 }
 import { notifyOrder } from "@/lib/notify-order";
 
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/admin/")({
   head: () => ({
     meta: [
       { title: "Admin — Fatui Market" },

@@ -19,9 +19,9 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BuyIndexRouteImport } from './routes/buy.index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as OrdersCodeRouteImport } from './routes/orders.$code'
 import { Route as GuidesGenshinImpactTopUpRouteImport } from './routes/guides.genshin-impact-top-up'
@@ -79,11 +79,6 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -92,6 +87,11 @@ const IndexRoute = IndexRouteImport.update({
 const BuyIndexRoute = BuyIndexRouteImport.update({
   id: '/buy/',
   path: '/buy/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductsSlugRoute = ProductsSlugRouteImport.update({
@@ -128,7 +128,6 @@ const ApiPublicClaimAdminRoute = ApiPublicClaimAdminRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRoute
@@ -143,13 +142,13 @@ export interface FileRoutesByFullPath {
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/admin/': typeof AdminIndexRoute
   '/buy/': typeof BuyIndexRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRoute
@@ -164,6 +163,7 @@ export interface FileRoutesByTo {
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/admin': typeof AdminIndexRoute
   '/buy': typeof BuyIndexRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
@@ -171,7 +171,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRoute
@@ -186,6 +185,7 @@ export interface FileRoutesById {
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/admin/': typeof AdminIndexRoute
   '/buy/': typeof BuyIndexRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
@@ -194,7 +194,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
     | '/auth'
     | '/contact'
     | '/dashboard'
@@ -209,13 +208,13 @@ export interface FileRouteTypes {
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
+    | '/admin/'
     | '/buy/'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/auth'
     | '/contact'
     | '/dashboard'
@@ -230,13 +229,13 @@ export interface FileRouteTypes {
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
+    | '/admin'
     | '/buy'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
   id:
     | '__root__'
     | '/'
-    | '/admin'
     | '/auth'
     | '/contact'
     | '/dashboard'
@@ -251,6 +250,7 @@ export interface FileRouteTypes {
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
+    | '/admin/'
     | '/buy/'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
@@ -258,7 +258,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   DashboardRoute: typeof DashboardRoute
@@ -273,6 +272,7 @@ export interface RootRouteChildren {
   GuidesGenshinImpactTopUpRoute: typeof GuidesGenshinImpactTopUpRoute
   OrdersCodeRoute: typeof OrdersCodeRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   BuyIndexRoute: typeof BuyIndexRoute
   ApiPublicClaimAdminRoute: typeof ApiPublicClaimAdminRoute
   ApiPublicNotifyOrderRoute: typeof ApiPublicNotifyOrderRoute
@@ -350,13 +350,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -369,6 +362,13 @@ declare module '@tanstack/react-router' {
       path: '/buy'
       fullPath: '/buy/'
       preLoaderRoute: typeof BuyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/products/$slug': {
@@ -418,7 +418,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   DashboardRoute: DashboardRoute,
@@ -433,6 +432,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuidesGenshinImpactTopUpRoute: GuidesGenshinImpactTopUpRoute,
   OrdersCodeRoute: OrdersCodeRoute,
   ProductsSlugRoute: ProductsSlugRoute,
+  AdminIndexRoute: AdminIndexRoute,
   BuyIndexRoute: BuyIndexRoute,
   ApiPublicClaimAdminRoute: ApiPublicClaimAdminRoute,
   ApiPublicNotifyOrderRoute: ApiPublicNotifyOrderRoute,
