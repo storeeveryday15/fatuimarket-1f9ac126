@@ -346,7 +346,7 @@ export const runAutoPricing = createServerFn({ method: "POST" })
       max_profit_inr: Number(settings.max_profit_inr),
       min_profit_pct: Number(settings.min_profit_pct),
       max_profit_pct: Number(settings.max_profit_pct),
-      price_rounding: settings.price_rounding,
+      price_rounding: settings.price_rounding as import("@/lib/admin/pricing").PriceRounding,
     };
 
     const { data: products } = await context.supabase
@@ -354,7 +354,7 @@ export const runAutoPricing = createServerFn({ method: "POST" })
       .select("*")
       .eq("auto_pricing", true);
 
-    const changes: Array<Record<string, unknown>> = [];
+    const changes: Array<{ id: string; sku: string; old_price: number; new_price: number; reason: string }> = [];
 
     for (const p of (products ?? []) as Array<Record<string, any>>) {
       const calc = computePricing(Number(p.supplier_cost_inr), Number(p.price_inr), rules);
