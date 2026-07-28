@@ -1,12 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ShieldCheck, MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
+import { MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
 import { notifyOrder } from "@/lib/notify-order";
 
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/admin/")({
   head: () => ({
     meta: [
       { title: "Admin — Fatui Market" },
@@ -76,8 +76,6 @@ function AdminPage() {
   const [search, setSearch] = useState("");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [shotUrl, setShotUrl] = useState<string | null>(null);
-  const navigate = useNavigate();
-
   const load = async () => {
     const [{ data: o }, { data: s }, { data: p }, { data: r }] = await Promise.all([
       supabase.from("orders").select("*").order("created_at", { ascending: false }),
@@ -93,22 +91,12 @@ function AdminPage() {
 
   useEffect(() => {
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) { navigate({ to: "/auth", search: { redirect: "/admin" } }); return; }
-      // try to auto-claim admin if user matches ADMIN_EMAIL
-      try {
-        const { data: sess } = await supabase.auth.getSession();
-        if (sess.session?.access_token) {
-          await fetch("/api/public/claim-admin", { method: "POST", headers: { authorization: `Bearer ${sess.session.access_token}` } });
-        }
-      } catch { /* ignore */ }
-      const { data: role } = await supabase.from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "admin").maybeSingle();
-      if (!role) { toast.error("Admin access required"); navigate({ to: "/" }); return; }
+      // Access is already enforced by the /admin layout guard.
       setReady(true);
       try { await supabase.rpc("expire_stale_orders" as never); } catch { /* ignore */ }
       await load();
     })();
-  }, [navigate]);
+  }, []);
 
   const openOrder = async (o: Order) => {
     setActiveOrder(o);
@@ -163,12 +151,7 @@ function AdminPage() {
   });
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-10">
-      <div className="flex items-center gap-2">
-        <ShieldCheck className="h-6 w-6 text-[var(--neon)]" />
-        <h1 className="text-3xl font-bold">Admin panel</h1>
-      </div>
-
+    <div>
       <Dashboard orders={orders} users={users} />
 
       <div className="mt-8 flex flex-wrap gap-2 border-b border-border">
