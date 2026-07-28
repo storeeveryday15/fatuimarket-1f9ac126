@@ -27,6 +27,8 @@ import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as OrdersCodeRouteImport } from './routes/orders.$code'
 import { Route as GuidesGenshinImpactTopUpRouteImport } from './routes/guides.genshin-impact-top-up'
 import { Route as BuySlugRouteImport } from './routes/buy.$slug'
+import { Route as AdminSuppliersRouteImport } from './routes/admin/suppliers'
+import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
 import { Route as ApiPublicNotifyOrderRouteImport } from './routes/api/public/notify-order'
 import { Route as ApiPublicClaimAdminRouteImport } from './routes/api/public/claim-admin'
 
@@ -121,6 +123,16 @@ const BuySlugRoute = BuySlugRouteImport.update({
   path: '/buy/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSuppliersRoute = AdminSuppliersRouteImport.update({
+  id: '/suppliers',
+  path: '/suppliers',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const ApiPublicNotifyOrderRoute = ApiPublicNotifyOrderRouteImport.update({
   id: '/api/public/notify-order',
   path: '/api/public/notify-order',
@@ -145,6 +157,8 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/wallet': typeof WalletRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
@@ -166,6 +180,8 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/wallet': typeof WalletRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
@@ -189,6 +205,8 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
   '/wallet': typeof WalletRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
@@ -213,6 +231,8 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/wallet'
+    | '/admin/notifications'
+    | '/admin/suppliers'
     | '/buy/$slug'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
@@ -234,6 +254,8 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/wallet'
+    | '/admin/notifications'
+    | '/admin/suppliers'
     | '/buy/$slug'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
@@ -256,6 +278,8 @@ export interface FileRouteTypes {
     | '/terms'
     | '/track'
     | '/wallet'
+    | '/admin/notifications'
+    | '/admin/suppliers'
     | '/buy/$slug'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
@@ -416,6 +440,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BuySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/suppliers': {
+      id: '/admin/suppliers'
+      path: '/suppliers'
+      fullPath: '/admin/suppliers'
+      preLoaderRoute: typeof AdminSuppliersRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/api/public/notify-order': {
       id: '/api/public/notify-order'
       path: '/api/public/notify-order'
@@ -434,10 +472,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteRouteChildren {
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminSuppliersRoute: typeof AdminSuppliersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminSuppliersRoute: AdminSuppliersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
