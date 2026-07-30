@@ -1,58 +1,38 @@
-## Goal
+## What's actually broken
 
-Turn Fatui Market into a full reseller operations platform: supplier management, cost/profit tracking, a smart price engine, an AI admin assistant, live notifications, and analytics — all on real database tables with realtime updates and admin-only access.
+Reproduced in a real browser session at `/admin/notifications`. The page throws:
 
-This is far too large for one pass, so it ships in 4 phases. Each phase is usable on its own.
+```text
+Error: cannot add `postgres_changes` callbacks for realtime:realtime:admin_notifications
+after `subscribe()`.   at src/hooks/use-realtime-table.ts
+```
 
----
+The error escapes to the root error boundary in `src/routes/__root.tsx`, which renders "This page didn't load".
 
-### Phase 1 — Data foundation + Supplier management
+Cause: the admin layout renders `NotificationBell`, and the page renders `NotificationCenter`. Both call `useRealtimeTable("admin_notifications")`, and that hook always names its channel `realtime:<table>`. Supabase-js returns the already-subscribed channel for that topic, and calling `.on("postgres_changes", ...)` on an already-subscribed channel throws. Opening the bell popover (a third mount) makes it worse. Same latent bug exists anywhere two components watch the same table.
 
-New tables (admin-only access, all realtime-enabled):
+Ruled out: the `admin_notifications` table exists, RLS is a correct admin-only policy, SSR of the route returns 200, imports and the route file are fine, and an empty table is not the trigger.
 
-- `suppliers` — name, website, api_endpoint, api_key_ref, status, priority, supported products, notes, auto_pricing_enabled, auto_ordering_enabled, last_checked_at, avg_response_ms, error_count
-- `catalog_products` — the sellable SKUs (product slug, tier, category, images, description, selling price, supplier cost, supplier link, visibility, featured, stock status, auto_pricing)
-- `price_history` — supplier price, selling price, profit, reason, AI explanation, changed_by, timestamp
-- `notifications` — type, severity, title, body, read, created_at
-- `admin_audit_log` — actor, action, target, payload, timestamp
-- `platform_settings` — min profit, max profit, rounding rule, auto-pricing mode, alert thresholds, AI behaviour
-- `supplier_checks` — status, response time, error message per check
+## Fix
 
-The 12 suppliers you listed are seeded with their URLs, marked "manual pricing" since none expose a public reseller API.
+1. `src/hooks/use-realtime-table.ts`
+   - Give every hook instance a unique channel topic (`realtime:<table>:<useId()/random>`) so two components never collide on one channel.
+   - Wrap the initial fetch and the channel setup/teardown in try/catch; on failure set an error message, `console.error` it, and still leave the hook in a resolved (non-loading) state so the UI renders instead of throwing.
+   - Handle subscribe status callbacks (`CHANNEL_ERROR`, `TIMED_OUT`) by logging and degrading to the already-fetched data — no throw.
+   - Never leave `rows` as `null` after a failed fetch (use `[]`) so consumers show the empty state, not a crash.
 
-**Supplier page** (`/admin/suppliers`): list with live status chips (Online / Offline / Slow / API Error / Auth Error), last checked, avg response, error count; create/edit drawer with all fields; API keys stored as backend secrets, never in a table column.
+2. `src/components/admin/notification-center.tsx`
+   - Defensive rendering: tolerate null/undefined `title`, `body`, `type`, and unknown `severity`.
+   - Keep the existing loading state, keep "No notifications yet" for the empty case, and add a small non-fatal banner when `error` is set ("Live updates unavailable — showing last loaded data").
+   - `markRead` / `markAllRead`: surface errors via `console.error` + a toast instead of silently failing.
+   - `NotificationBell`: badge computed defensively from a possibly-empty list.
 
-### Phase 2 — Smart Price Engine + Product management
+3. `src/routes/admin/notifications.tsx`
+   - Add a route-level `errorComponent` (and `notFoundComponent`) so any future failure in this subtree renders a contained retry card instead of blanking the whole app via the root boundary.
+   - Add a page `head()` with a proper title/description.
 
-- Product manager (`/admin/products`): images, description, supplier link, category, selling price, supplier cost, live profit + margin %, visibility, featured, stock, auto-pricing toggle.
-- Price engine computes Recommended Price from min/max profit rules, rounding, and a hard "never below cost" floor.
-- Modes: Manual / Suggest Only / Automatic. In Automatic, a scheduled job applies changes and writes `price_history` with old price, new price, reason, timestamp, AI explanation. One-click rollback per entry.
-- Price history timeline + charts per product (supplier price vs selling price vs profit).
+No database migration is needed — schema, grants and RLS are already correct.
 
-### Phase 3 — Admin dashboard, notifications, analytics
+## Verification
 
-- Dashboard cards: today's revenue/profit, weekly, monthly, orders today, pending/completed/cancelled, AOV, top sellers, most profitable, low margin, customer growth, supplier status, wallet balance, system health — all live via realtime subscriptions, with loading skeletons and animated cards.
-- Notification center: bell with unread count, severity filter, search, mark-read, triggered on price change, supplier offline, low wallet, failed order, new order, new customer, low profit, API error, system warning. Email + Telegram fanout reuses your existing notification wiring; Discord webhook added as an optional setting.
-- Analytics page: revenue, profit, margins, supplier performance, best/worst sellers, sales by category, over day/week/month/year, with charts.
-- Customer management: profiles, order history, lifetime value, favourite products, VIP level, ban toggle.
-
-### Phase 4 — AI layer
-
-- **AI Admin Assistant** (admin-only chat): answers questions on orders, revenue, products, customers and profit by querying the database through tools; analyses trends, recommends pricing, flags unusual activity, generates reports, explains margins, suggests improvements.
-- **Daily AI report** (cron): sales summary, profit summary, recommended prices, supplier changes, products needing attention, opportunities, customer insights — stored and shown in the dashboard.
-- **AI customer support** upgrade to the existing chat widget: FAQs, order status lookup, product recommendations, Fatui Market wallet balance, ticket creation, escalation to admin.
-
----
-
-### Technical notes
-
-- Supabase tables with RLS: every new table is admin-only via the existing `has_role(auth.uid(),'admin')`, with explicit GRANTs; customer-facing reads (catalog) get a narrow public policy.
-- Realtime: tables added to the realtime publication; subscriptions live in hooks with proper cleanup.
-- Server logic uses TanStack server functions; scheduled work uses pg_cron calling public API routes with key auth.
-- No scraping. Suppliers without an official API are manual-update only; the "check" job only records reachability where the site permits it, otherwise status stays admin-set.
-- AI uses the built-in Lovable AI gateway (no extra API key), with all prompts and tool execution server-side.
-- Existing storefront UI is untouched; all new surfaces live under `/admin/*`.
-
-### Scope check
-
-Migrating your current hardcoded `src/lib/products.ts` catalog into the `catalog_products` table is part of Phase 2 — after that, the storefront reads prices from the database so auto-pricing actually affects what customers see.
+Re-run the authenticated browser check on `/admin/notifications`: the page must render the list (or the empty state) with zero page errors, and opening the bell popover while on the notifications page must not throw.
