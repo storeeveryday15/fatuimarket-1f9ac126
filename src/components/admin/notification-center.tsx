@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeTable } from "@/hooks/use-realtime-table";
 import { SEVERITY_META, type AdminNotification } from "@/lib/admin/types";
-import { Bell, Check, Search } from "lucide-react";
+import { Bell, Check, Search, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 
 /**
  * Notification centre.
@@ -10,25 +11,45 @@ import { Bell, Check, Search } from "lucide-react";
  * page at /admin/notifications via the `variant` prop.
  */
 export function NotificationCenter({ variant = "page" }: { variant?: "page" | "popover" }) {
-  const { rows, loading } = useRealtimeTable<AdminNotification>("admin_notifications", { limit: 200 });
+  const { rows, loading, error, reload } = useRealtimeTable<AdminNotification>("admin_notifications", {
+    limit: 200,
+  });
   const [query, setQuery] = useState("");
   const [severity, setSeverity] = useState<string>("all");
 
   const items = useMemo(() => {
-    const list = rows ?? [];
+    const list = Array.isArray(rows) ? rows : [];
     return list.filter((n) => {
+      if (!n) return false;
       if (severity !== "all" && n.severity !== severity) return false;
       if (!query.trim()) return true;
       const q = query.toLowerCase();
-      return n.title.toLowerCase().includes(q) || (n.body ?? "").toLowerCase().includes(q) || n.type.includes(q);
+      return (
+        (n.title ?? "").toLowerCase().includes(q) ||
+        (n.body ?? "").toLowerCase().includes(q) ||
+        (n.type ?? "").toLowerCase().includes(q)
+      );
     });
   }, [rows, query, severity]);
 
   const markRead = async (id: string) => {
-    await supabase.from("admin_notifications").update({ read: true }).eq("id", id);
+    const { error: err } = await supabase.from("admin_notifications").update({ read: true }).eq("id", id);
+    if (err) {
+      console.error("[NotificationCenter] mark as read failed:", err);
+      toast.error("Couldn't mark as read");
+      return;
+    }
+    void reload();
   };
+
   const markAllRead = async () => {
-    await supabase.from("admin_notifications").update({ read: true }).eq("read", false);
+    const { error: err } = await supabase.from("admin_notifications").update({ read: true }).eq("read", false);
+    if (err) {
+      console.error("[NotificationCenter] mark all read failed:", err);
+      toast.error("Couldn't mark all as read");
+      return;
+    }
+    void reload();
   };
 
   return (
@@ -62,6 +83,18 @@ export function NotificationCenter({ variant = "page" }: { variant?: "page" | "p
         </button>
       </div>
 
+      {error && (
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-warning">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <div className="flex-1">
+            Live updates unavailable — showing the last loaded data.
+            <button onClick={() => void reload()} className="ml-2 font-semibold underline">
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className={`mt-3 grid gap-2 ${variant === "popover" ? "max-h-[60vh] overflow-y-auto" : ""}`}>
         {loading && <div className="surface-card p-6 text-center text-sm text-muted-foreground">Loading…</div>}
         {!loading && items.length === 0 && (
@@ -72,6 +105,8 @@ export function NotificationCenter({ variant = "page" }: { variant?: "page" | "p
         )}
         {items.map((n) => {
           const meta = SEVERITY_META[n.severity] ?? SEVERITY_META.info;
+          const createdAt = n.created_at ? new Date(n.created_at) : null;
+          const when = createdAt && !Number.isNaN(createdAt.getTime()) ? createdAt.toLocaleString() : "";
           return (
             <div
               key={n.id}
@@ -81,10 +116,11 @@ export function NotificationCenter({ variant = "page" }: { variant?: "page" | "p
                 {meta.label}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold">{n.title}</div>
+                <div className="text-sm font-semibold">{n.title ?? "Notification"}</div>
                 {n.body && <div className="mt-0.5 text-xs text-muted-foreground">{n.body}</div>}
                 <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {n.type.replace(/_/g, " ")} · {new Date(n.created_at).toLocaleString()}
+                  {(n.type ?? "system").replace(/_/g, " ")}
+                  {when ? ` · ${when}` : ""}
                 </div>
               </div>
               {!n.read && (
@@ -107,7 +143,7 @@ export function NotificationCenter({ variant = "page" }: { variant?: "page" | "p
 /** Bell button with a live unread badge. */
 export function NotificationBell({ onClick }: { onClick: () => void }) {
   const { rows } = useRealtimeTable<AdminNotification>("admin_notifications", { limit: 200 });
-  const unread = (rows ?? []).filter((n) => !n.read).length;
+  const unread = (Array.isArray(rows) ? rows : []).filter((n) => n && !n.read).length;
   return (
     <button
       onClick={onClick}
