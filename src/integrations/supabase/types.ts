@@ -129,17 +129,23 @@ export type Database = {
         Row: {
           auto_pricing: boolean
           category: string | null
+          category_id: string | null
           created_at: string
           description: string | null
           featured: boolean
           id: string
           image_url: string | null
+          name: string | null
           price_inr: number
           product_slug: string
+          product_type: string
           sort_order: number
+          status: string
+          stock: number
           stock_status: string
           supplier_cost_inr: number
           supplier_id: string | null
+          supplier_name: string | null
           supplier_url: string | null
           tier_label: string
           updated_at: string
@@ -148,17 +154,23 @@ export type Database = {
         Insert: {
           auto_pricing?: boolean
           category?: string | null
+          category_id?: string | null
           created_at?: string
           description?: string | null
           featured?: boolean
           id?: string
           image_url?: string | null
+          name?: string | null
           price_inr?: number
           product_slug: string
+          product_type?: string
           sort_order?: number
+          status?: string
+          stock?: number
           stock_status?: string
           supplier_cost_inr?: number
           supplier_id?: string | null
+          supplier_name?: string | null
           supplier_url?: string | null
           tier_label: string
           updated_at?: string
@@ -167,23 +179,36 @@ export type Database = {
         Update: {
           auto_pricing?: boolean
           category?: string | null
+          category_id?: string | null
           created_at?: string
           description?: string | null
           featured?: boolean
           id?: string
           image_url?: string | null
+          name?: string | null
           price_inr?: number
           product_slug?: string
+          product_type?: string
           sort_order?: number
+          status?: string
+          stock?: number
           stock_status?: string
           supplier_cost_inr?: number
           supplier_id?: string | null
+          supplier_name?: string | null
           supplier_url?: string | null
           tier_label?: string
           updated_at?: string
           visible?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "catalog_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "catalog_products_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -223,6 +248,57 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_history: {
+        Row: {
+          actor_id: string | null
+          catalog_product_id: string | null
+          change: number
+          created_at: string
+          id: string
+          new_stock: number | null
+          note: string | null
+          order_id: string | null
+          reason: string
+        }
+        Insert: {
+          actor_id?: string | null
+          catalog_product_id?: string | null
+          change: number
+          created_at?: string
+          id?: string
+          new_stock?: number | null
+          note?: string | null
+          order_id?: string | null
+          reason: string
+        }
+        Update: {
+          actor_id?: string | null
+          catalog_product_id?: string | null
+          change?: number
+          created_at?: string
+          id?: string
+          new_stock?: number | null
+          note?: string | null
+          order_id?: string | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_history_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           admin_notes: string | null
@@ -230,6 +306,7 @@ export type Database = {
           amount_usd: number | null
           cashback_credited: boolean
           cashback_inr: number
+          catalog_product_id: string | null
           completed_at: string | null
           coupon_code: string | null
           created_at: string
@@ -249,6 +326,7 @@ export type Database = {
           processing_at: string | null
           product_name: string
           product_slug: string
+          quantity: number
           reason: string | null
           region: string
           rejected_at: string | null
@@ -256,6 +334,7 @@ export type Database = {
           server_id: string | null
           server_region: string | null
           status: string
+          stock_deducted: boolean
           tier_label: string
           updated_at: string
           user_id: string | null
@@ -268,6 +347,7 @@ export type Database = {
           amount_usd?: number | null
           cashback_credited?: boolean
           cashback_inr?: number
+          catalog_product_id?: string | null
           completed_at?: string | null
           coupon_code?: string | null
           created_at?: string
@@ -287,6 +367,7 @@ export type Database = {
           processing_at?: string | null
           product_name: string
           product_slug: string
+          quantity?: number
           reason?: string | null
           region?: string
           rejected_at?: string | null
@@ -294,6 +375,7 @@ export type Database = {
           server_id?: string | null
           server_region?: string | null
           status?: string
+          stock_deducted?: boolean
           tier_label: string
           updated_at?: string
           user_id?: string | null
@@ -306,6 +388,7 @@ export type Database = {
           amount_usd?: number | null
           cashback_credited?: boolean
           cashback_inr?: number
+          catalog_product_id?: string | null
           completed_at?: string | null
           coupon_code?: string | null
           created_at?: string
@@ -325,6 +408,7 @@ export type Database = {
           processing_at?: string | null
           product_name?: string
           product_slug?: string
+          quantity?: number
           reason?: string | null
           region?: string
           rejected_at?: string | null
@@ -332,13 +416,22 @@ export type Database = {
           server_id?: string | null
           server_region?: string | null
           status?: string
+          stock_deducted?: boolean
           tier_label?: string
           updated_at?: string
           user_id?: string | null
           utr?: string | null
           wallet_used_inr?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       platform_settings: {
         Row: {
@@ -450,6 +543,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_categories: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -817,6 +940,19 @@ export type Database = {
     Functions: {
       compute_cashback_inr: { Args: { amount: number }; Returns: number }
       expire_stale_orders: { Args: never; Returns: undefined }
+      get_category_stats: {
+        Args: never
+        Returns: {
+          active_products: number
+          category_id: string
+          out_of_stock_products: number
+          profit_inr: number
+          revenue_inr: number
+          total_inventory: number
+          total_products: number
+          total_sales: number
+        }[]
+      }
       get_leaderboard: {
         Args: { _limit?: number }
         Returns: {

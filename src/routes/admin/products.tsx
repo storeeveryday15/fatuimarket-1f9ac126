@@ -1,109 +1,312 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { ArrowLeft, Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeTable } from "@/hooks/use-realtime-table";
-import type { CatalogProduct, Supplier } from "@/lib/admin/types";
-import { computePricing, DEFAULT_RULES, inr } from "@/lib/admin/pricing";
-import { Plus } from "lucide-react";
+import { ProductEditor } from "@/components/admin/product-editor";
+import { inr } from "@/lib/admin/pricing";
+import {
+  fmtDate,
+  stockLabel,
+  STATUS_META,
+  type Category,
+  type CategoryStats,
+  type InventoryProduct,
+} from "@/lib/admin/inventory";
 
 export const Route = createFileRoute("/admin/products")({ component: ProductsPage });
 
-const BLANK = { product_slug: "", tier_label: "", category: "", price_inr: 0, supplier_cost_inr: 0, supplier_id: "", visible: true, featured: false, stock_status: "in_stock", auto_pricing: false, image_url: "", description: "" };
+type Filter = "all" | "active" | "hidden" | "out_of_stock" | "unlimited" | "limited";
+
+const FILTERS: Array<{ id: Filter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "active", label: "Active" },
+  { id: "hidden", label: "Hidden" },
+  { id: "out_of_stock", label: "Out of Stock" },
+  { id: "unlimited", label: "Unlimited" },
+  { id: "limited", label: "Limited" },
+];
 
 function ProductsPage() {
-  const { rows, loading } = useRealtimeTable<CatalogProduct>("catalog_products", { orderBy: "product_slug", ascending: true });
-  const { rows: suppliers } = useRealtimeTable<Supplier>("suppliers", { orderBy: "priority", ascending: true });
-  const [form, setForm] = useState({ ...BLANK });
-  const [open, setOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
+  const { rows: categories, loading: catLoading } = useRealtimeTable<Category>("product_categories", {
+    orderBy: "sort_order",
+    ascending: true,
+  });
+  const { rows: products, loading } = useRealtimeTable<InventoryProduct>("catalog_products", {
+    orderBy: "name",
+    ascending: true,
+  });
 
-  const save = async () => {
-    const payload = { ...form, supplier_id: form.supplier_id || null, category: form.category || null, image_url: form.image_url || null, description: form.description || null };
-    if (!payload.product_slug || !payload.tier_label) return toast.error("Slug and tier are required");
-    const { error } = editId
-      ? await supabase.from("catalog_products").update(payload).eq("id", editId)
-      : await supabase.from("catalog_products").insert(payload);
-    if (error) return toast.error(error.message);
-    toast.success("Saved");
-    setOpen(false);
+  const [stats, setStats] = useState<CategoryStats[]>([]);
+  const [activeCat, setActiveCat] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [editing, setEditing] = useState<InventoryProduct | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+
+  const cats = useMemo(() => categories ?? [], [categories]);
+  const items = useMemo(() => products ?? [], [products]);
+
+  useEffect(() => {
+    let alive = true;
+    supabase
+      .rpc("get_category_stats")
+      .then(({ data, error }) => {
+        if (!alive) return;
+        if (error) {
+          console.error("[admin/products] category stats failed", error);
+          return;
+        }
+        setStats((data ?? []) as CategoryStats[]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [items]);
+
+  const statFor = (id: string) => stats.find((s) => s.category_id === id);
+  const category = cats.find((c) => c.id === activeCat) ?? null;
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return items.filter((p) => {
+      if (activeCat && p.category_id !== activeCat) return false;
+      if (filter === "active" && p.status !== "active") return false;
+      if (filter === "hidden" && p.status !== "hidden") return false;
+      if (filter === "out_of_stock" && p.status !== "out_of_stock") return false;
+      if (filter === "limited" && p.product_type !== "limited") return false;
+      if (filter === "unlimited" && p.product_type !== "unlimited") return false;
+      if (!q) return true;
+      const catName = cats.find((c) => c.id === p.category_id)?.name ?? p.category ?? "";
+      return (
+        (p.name ?? p.tier_label).toLowerCase().includes(q) ||
+        p.tier_label.toLowerCase().includes(q) ||
+        catName.toLowerCase().includes(q)
+      );
+    });
+  }, [items, activeCat, filter, search, cats]);
+
+  const openNew = () => {
+    setEditing(null);
+    setEditorOpen(true);
   };
 
-  const patch = async (id: string, p: Partial<CatalogProduct>) => {
-    const { error } = await supabase.from("catalog_products").update(p).eq("id", id);
+  const quickStatus = async (p: InventoryProduct, status: string) => {
+    const { error } = await supabase.from("catalog_products").update({ status }).eq("id", p.id);
     if (error) toast.error(error.message);
   };
 
-  return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-bold">Products</h2>
-        <button onClick={() => { setForm({ ...BLANK }); setEditId(null); setOpen(true); }} className="inline-flex items-center gap-1.5 rounded-xl bg-[image:var(--gradient-primary)] px-4 py-2 text-sm font-semibold text-primary-foreground"><Plus className="h-4 w-4" /> Add product</button>
-      </div>
-
-      {loading && <div className="surface-card p-10 text-center text-sm text-muted-foreground">Loading catalog…</div>}
-      {!loading && (rows ?? []).length === 0 && (
-        <div className="surface-card p-10 text-center text-sm text-muted-foreground">No catalog entries yet. Add your SKUs with supplier cost to unlock profit tracking and the price engine.</div>
-      )}
-
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <table className="w-full text-sm">
-          <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
-            <tr><th className="px-3 py-3">SKU</th><th className="px-3 py-3">Cost</th><th className="px-3 py-3">Price</th><th className="px-3 py-3">Profit</th><th className="px-3 py-3">Stock</th><th className="px-3 py-3">Flags</th><th className="px-3 py-3">Actions</th></tr>
-          </thead>
-          <tbody>
-            {(rows ?? []).map((p) => {
-              const calc = computePricing(Number(p.supplier_cost_inr), Number(p.price_inr), DEFAULT_RULES);
-              return (
-                <tr key={p.id} className="border-t border-border">
-                  <td className="px-3 py-3"><div className="font-semibold">{p.product_slug}</div><div className="text-xs text-muted-foreground">{p.tier_label}</div></td>
-                  <td className="px-3 py-3">{inr(p.supplier_cost_inr)}</td>
-                  <td className="px-3 py-3 font-semibold">{inr(p.price_inr)}</td>
-                  <td className={`px-3 py-3 font-semibold ${calc.profit < 0 ? "text-destructive" : "text-success"}`}>{inr(calc.profit)}<div className="text-[11px] font-normal text-muted-foreground">{calc.profitPct.toFixed(1)}%</div></td>
-                  <td className="px-3 py-3 text-xs">{p.stock_status.replace(/_/g, " ")}</td>
-                  <td className="px-3 py-3 text-xs">
-                    <label className="mr-2"><input type="checkbox" checked={p.visible} onChange={(e) => patch(p.id, { visible: e.target.checked })} /> visible</label>
-                    <label className="mr-2"><input type="checkbox" checked={p.featured} onChange={(e) => patch(p.id, { featured: e.target.checked })} /> featured</label>
-                    <label><input type="checkbox" checked={p.auto_pricing} onChange={(e) => patch(p.id, { auto_pricing: e.target.checked })} /> auto</label>
-                  </td>
-                  <td className="px-3 py-3">
-                    <button onClick={() => { setForm({ product_slug: p.product_slug, tier_label: p.tier_label, category: p.category ?? "", price_inr: Number(p.price_inr), supplier_cost_inr: Number(p.supplier_cost_inr), supplier_id: p.supplier_id ?? "", visible: p.visible, featured: p.featured, stock_status: p.stock_status, auto_pricing: p.auto_pricing, image_url: p.image_url ?? "", description: p.description ?? "" }); setEditId(p.id); setOpen(true); }} className="rounded-md border border-border px-2 py-1 text-[11px] hover:bg-secondary">Edit</button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {open && (
-        <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setOpen(false)}>
-          <div className="flex-1 bg-black/50" />
-          <div className="h-full w-full max-w-lg overflow-y-auto bg-card p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="text-lg font-bold">{editId ? "Edit product" : "New product"}</div>
-            <div className="mt-4 grid gap-3 [&_input]:w-full [&_input]:rounded-lg [&_input]:border [&_input]:border-input [&_input]:bg-background [&_input]:px-3 [&_input]:py-2 [&_input]:text-sm [&_select]:w-full [&_select]:rounded-lg [&_select]:border [&_select]:border-input [&_select]:bg-background [&_select]:px-3 [&_select]:py-2 [&_select]:text-sm [&_textarea]:w-full [&_textarea]:rounded-lg [&_textarea]:border [&_textarea]:border-input [&_textarea]:bg-background [&_textarea]:px-3 [&_textarea]:py-2 [&_textarea]:text-sm">
-              <input placeholder="Product slug (e.g. mobile-legends)" value={form.product_slug} onChange={(e) => setForm({ ...form, product_slug: e.target.value })} />
-              <input placeholder="Tier label (e.g. Weekly Pass)" value={form.tier_label} onChange={(e) => setForm({ ...form, tier_label: e.target.value })} />
-              <input placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-              <input placeholder="Image URL" value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} />
-              <textarea rows={3} placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-              <input type="number" placeholder="Supplier cost" value={form.supplier_cost_inr} onChange={(e) => setForm({ ...form, supplier_cost_inr: Number(e.target.value) })} />
-              <input type="number" placeholder="Selling price" value={form.price_inr} onChange={(e) => setForm({ ...form, price_inr: Number(e.target.value) })} />
-              <select value={form.supplier_id} onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}>
-                <option value="">No supplier</option>
-                {(suppliers ?? []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-              <select value={form.stock_status} onChange={(e) => setForm({ ...form, stock_status: e.target.value })}>
-                <option value="in_stock">In stock</option><option value="low_stock">Low stock</option><option value="out_of_stock">Out of stock</option>
-              </select>
-            </div>
-            <div className="mt-5 flex gap-2">
-              <button onClick={save} className="rounded-xl bg-[image:var(--gradient-primary)] px-4 py-2 text-sm font-semibold text-primary-foreground">Save</button>
-              <button onClick={() => setOpen(false)} className="rounded-xl border border-border px-4 py-2 text-sm">Cancel</button>
-            </div>
+  // ---- Category grid -------------------------------------------------------
+  if (!activeCat) {
+    return (
+      <div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-xl font-bold">Inventory &amp; Products</h2>
+            <p className="text-sm text-muted-foreground">Pick a category to manage its products.</p>
+          </div>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search products or categories…"
+              className="w-64 rounded-xl border border-input bg-background py-2 pl-9 pr-3 text-sm"
+            />
           </div>
         </div>
+
+        {search.trim() && (
+          <div className="mb-6 overflow-hidden rounded-xl border border-border">
+            <ProductTable
+              rows={visible}
+              cats={cats}
+              onEdit={(p) => {
+                setEditing(p);
+                setEditorOpen(true);
+              }}
+              onStatus={quickStatus}
+            />
+          </div>
+        )}
+
+        {catLoading && <div className="surface-card p-10 text-center text-sm text-muted-foreground">Loading categories…</div>}
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {cats.map((c) => {
+            const s = statFor(c.id);
+            return (
+              <button
+                key={c.id}
+                onClick={() => setActiveCat(c.id)}
+                className="surface-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-[var(--shadow-elegant)]"
+              >
+                <div className="text-base font-bold">{c.name}</div>
+                <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                  <Stat label="Products" value={String(s?.total_products ?? 0)} />
+                  <Stat label="Active" value={String(s?.active_products ?? 0)} />
+                  <Stat label="Out of stock" value={String(s?.out_of_stock_products ?? 0)} />
+                  <Stat label="Inventory" value={String(s?.total_inventory ?? 0)} />
+                  <Stat label="Sales" value={String(s?.total_sales ?? 0)} />
+                  <Stat label="Revenue" value={inr(Number(s?.revenue_inr ?? 0))} />
+                  <Stat label="Profit" value={inr(Number(s?.profit_inr ?? 0))} />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <ProductEditor
+          open={editorOpen}
+          onClose={() => setEditorOpen(false)}
+          product={editing}
+          category={null}
+          categories={cats}
+        />
+      </div>
+    );
+  }
+
+  // ---- Product list for one category --------------------------------------
+  return (
+    <div>
+      <button onClick={() => setActiveCat(null)} className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" /> All categories
+      </button>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-xl font-bold">{category?.name}</h2>
+        <button onClick={openNew} className="inline-flex items-center gap-1.5 rounded-xl bg-[image:var(--gradient-primary)] px-4 py-2 text-sm font-semibold text-primary-foreground">
+          <Plus className="h-4 w-4" /> Add product
+        </button>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search product name…"
+            className="w-64 rounded-xl border border-input bg-background py-2 pl-9 pr-3 text-sm"
+          />
+        </div>
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+              filter === f.id ? "border-[var(--neon)]/60 bg-[var(--neon)]/10" : "border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {loading && <div className="surface-card p-10 text-center text-sm text-muted-foreground">Loading products…</div>}
+      {!loading && visible.length === 0 && (
+        <div className="surface-card p-10 text-center text-sm text-muted-foreground">
+          No products in this category yet. Use “Add product” to create the first one.
+        </div>
       )}
+
+      {visible.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <ProductTable
+            rows={visible}
+            cats={cats}
+            onEdit={(p) => {
+              setEditing(p);
+              setEditorOpen(true);
+            }}
+            onStatus={quickStatus}
+          />
+        </div>
+      )}
+
+      <ProductEditor
+        open={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        product={editing}
+        category={category}
+        categories={cats}
+      />
     </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function ProductTable({
+  rows,
+  cats,
+  onEdit,
+  onStatus,
+}: {
+  rows: InventoryProduct[];
+  cats: Category[];
+  onEdit: (p: InventoryProduct) => void;
+  onStatus: (p: InventoryProduct, status: string) => void;
+}) {
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
+        <tr>
+          <th className="px-3 py-3">Product</th>
+          <th className="px-3 py-3">Price</th>
+          <th className="px-3 py-3">Stock</th>
+          <th className="px-3 py-3">Type</th>
+          <th className="px-3 py-3">Status</th>
+          <th className="px-3 py-3">Last updated</th>
+          <th className="px-3 py-3" />
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((p) => {
+          const meta = STATUS_META[p.status] ?? STATUS_META["hidden"]!;
+          const catName = cats.find((c) => c.id === p.category_id)?.name ?? p.category ?? "—";
+          const limited = p.product_type === "limited";
+          return (
+            <tr key={p.id} className="border-t border-border">
+              <td className="px-3 py-3">
+                <div className="font-semibold">{p.name ?? p.tier_label}</div>
+                <div className="text-xs text-muted-foreground">{catName}</div>
+              </td>
+              <td className="px-3 py-3 font-semibold">{inr(p.price_inr)}</td>
+              <td className={`px-3 py-3 tabular-nums ${limited && p.stock <= 0 ? "text-destructive" : limited && p.stock < 100 ? "text-warning" : ""}`}>
+                {stockLabel(p)}
+              </td>
+              <td className="px-3 py-3 text-xs capitalize">{limited ? "Limited" : "Unlimited"}</td>
+              <td className="px-3 py-3">
+                <select
+                  value={p.status}
+                  onChange={(e) => onStatus(p, e.target.value)}
+                  className={`rounded-md px-2 py-1 text-[11px] font-semibold ${meta.className}`}
+                >
+                  <option value="active">Active</option>
+                  <option value="hidden">Hidden</option>
+                  <option value="out_of_stock">Out of Stock</option>
+                </select>
+              </td>
+              <td className="px-3 py-3 text-xs text-muted-foreground">{fmtDate(p.updated_at)}</td>
+              <td className="px-3 py-3">
+                <button onClick={() => onEdit(p)} className="rounded-md border border-border px-2 py-1 text-[11px] hover:bg-secondary">
+                  Edit
+                </button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }

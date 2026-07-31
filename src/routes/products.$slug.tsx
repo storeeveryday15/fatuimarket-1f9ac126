@@ -18,6 +18,8 @@ import { z } from "zod";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsList } from "@/components/reviews-list";
 import { notifyOrder } from "@/lib/notify-order";
+import { useProductStock } from "@/hooks/use-product-stock";
+
 
 
 export const Route = createFileRoute("/products/$slug")({
@@ -165,6 +167,9 @@ function ProductPage() {
     return true;
   })();
 
+  const stockInfo = useProductStock(product.slug, selected.label);
+
+
   const copyUid = async () => {
     if (!playerId.trim()) return toast.error("Enter your UID first");
     try { await navigator.clipboard.writeText(playerId.trim()); toast.success("UID copied"); } catch { toast.error("Copy failed"); }
@@ -226,6 +231,8 @@ function ProductPage() {
         coupon_code: couponApplied ? "WELCOME2FATUI" : null,
         discount_inr: discountInr,
         wallet_used_inr: walletApplyInr,
+        quantity: qty,
+        catalog_product_id: stockInfo.productId,
       } as never);
       if (error) throw error;
       void notifyOrder(code, "created");
@@ -383,6 +390,12 @@ function ProductPage() {
                   );
                 })}
               </div>
+              {stockInfo.tracked && stockInfo.label && (
+                <div className={cn("mt-3 inline-flex rounded-lg px-3 py-1.5 text-xs font-semibold", stockInfo.soldOut ? "bg-destructive/15 text-destructive" : stockInfo.low ? "bg-warning/15 text-warning" : "bg-success/15 text-success")}>
+                  {stockInfo.label}
+                </div>
+              )}
+
               <div className="mt-5 flex items-center justify-between rounded-xl border border-border bg-background/40 p-3">
                 <div>
                   <div className="text-xs font-medium text-muted-foreground">Quantity</div>
@@ -428,9 +441,10 @@ function ProductPage() {
               </div>
             </div>
 
-            <button type="button" disabled={placing || !filled} onClick={continueToPayment} className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform hover:scale-[1.01] disabled:opacity-50">
-              {placing ? "Creating order…" : <>Continue to payment <ArrowRight className="h-4 w-4" /></>}
+            <button type="button" disabled={placing || !filled || stockInfo.soldOut} onClick={continueToPayment} className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform hover:scale-[1.01] disabled:opacity-50">
+              {stockInfo.soldOut ? "Out of Stock" : placing ? "Creating order…" : <>Continue to payment <ArrowRight className="h-4 w-4" /></>}
             </button>
+
 
             <div className="mt-3 grid grid-cols-2 gap-2">
               <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-3 py-2.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20">
