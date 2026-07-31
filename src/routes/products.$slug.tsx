@@ -18,6 +18,8 @@ import { z } from "zod";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsList } from "@/components/reviews-list";
 import { notifyOrder } from "@/lib/notify-order";
+import { useProductStock } from "@/hooks/use-product-stock";
+
 
 
 export const Route = createFileRoute("/products/$slug")({
