@@ -165,6 +165,9 @@ function ProductPage() {
     return true;
   })();
 
+  const stockInfo = useProductStock(product.slug, selected.label);
+
+
   const copyUid = async () => {
     if (!playerId.trim()) return toast.error("Enter your UID first");
     try { await navigator.clipboard.writeText(playerId.trim()); toast.success("UID copied"); } catch { toast.error("Copy failed"); }
