@@ -231,6 +231,8 @@ function ProductPage() {
         coupon_code: couponApplied ? "WELCOME2FATUI" : null,
         discount_inr: discountInr,
         wallet_used_inr: walletApplyInr,
+        quantity: qty,
+        catalog_product_id: stockInfo.productId,
       } as never);
       if (error) throw error;
       void notifyOrder(code, "created");

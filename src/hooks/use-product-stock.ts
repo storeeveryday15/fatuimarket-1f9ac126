@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { availability, type InventoryProduct } from "@/lib/admin/inventory";
 
-export type StockInfo = ReturnType<typeof availability> & { tracked: boolean };
+export type StockInfo = ReturnType<typeof availability> & { tracked: boolean; productId: string | null };
 
-const UNTRACKED: StockInfo = { soldOut: false, label: "", low: false, tracked: false };
+const UNTRACKED: StockInfo = { soldOut: false, label: "", low: false, tracked: false, productId: null };
 
 /**
  * Customer-side stock lookup for a product slug.
@@ -14,13 +14,13 @@ const UNTRACKED: StockInfo = { soldOut: false, label: "", low: false, tracked: f
  * stock badge and the payment button automatically.
  */
 export function useProductStock(productSlug: string, tierLabel: string): StockInfo {
-  const [rows, setRows] = useState<Pick<InventoryProduct, "tier_label" | "name" | "product_type" | "stock" | "status">[]>([]);
+  const [rows, setRows] = useState<Pick<InventoryProduct, "id" | "tier_label" | "name" | "product_type" | "stock" | "status">[]>([]);
 
   useEffect(() => {
     let alive = true;
     supabase
       .from("catalog_products")
-      .select("tier_label,name,product_type,stock,status")
+      .select("id,tier_label,name,product_type,stock,status")
       .eq("product_slug", productSlug)
       .then(({ data, error }) => {
         if (!alive) return;
@@ -37,5 +37,5 @@ export function useProductStock(productSlug: string, tierLabel: string): StockIn
 
   const match = rows.find((r) => r.tier_label === tierLabel || r.name === tierLabel);
   if (!match) return UNTRACKED;
-  return { ...availability(match), tracked: true };
+  return { ...availability(match), tracked: true, productId: match.id };
 }
