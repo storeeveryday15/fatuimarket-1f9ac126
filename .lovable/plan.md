@@ -1,38 +1,56 @@
-## What's actually broken
+# Fatui AI Assistant, Announcements & Smart Notifications
 
-Reproduced in a real browser session at `/admin/notifications`. The page throws:
+A large build, split into four shippable phases. Each phase works on its own, so we can stop or reorder after any of them.
 
-```text
-Error: cannot add `postgres_changes` callbacks for realtime:realtime:admin_notifications
-after `subscribe()`.   at src/hooks/use-realtime-table.ts
-```
+## Phase 1 — Fatui AI Assistant (site-wide)
 
-The error escapes to the root error boundary in `src/routes/__root.tsx`, which renders "This page didn't load".
+A customer-facing assistant reachable from every page, added as a new panel in the existing orbital floating menu (the "Live Chat" slot).
 
-Cause: the admin layout renders `NotificationBell`, and the page renders `NotificationCenter`. Both call `useRealtimeTable("admin_notifications")`, and that hook always names its channel `realtime:<table>`. Supabase-js returns the already-subscribed channel for that topic, and calling `.on("postgres_changes", ...)` on an already-subscribed channel throws. Opening the bell popover (a third mount) makes it worse. Same latent bug exists anywhere two components watch the same table.
+- Single conversation, kept in the browser only (no login required, no chat history database). Cleared with a "New chat" button.
+- Streams answers from Lovable AI (Gemini 3.6 Flash) through a server route, so no keys ever reach the browser.
+- Knowledge the assistant is given on every request:
+  - Store policy pack: how ordering works, delivery times, refunds, payment methods (UPI/card/netbanking/wallet), coupons, wallet top-ups, order tracking, login, support channels, business hours, international payments, pricing changes, safety.
+  - Live catalog: product names, tiers, public prices, stock status, and per-game server/region lists, read from the database at request time so answers never go stale.
+  - Per-game guides: required account details (e.g. MLBB Zone + Server ID vs Genshin UID + region), recharge steps, delivery expectations, common issues.
+  - Latest cached game news (Phase 2).
+- Safety: the server prompt is built only from public data. Supplier costs, admin notes, secrets, other customers' data, and internal tables are never queried on this path.
+- Order lookup: if a signed-in customer asks about their order, the assistant can look up only that customer's own orders.
 
-Ruled out: the `admin_notifications` table exists, RLS is a correct admin-only policy, SSR of the route returns 200, imports and the route file are fine, and an empty table is not the trigger.
+## Phase 2 — Game news system
 
-## Fix
+- `game_news` table: game slug, category (event, banner, skin, hero, patch, codes, pass), title, summary, source URL, published date.
+- A scheduled job refreshes news every 6 hours from official sources, summarises with AI, and stores the results. Nothing is fetched on page load — pages read the cached rows.
+- Powers both the assistant's "what's new in X" answers and the Smart Notifications in Phase 4.
+- A small "Latest in <game>" strip on each product page.
 
-1. `src/hooks/use-realtime-table.ts`
-   - Give every hook instance a unique channel topic (`realtime:<table>:<useId()/random>`) so two components never collide on one channel.
-   - Wrap the initial fetch and the channel setup/teardown in try/catch; on failure set an error message, `console.error` it, and still leave the hook in a resolved (non-loading) state so the UI renders instead of throwing.
-   - Handle subscribe status callbacks (`CHANNEL_ERROR`, `TIMED_OUT`) by logging and degrading to the already-fetched data — no throw.
-   - Never leave `rows` as `null` after a failed fetch (use `[]`) so consumers show the empty state, not a crash.
+## Phase 3 — Announcement Center + Notification Inbox
 
-2. `src/components/admin/notification-center.tsx`
-   - Defensive rendering: tolerate null/undefined `title`, `body`, `type`, and unknown `severity`.
-   - Keep the existing loading state, keep "No notifications yet" for the empty case, and add a small non-fatal banner when `error` is set ("Live updates unavailable — showing last loaded data").
-   - `markRead` / `markAllRead`: surface errors via `console.error` + a toast instead of silently failing.
-   - `NotificationBell`: badge computed defensively from a possibly-empty list.
+Admin side (new `/admin/announcements` page):
 
-3. `src/routes/admin/notifications.tsx`
-   - Add a route-level `errorComponent` (and `notFoundComponent`) so any future failure in this subtree renders a contained retry card instead of blanking the whole app via the root boundary.
-   - Add a page `head()` with a proper title/description.
+- Create announcements of type text, image, banner, emergency, maintenance, coupon, flash sale, event.
+- Fields: title, description, image upload, button text, button link, target games, start date, end date, priority, status (draft/published), plus a live preview.
+- Homepage banner slider becomes database-driven: unlimited banners with image, title, subtitle, button, schedule, priority and target game — replacing today's hardcoded slides.
 
-No database migration is needed — schema, grants and RLS are already correct.
+Customer side:
 
-## Verification
+- Announcements render on the homepage, on matching product pages, and in the dashboard, filtered by date window, priority and target game.
+- Notification Center inbox at `/notifications` with categories Orders, Events, Sales, Maintenance, Coupons, System, and an unread badge in the header.
+- Order status changes automatically create inbox entries.
 
-Re-run the authenticated browser check on `/admin/notifications`: the page must render the list (or the empty state) with zero page errors, and opening the bell popover while on the notifications page must not throw.
+## Phase 4 — Smart notifications & preferences
+
+- Each customer's purchased games are derived from their order history; promotional notifications only go to customers who bought that game.
+- Frequency caps: at most 1 promotional email per customer per month; order emails and emergency announcements are uncapped.
+- Account Settings gains toggles for Email, Push notifications and Store announcements; every send checks them.
+- Email sending uses the project's email infrastructure; if no sender domain is set up yet, in-app inbox notifications ship first and email switches on once the domain is verified.
+
+## Technical notes
+
+- New tables: `game_news`, `announcements`, `banners`, `notifications`, `notification_preferences`. All with row-level security: customers read only their own inbox rows and published announcements; only admins write.
+- Images for announcements/banners go to a public storage bucket with admin-only writes.
+- Assistant and news refresh run as TanStack server functions / server routes; the news refresh is triggered on a schedule.
+- The assistant's system prompt is assembled server-side from a public-data query only, and product cost/supplier columns are excluded at the query level, not just by prompt instruction.
+
+## Suggested order
+
+Phase 1 first (biggest customer-visible win), then 3, then 2, then 4 — since smart notifications depend on both the news feed and the inbox.
