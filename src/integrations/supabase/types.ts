@@ -1372,6 +1372,7 @@ export type Database = {
           amount_inr: number | null
           created_at: string | null
           currency: string | null
+          masked_buyer: string | null
           order_code: string | null
           product_name: string | null
           status: string | null
@@ -1510,6 +1511,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_verified_buyer: { Args: { _user_id: string }; Returns: boolean }
       rate_assistant_chat: {
         Args: { _chat_id: string; _rating: number }
         Returns: undefined

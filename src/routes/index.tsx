@@ -6,7 +6,7 @@ import { ReviewForm } from "@/components/review-form";
 import { BannerSlider } from "@/components/banner-slider";
 import { TopCustomers } from "@/components/top-customers";
 import { OrderStats } from "@/components/order-stats";
-import { RecentPurchases } from "@/components/recent-purchases";
+
 import { ProductExplorer } from "@/components/product-explorer";
 import { RecentlyViewedRail, RecommendedRail } from "@/components/product-rails";
 
@@ -54,13 +54,11 @@ function Home() {
         <OrderStats />
       </section>
 
-      {/* Top customers + recent purchases */}
+      {/* Top customers */}
       <section className="container mx-auto max-w-7xl px-4 py-12 md:py-16">
-        <div className="grid gap-6 lg:grid-cols-[1.2fr,1fr]">
-          <TopCustomers />
-          <RecentPurchases />
-        </div>
+        <TopCustomers />
       </section>
+
 
       {/* Products */}
       <section id="products" className="container mx-auto max-w-7xl px-4 py-16 md:py-20">
