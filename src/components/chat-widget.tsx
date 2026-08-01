@@ -65,16 +65,21 @@ type Orbit = {
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [msgs, setMsgs] = useState<Msg[]>([
-    { role: "bot", text: "Hi! I'm Fatui Bot 🤖. Ask about pricing, delivery, payments, or refunds." },
-  ]);
+  const [msgs, setMsgs] = useState<Msg[]>([GREETING]);
   const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const ask = useServerFn(askFatuiAssistant);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs, chatOpen]);
+
+  useEffect(() => {
+    if (chatOpen && !busy) inputRef.current?.focus();
+  }, [chatOpen, busy]);
 
   // Close orbital menu on outside click / Escape
   useEffect(() => {
@@ -94,21 +99,45 @@ export function ChatWidget() {
   }, [open]);
 
   const send = async (text: string) => {
-    if (!text.trim()) return;
-    const next: Msg[] = [...msgs, { role: "user", text }];
+    const q = text.trim();
+    if (!q || busy) return;
+    const next: Msg[] = [...msgs, { role: "user", text: q }];
     setMsgs(next);
     setInput("");
-    setTimeout(() => setMsgs((m) => [...m, { role: "bot", text: reply(text) }]), 350);
-    if (/human|agent|support|paid|refund|issue|problem/i.test(text)) {
+    setBusy(true);
+
+    try {
+      const orderContext = await ownOrderContext().catch(() => undefined);
+      const history = next
+        .filter((m) => m !== GREETING)
+        .slice(-16)
+        .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.text }));
+      const { reply } = await ask({ data: { messages: history, orderContext } });
+      setMsgs((m) => [...m, { role: "bot", text: reply }]);
+    } catch (err) {
+      console.error("[ChatWidget] assistant failed", err);
+      setMsgs((m) => [
+        ...m,
+        {
+          role: "bot",
+          text: `${err instanceof Error ? err.message : "Something went wrong."} You can also reach a human here: ${WHATSAPP_LINK}`,
+        },
+      ]);
+    } finally {
+      setBusy(false);
+    }
+
+    if (/human|agent|support|paid|refund|issue|problem/i.test(q)) {
       const { data: u } = await supabase.auth.getUser();
       await supabase.from("support_messages").insert({
         user_id: u.user?.id ?? null,
         name: u.user?.email ?? "Guest",
         contact: u.user?.email ?? null,
-        message: text,
+        message: q,
       });
     }
   };
+
 
   const orbits: Orbit[] = [
     {
