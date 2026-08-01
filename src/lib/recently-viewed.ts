@@ -28,6 +28,15 @@ export function recordProductView(slug: string, tier?: string) {
   } catch {
     /* storage may be unavailable (private mode) — viewing history is optional */
   }
+  // Anonymous view analytics for the admin dashboard (no personal data).
+  void supabase
+    .rpc("record_product_view", {
+      _product_slug: slug,
+      _tier_label: tier ?? null,
+      _session_id: getVisitorSessionId() || null,
+      _device_type: getDeviceType(),
+    })
+    .then(undefined, () => undefined);
   window.dispatchEvent(new Event(EVENT));
 }
 
