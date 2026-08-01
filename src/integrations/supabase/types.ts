@@ -1372,6 +1372,7 @@ export type Database = {
           amount_inr: number | null
           created_at: string | null
           currency: string | null
+          masked_buyer: string | null
           order_code: string | null
           product_name: string | null
           status: string | null
