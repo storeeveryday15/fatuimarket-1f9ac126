@@ -107,6 +107,69 @@ export type Database = {
         }
         Relationships: []
       }
+      announcements: {
+        Row: {
+          button_link: string | null
+          button_text: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          emailed_at: string | null
+          ends_at: string | null
+          id: string
+          image_url: string | null
+          placements: string[]
+          priority: number
+          send_email: boolean
+          starts_at: string
+          status: string
+          target_games: string[]
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          button_link?: string | null
+          button_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          emailed_at?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          placements?: string[]
+          priority?: number
+          send_email?: boolean
+          starts_at?: string
+          status?: string
+          target_games?: string[]
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          button_link?: string | null
+          button_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          emailed_at?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          placements?: string[]
+          priority?: number
+          send_email?: boolean
+          starts_at?: string
+          status?: string
+          target_games?: string[]
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_config: {
         Row: {
           key: string
@@ -122,6 +185,54 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: string
+        }
+        Relationships: []
+      }
+      banners: {
+        Row: {
+          active: boolean
+          button_link: string | null
+          button_text: string | null
+          created_at: string
+          ends_at: string | null
+          id: string
+          image_url: string
+          priority: number
+          starts_at: string
+          subtitle: string
+          target_game: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          button_link?: string | null
+          button_text?: string | null
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          image_url: string
+          priority?: number
+          starts_at?: string
+          subtitle?: string
+          target_game?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          button_link?: string | null
+          button_text?: string | null
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          image_url?: string
+          priority?: number
+          starts_at?: string
+          subtitle?: string
+          target_game?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -257,6 +368,42 @@ export type Database = {
         }
         Relationships: []
       }
+      game_news: {
+        Row: {
+          category: string
+          created_at: string
+          game_slug: string
+          id: string
+          published_at: string
+          source_url: string | null
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          game_slug: string
+          id?: string
+          published_at?: string
+          source_url?: string | null
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          game_slug?: string
+          id?: string
+          published_at?: string
+          source_url?: string | null
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       game_servers: {
         Row: {
           active: boolean
@@ -344,6 +491,86 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          announcements_enabled: boolean
+          created_at: string
+          email_enabled: boolean
+          last_promo_email_at: string | null
+          push_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          announcements_enabled?: boolean
+          created_at?: string
+          email_enabled?: boolean
+          last_promo_email_at?: string | null
+          push_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          announcements_enabled?: boolean
+          created_at?: string
+          email_enabled?: boolean
+          last_promo_email_at?: string | null
+          push_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          announcement_id: string | null
+          body: string
+          category: string
+          created_at: string
+          game_slug: string | null
+          id: string
+          image_url: string | null
+          link: string | null
+          read: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id?: string | null
+          body?: string
+          category?: string
+          created_at?: string
+          game_slug?: string | null
+          id?: string
+          image_url?: string | null
+          link?: string | null
+          read?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string | null
+          body?: string
+          category?: string
+          created_at?: string
+          game_slug?: string | null
+          id?: string
+          image_url?: string | null
+          link?: string | null
+          read?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
             referencedColumns: ["id"]
           },
         ]
