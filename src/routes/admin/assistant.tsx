@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { askAdminAssistant, generateAiReport } from "@/lib/admin.functions";
 import { Bot, Send, FileText } from "lucide-react";
+import { CustomerAiPanel } from "@/components/admin/customer-ai-panel";
 
 export const Route = createFileRoute("/admin/assistant")({ component: AssistantPage });
 
@@ -81,6 +82,10 @@ function AssistantPage() {
         <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about orders, revenue, margins, suppliers…" className="flex-1 rounded-xl border border-input bg-background px-4 py-3 text-sm" />
         <button disabled={busy} className="rounded-xl bg-[image:var(--gradient-primary)] px-4 text-primary-foreground disabled:opacity-50"><Send className="h-4 w-4" /></button>
       </form>
+
+      <div className="mt-6 border-t border-border pt-6">
+        <CustomerAiPanel />
+      </div>
     </div>
   );
 }

@@ -188,6 +188,96 @@ export type Database = {
         }
         Relationships: []
       }
+      assistant_chats: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          question: string
+          rating: number | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          id?: string
+          question: string
+          rating?: number | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          question?: string
+          rating?: number | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      assistant_faqs: {
+        Row: {
+          active: boolean
+          answer: string
+          category: string
+          created_at: string
+          id: string
+          question: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          answer: string
+          category?: string
+          created_at?: string
+          id?: string
+          question: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          answer?: string
+          category?: string
+          created_at?: string
+          id?: string
+          question?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      assistant_settings: {
+        Row: {
+          enabled: boolean
+          extra_instructions: string | null
+          id: number
+          supported_games: string[]
+          updated_at: string
+          welcome_message: string
+        }
+        Insert: {
+          enabled?: boolean
+          extra_instructions?: string | null
+          id?: number
+          supported_games?: string[]
+          updated_at?: string
+          welcome_message?: string
+        }
+        Update: {
+          enabled?: boolean
+          extra_instructions?: string | null
+          id?: number
+          supported_games?: string[]
+          updated_at?: string
+          welcome_message?: string
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           active: boolean
@@ -1347,6 +1437,16 @@ export type Database = {
       }
       compute_cashback_inr: { Args: { amount: number }; Returns: number }
       expire_stale_orders: { Args: never; Returns: undefined }
+      get_assistant_stats: {
+        Args: never
+        Returns: {
+          chats_today: number
+          negative: number
+          positive: number
+          satisfaction: number
+          total_chats: number
+        }[]
+      }
       get_category_stats: {
         Args: never
         Returns: {
@@ -1393,6 +1493,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      rate_assistant_chat: {
+        Args: { _chat_id: string; _rating: number }
+        Returns: undefined
       }
     }
     Enums: {
