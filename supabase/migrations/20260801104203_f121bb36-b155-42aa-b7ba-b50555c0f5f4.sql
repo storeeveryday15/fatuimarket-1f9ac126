@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS catalog_products_slug_tier_uidx ON public.catalog_products (product_slug, tier_label);
