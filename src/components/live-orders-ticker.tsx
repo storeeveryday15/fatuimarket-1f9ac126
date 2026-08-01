@@ -38,7 +38,8 @@ export function LiveOrdersTicker() {
       .channel("ticker-orders")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => fetchRows())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const poll = setInterval(fetchRows, 20000);
+    return () => { supabase.removeChannel(ch); clearInterval(poll); };
   }, []);
 
   if (rows.length === 0) return null;

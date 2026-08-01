@@ -1362,6 +1362,7 @@ export type Database = {
           currency: string | null
           order_code: string | null
           product_name: string | null
+          status: string | null
           tier_label: string | null
         }
         Relationships: []

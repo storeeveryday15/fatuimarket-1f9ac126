@@ -47,7 +47,8 @@ export function RecentPurchases() {
       .channel("recent-purchases")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => fetchRows())
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const poll = setInterval(fetchRows, 20000);
+    return () => { supabase.removeChannel(ch); clearInterval(poll); };
   }, []);
 
   return (
