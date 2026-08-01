@@ -73,64 +73,10 @@ function Home() {
           </div>
         </div>
 
-        <div className="stagger-grid mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {PRODUCTS.map((p) => {
-            const minInr = Math.min(
-              ...p.denominations.map((d) => d.priceINR ?? Math.round(d.price * 83))
-            );
-            const state = catalog.gameState(p.slug);
-            return (
-              <Link
-                key={p.slug}
-                to="/products/$slug"
-                params={{ slug: p.slug }}
-                className="group surface-card card-lift ripple relative overflow-hidden"
-              >
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  <img
-                    src={p.image}
-                    alt={`${p.name} top-up card`}
-                    loading="lazy"
-                    decoding="async"
-                    width={800}
-                    height={600}
-                    className={`h-full w-full object-cover object-center duration-700 ease-out group-hover:scale-110 ${stockImageClass(state)}`}
-                  />
-
-                  {/* Dark overlay 50% for readable text on any art */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
-                  <StockOverlay state={state} size="lg" />
-                  <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur">
-                    {p.publisher}
-                  </span>
-                  {/* Text overlay */}
-                  <div className="absolute inset-x-0 bottom-0 p-4">
-                    <h3 className="text-xl font-extrabold text-white drop-shadow-lg">{p.name}</h3>
-                    <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-[var(--neon)]">
-                      {p.currency}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-4">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Starting from</div>
-                    <div className="text-base font-bold text-foreground">₹{minInr}</div>
-                  </div>
-                  {state.blocked ? (
-                    <span className="inline-flex items-center gap-1 rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-semibold text-muted-foreground">
-                      {state.label}
-                    </span>
-                  ) : (
-                    <span className="btn-shine soft-pulse inline-flex items-center gap-1 rounded-lg bg-[image:var(--gradient-primary)] bg-[length:200%_200%] px-3 py-2 text-xs font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform group-hover:translate-x-0.5">
-                      Top Up <ArrowRight className="h-3.5 w-3.5" />
-                    </span>
-                  )}
-
-                </div>
-              </Link>
-            );
-          })}
+        <div className="mt-8">
+          <ProductExplorer />
         </div>
+
 
       </section>
 
