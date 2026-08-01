@@ -1034,19 +1034,31 @@ export type Database = {
       }
       site_visitors: {
         Row: {
+          country: string | null
+          device_type: string | null
           first_seen_at: string
           last_seen_at: string
+          referrer: string | null
           session_id: string
+          user_id: string | null
         }
         Insert: {
+          country?: string | null
+          device_type?: string | null
           first_seen_at?: string
           last_seen_at?: string
+          referrer?: string | null
           session_id: string
+          user_id?: string | null
         }
         Update: {
+          country?: string | null
+          device_type?: string | null
           first_seen_at?: string
           last_seen_at?: string
+          referrer?: string | null
           session_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1481,9 +1493,12 @@ export type Database = {
         }[]
       }
       get_visitor_stats: {
-        Args: never
+        Args: { _tz_offset_minutes?: number }
         Returns: {
+          desktop: number
+          mobile: number
           online: number
+          tablet: number
           today: number
           total: number
         }[]
@@ -1497,6 +1512,15 @@ export type Database = {
       }
       rate_assistant_chat: {
         Args: { _chat_id: string; _rating: number }
+        Returns: undefined
+      }
+      visitor_heartbeat: {
+        Args: {
+          _country?: string
+          _device_type?: string
+          _referrer?: string
+          _session_id: string
+        }
         Returns: undefined
       }
     }
