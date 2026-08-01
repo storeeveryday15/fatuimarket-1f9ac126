@@ -1,43 +1,43 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Instagram } from "lucide-react";
+import { MessageCircle, X, Send, Instagram, RotateCcw } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { askFatuiAssistant } from "@/lib/assistant.functions";
 import { WHATSAPP_LINK, INSTAGRAM_LINK, TELEGRAM_LINK } from "@/lib/products";
 
 type Msg = { role: "bot" | "user"; text: string };
 
+const GREETING: Msg = {
+  role: "bot",
+  text: "Hi! I'm Fatui AI ✨ — ask me about any game top-up, prices, delivery, wallet, refunds or the latest in-game events.",
+};
+
 const QUICK = [
   "How long does delivery take?",
-  "How do I pay with UPI?",
-  "I paid but no top-up",
+  "What do I need for a Mobile Legends top-up?",
+  "What's new in Genshin Impact?",
   "Refund policy",
   "Talk to a human",
 ];
 
-function reply(q: string): string {
-  const t = q.toLowerCase();
-  if (t.includes("how long") || t.includes("delivery") || t.includes("take")) {
-    return "⚡ Most orders are delivered in under 60 seconds after we verify your payment. Diamonds top-ups go straight to your game ID; gift codes are emailed.";
-  }
-  if (t.includes("upi") || t.includes("pay")) {
-    return "📱 Pick a product, choose your pack, and scan the UPI QR or tap 'Pay with UPI'. The exact amount is pre-filled. After paying, paste your 12-digit UTR on the order page so we can verify instantly.";
-  }
-  if (t.includes("paid") && (t.includes("no") || t.includes("not") || t.includes("didn"))) {
-    return "I'm sorry! Please share your Order ID (starts with FM-) and a screenshot of payment. Tap 'Talk to a human' below and we'll fix it within minutes.";
-  }
-  if (t.includes("refund")) {
-    return "💸 Full refund within 30 minutes if delivery hasn't started. After delivery, refunds depend on the publisher. See /refund for full policy.";
-  }
-  if (t.includes("human") || t.includes("agent") || t.includes("support") || t.includes("whatsapp")) {
-    return `👤 Connecting you to a human. Tap here: ${WHATSAPP_LINK}`;
-  }
-  if (t.includes("price") || t.includes("cost")) {
-    return "All prices are listed on the product page. India: INR (UPI). International: USD (Card/PayPal). No hidden fees.";
-  }
-  if (t.includes("hi") || t.includes("hello") || t.includes("hey")) {
-    return "Hey! 👋 Welcome to Fatui Market. How can I help?";
-  }
-  return "I'll escalate that to our team. Tap 'Talk to a human' below for WhatsApp support, or share your question and we'll get back fast.";
+/** Pulls the signed-in customer's own recent orders (RLS-scoped) for context. */
+async function ownOrderContext(): Promise<string | undefined> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return undefined;
+  const { data } = await supabase
+    .from("orders")
+    .select("order_code,product_name,tier_label,status,server_region,created_at")
+    .order("created_at", { ascending: false })
+    .limit(5);
+  if (!data?.length) return undefined;
+  return data
+    .map(
+      (o) =>
+        `${o.order_code}: ${o.product_name} ${o.tier_label} — ${o.status}${o.server_region ? ` (${o.server_region})` : ""} on ${new Date(o.created_at).toLocaleDateString()}`,
+    )
+    .join("\n");
 }
+
 
 // Brand icons (inline SVG for accurate look)
 const WhatsAppIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
