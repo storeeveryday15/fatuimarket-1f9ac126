@@ -28,6 +28,7 @@ type Order = {
   player_name: string | null;
   game_id: string | null;
   server_id: string | null;
+  server_region: string | null;
   product_name: string;
   tier_label: string;
   amount_inr: number | null;
