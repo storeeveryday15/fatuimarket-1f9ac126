@@ -339,17 +339,28 @@ export function ChatWidget() {
         <div className="fixed bottom-24 left-5 z-50 flex h-[min(540px,80vh)] w-[min(360px,92vw)] flex-col rounded-2xl border border-border bg-card shadow-2xl animate-scale-in">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <div>
-              <div className="text-sm font-semibold">Fatui Support</div>
-              <div className="text-[11px] text-success">● online</div>
+              <div className="text-sm font-semibold">Fatui AI Assistant</div>
+              <div className="text-[11px] text-success">● online · answers instantly</div>
             </div>
-            <button
-              onClick={() => setChatOpen(false)}
-              aria-label="Close"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setMsgs([GREETING])}
+                aria-label="New chat"
+                title="New chat"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setChatOpen(false)}
+                aria-label="Close"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
+
           <div className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
             {msgs.map((m, i) => (
               <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
