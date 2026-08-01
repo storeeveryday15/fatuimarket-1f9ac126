@@ -63,7 +63,27 @@ function ProductsPage() {
     };
   }, [items]);
 
-  const statFor = (id: string) => stats.find((s) => s.category_id === id);
+  const statFor = (id: string): CategoryStats => {
+    const serverStats = stats.find((s) => s.category_id === id);
+    const categoryProducts = items.filter((product) => product.category_id === id);
+
+    // Inventory counts come from the same admin catalog rows rendered below.
+    // This keeps the category cards connected to the existing catalog even if
+    // the aggregate helper cannot read protected supplier/cost columns.
+    return {
+      category_id: id,
+      total_products: categoryProducts.length,
+      active_products: categoryProducts.filter((product) => product.status === "active").length,
+      out_of_stock_products: categoryProducts.filter((product) => product.status === "out_of_stock").length,
+      total_inventory: categoryProducts.reduce(
+        (total, product) => total + (product.product_type === "limited" ? Number(product.stock) || 0 : 0),
+        0,
+      ),
+      total_sales: Number(serverStats?.total_sales ?? 0),
+      revenue_inr: Number(serverStats?.revenue_inr ?? 0),
+      profit_inr: Number(serverStats?.profit_inr ?? 0),
+    };
+  };
   const category = cats.find((c) => c.id === activeCat) ?? null;
 
   const visible = useMemo(() => {
@@ -142,13 +162,13 @@ function ProductsPage() {
               >
                 <div className="text-base font-bold">{c.name}</div>
                 <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-                  <Stat label="Products" value={String(s?.total_products ?? 0)} />
-                  <Stat label="Active" value={String(s?.active_products ?? 0)} />
-                  <Stat label="Out of stock" value={String(s?.out_of_stock_products ?? 0)} />
-                  <Stat label="Inventory" value={String(s?.total_inventory ?? 0)} />
-                  <Stat label="Sales" value={String(s?.total_sales ?? 0)} />
-                  <Stat label="Revenue" value={inr(Number(s?.revenue_inr ?? 0))} />
-                  <Stat label="Profit" value={inr(Number(s?.profit_inr ?? 0))} />
+                  <Stat label="Products" value={String(s.total_products)} />
+                  <Stat label="Active" value={String(s.active_products)} />
+                  <Stat label="Out of stock" value={String(s.out_of_stock_products)} />
+                  <Stat label="Inventory" value={String(s.total_inventory)} />
+                  <Stat label="Sales" value={String(s.total_sales)} />
+                  <Stat label="Revenue" value={inr(s.revenue_inr)} />
+                  <Stat label="Profit" value={inr(s.profit_inr)} />
                 </div>
               </button>
             );
