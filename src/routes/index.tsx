@@ -8,6 +8,9 @@ import { BannerSlider } from "@/components/banner-slider";
 import { TopCustomers } from "@/components/top-customers";
 import { OrderStats } from "@/components/order-stats";
 import { RecentPurchases } from "@/components/recent-purchases";
+import { StockOverlay, stockImageClass } from "@/components/stock-overlay";
+import { useCatalogStatus } from "@/hooks/use-catalog-status";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,6 +25,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const catalog = useCatalogStatus();
+
   return (
     <div>
       {/* Hero carousel */}
@@ -73,6 +78,7 @@ function Home() {
             const minInr = Math.min(
               ...p.denominations.map((d) => d.priceINR ?? Math.round(d.price * 83))
             );
+            const state = catalog.gameState(p.slug);
             return (
               <Link
                 key={p.slug}
@@ -88,11 +94,12 @@ function Home() {
                     decoding="async"
                     width={800}
                     height={600}
-                    className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
+                    className={`h-full w-full object-cover object-center duration-700 ease-out group-hover:scale-110 ${stockImageClass(state)}`}
                   />
 
                   {/* Dark overlay 50% for readable text on any art */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/20" />
+                  <StockOverlay state={state} size="lg" />
                   <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/90 backdrop-blur">
                     {p.publisher}
                   </span>
@@ -109,15 +116,22 @@ function Home() {
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Starting from</div>
                     <div className="text-base font-bold text-foreground">₹{minInr}</div>
                   </div>
-                  <span className="btn-shine soft-pulse inline-flex items-center gap-1 rounded-lg bg-[image:var(--gradient-primary)] bg-[length:200%_200%] px-3 py-2 text-xs font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform group-hover:translate-x-0.5">
-                    Top Up <ArrowRight className="h-3.5 w-3.5" />
-                  </span>
+                  {state.blocked ? (
+                    <span className="inline-flex items-center gap-1 rounded-lg border border-border bg-secondary px-3 py-2 text-xs font-semibold text-muted-foreground">
+                      {state.label}
+                    </span>
+                  ) : (
+                    <span className="btn-shine soft-pulse inline-flex items-center gap-1 rounded-lg bg-[image:var(--gradient-primary)] bg-[length:200%_200%] px-3 py-2 text-xs font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform group-hover:translate-x-0.5">
+                      Top Up <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
+                  )}
 
                 </div>
               </Link>
             );
           })}
         </div>
+
       </section>
 
       {/* How it works */}

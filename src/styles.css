@@ -282,9 +282,17 @@
 }
 .route-fade-in { animation: route-fade-in 320ms ease-out both; }
 
+/* Stock status stamps / ribbons */
+@keyframes stock-fade-in {
+  0%   { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.stock-fade-in { animation: stock-fade-in 260ms ease-out both; }
+
+
 @media (prefers-reduced-motion: reduce) {
   .hero-kenburns, .hero-content-in, .hero-dot-active,
-  .animate-fade-up, .stagger-grid > *, .card-lift,
+  .animate-fade-up, .stagger-grid > *, .card-lift, .stock-fade-in,
   .btn-shine, .soft-pulse, .float-orb, .star-pop, .route-fade-in {
     animation: none !important;
     transition: none !important;

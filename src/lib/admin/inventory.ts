@@ -37,6 +37,10 @@ export type InventoryProduct = {
   product_type: ProductType | string;
   stock: number;
   status: ProductStatus | string;
+  display_status?: string | null;
+  low_stock_threshold?: number | null;
+  auto_status?: boolean | null;
+
   visible: boolean;
   featured: boolean;
   auto_pricing: boolean;
@@ -71,7 +75,11 @@ export const STATUS_META: Record<string, { label: string; className: string }> =
   active: { label: "Active", className: "bg-success/15 text-success" },
   hidden: { label: "Hidden", className: "bg-secondary text-muted-foreground" },
   out_of_stock: { label: "Out of Stock", className: "bg-destructive/15 text-destructive" },
+  restocking: { label: "Restocking", className: "bg-warning/15 text-warning" },
+  coming_soon: { label: "Coming Soon", className: "bg-primary/15 text-primary" },
+  disabled: { label: "Disabled", className: "bg-muted text-muted-foreground" },
 };
+
 
 export const LOW_STOCK_THRESHOLD = 100;
 

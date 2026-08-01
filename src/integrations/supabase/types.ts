@@ -128,13 +128,16 @@ export type Database = {
       catalog_products: {
         Row: {
           auto_pricing: boolean
+          auto_status: boolean
           category: string | null
           category_id: string | null
           created_at: string
           description: string | null
+          display_status: string
           featured: boolean
           id: string
           image_url: string | null
+          low_stock_threshold: number
           name: string | null
           price_inr: number
           product_slug: string
@@ -153,13 +156,16 @@ export type Database = {
         }
         Insert: {
           auto_pricing?: boolean
+          auto_status?: boolean
           category?: string | null
           category_id?: string | null
           created_at?: string
           description?: string | null
+          display_status?: string
           featured?: boolean
           id?: string
           image_url?: string | null
+          low_stock_threshold?: number
           name?: string | null
           price_inr?: number
           product_slug: string
@@ -178,13 +184,16 @@ export type Database = {
         }
         Update: {
           auto_pricing?: boolean
+          auto_status?: boolean
           category?: string | null
           category_id?: string | null
           created_at?: string
           description?: string | null
+          display_status?: string
           featured?: boolean
           id?: string
           image_url?: string | null
+          low_stock_threshold?: number
           name?: string | null
           price_inr?: number
           product_slug?: string
@@ -951,13 +960,16 @@ export type Database = {
     Views: {
       catalog_products_public: {
         Row: {
+          auto_status: boolean | null
           category: string | null
           category_id: string | null
           created_at: string | null
           description: string | null
+          display_status: string | null
           featured: boolean | null
           id: string | null
           image_url: string | null
+          low_stock_threshold: number | null
           name: string | null
           price_inr: number | null
           product_slug: string | null
@@ -971,13 +983,16 @@ export type Database = {
           visible: boolean | null
         }
         Insert: {
+          auto_status?: boolean | null
           category?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
+          display_status?: string | null
           featured?: boolean | null
           id?: string | null
           image_url?: string | null
+          low_stock_threshold?: number | null
           name?: string | null
           price_inr?: number | null
           product_slug?: string | null
@@ -991,13 +1006,16 @@ export type Database = {
           visible?: boolean | null
         }
         Update: {
+          auto_status?: boolean | null
           category?: string | null
           category_id?: string | null
           created_at?: string | null
           description?: string | null
+          display_status?: string | null
           featured?: boolean | null
           id?: string | null
           image_url?: string | null
+          low_stock_threshold?: number | null
           name?: string | null
           price_inr?: number | null
           product_slug?: string | null
@@ -1067,13 +1085,16 @@ export type Database = {
         Args: never
         Returns: {
           auto_pricing: boolean
+          auto_status: boolean
           category: string | null
           category_id: string | null
           created_at: string
           description: string | null
+          display_status: string
           featured: boolean
           id: string
           image_url: string | null
+          low_stock_threshold: number
           name: string | null
           price_inr: number
           product_slug: string

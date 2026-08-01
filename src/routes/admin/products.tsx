@@ -313,6 +313,10 @@ function ProductTable({
                   <option value="active">Active</option>
                   <option value="hidden">Hidden</option>
                   <option value="out_of_stock">Out of Stock</option>
+                  <option value="restocking">Restocking</option>
+                  <option value="coming_soon">Coming Soon</option>
+                  <option value="disabled">Disabled</option>
+
                 </select>
               </td>
               <td className="px-3 py-3 text-xs text-muted-foreground">{fmtDate(p.updated_at)}</td>
