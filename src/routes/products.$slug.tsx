@@ -126,6 +126,11 @@ function ProductPage() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [hasUsedWelcome, setHasUsedWelcome] = useState(true);
 
+  useEffect(() => {
+    if (!gameServers.length) return;
+    if (!gameServers.some((s) => s.id === serverRegion)) setServerRegion(gameServers[0]!.id);
+  }, [gameServers, serverRegion]);
+
   const isGiftCard = !product.needsPlayerId;
   const showEmailInput = isGiftCard || !user;
 
