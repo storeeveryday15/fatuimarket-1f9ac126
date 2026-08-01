@@ -332,6 +332,7 @@ export type Database = {
           auto_status: boolean
           category: string | null
           category_id: string | null
+          competitor_price_inr: number | null
           created_at: string
           description: string | null
           display_status: string
@@ -339,6 +340,7 @@ export type Database = {
           id: string
           image_url: string | null
           low_stock_threshold: number
+          min_safe_price_inr: number | null
           name: string | null
           price_inr: number
           product_slug: string
@@ -360,6 +362,7 @@ export type Database = {
           auto_status?: boolean
           category?: string | null
           category_id?: string | null
+          competitor_price_inr?: number | null
           created_at?: string
           description?: string | null
           display_status?: string
@@ -367,6 +370,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           low_stock_threshold?: number
+          min_safe_price_inr?: number | null
           name?: string | null
           price_inr?: number
           product_slug: string
@@ -388,6 +392,7 @@ export type Database = {
           auto_status?: boolean
           category?: string | null
           category_id?: string | null
+          competitor_price_inr?: number | null
           created_at?: string
           description?: string | null
           display_status?: string
@@ -395,6 +400,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           low_stock_threshold?: number
+          min_safe_price_inr?: number | null
           name?: string | null
           price_inr?: number
           product_slug?: string
@@ -924,6 +930,60 @@ export type Database = {
           },
         ]
       }
+      price_schedules: {
+        Row: {
+          applied_at: string | null
+          apply_at: string
+          catalog_product_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          new_price_inr: number
+          note: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applied_at?: string | null
+          apply_at: string
+          catalog_product_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          new_price_inr: number
+          note?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applied_at?: string | null
+          apply_at?: string
+          catalog_product_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          new_price_inr?: number
+          note?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_schedules_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_schedules_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_categories: {
         Row: {
           created_at: string
@@ -951,6 +1011,33 @@ export type Database = {
           slug?: string
           sort_order?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      product_views: {
+        Row: {
+          created_at: string
+          device_type: string | null
+          id: string
+          product_slug: string
+          session_id: string | null
+          tier_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          product_slug: string
+          session_id?: string | null
+          tier_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          product_slug?: string
+          session_id?: string | null
+          tier_label?: string | null
         }
         Relationships: []
       }
@@ -1034,6 +1121,7 @@ export type Database = {
       }
       site_visitors: {
         Row: {
+          browser: string | null
           country: string | null
           device_type: string | null
           first_seen_at: string
@@ -1043,6 +1131,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          browser?: string | null
           country?: string | null
           device_type?: string | null
           first_seen_at?: string
@@ -1052,6 +1141,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          browser?: string | null
           country?: string | null
           device_type?: string | null
           first_seen_at?: string
@@ -1419,6 +1509,7 @@ export type Database = {
           auto_status: boolean
           category: string | null
           category_id: string | null
+          competitor_price_inr: number | null
           created_at: string
           description: string | null
           display_status: string
@@ -1426,6 +1517,7 @@ export type Database = {
           id: string
           image_url: string | null
           low_stock_threshold: number
+          min_safe_price_inr: number | null
           name: string | null
           price_inr: number
           product_slug: string
@@ -1448,6 +1540,31 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      admin_product_views: {
+        Args: { _days?: number }
+        Returns: {
+          product_slug: string
+          tier_label: string
+          views: number
+        }[]
+      }
+      admin_visitor_breakdown: {
+        Args: never
+        Returns: {
+          avg_session_seconds: number
+          browser: string
+          device_type: string
+          referrer: string
+          sessions: number
+        }[]
+      }
+      admin_visitor_growth: {
+        Args: { _days?: number }
+        Returns: {
+          day: string
+          visitors: number
+        }[]
       }
       compute_cashback_inr: { Args: { amount: number }; Returns: number }
       expire_stale_orders: { Args: never; Returns: undefined }
@@ -1516,15 +1633,35 @@ export type Database = {
         Args: { _chat_id: string; _rating: number }
         Returns: undefined
       }
-      visitor_heartbeat: {
+      record_product_view: {
         Args: {
-          _country?: string
           _device_type?: string
-          _referrer?: string
-          _session_id: string
+          _product_slug: string
+          _session_id?: string
+          _tier_label?: string
         }
         Returns: undefined
       }
+      visitor_heartbeat:
+        | {
+            Args: {
+              _country?: string
+              _device_type?: string
+              _referrer?: string
+              _session_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _browser?: string
+              _country?: string
+              _device_type?: string
+              _referrer?: string
+              _session_id: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       app_role: "admin" | "customer"

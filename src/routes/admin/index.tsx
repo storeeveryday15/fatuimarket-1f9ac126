@@ -5,6 +5,9 @@ import { toast } from "sonner";
 import { MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
 import { notifyOrder } from "@/lib/notify-order";
 import { VisitorAnalytics } from "@/components/admin/visitor-analytics";
+import { StatCard } from "@/components/admin/stat-card";
+import { RecentPurchases } from "@/components/admin/recent-purchases";
+import { inr, useAdminMetrics } from "@/hooks/use-admin-metrics";
 
 
 export const Route = createFileRoute("/admin/")({
@@ -154,7 +157,7 @@ function AdminPage() {
 
   return (
     <div>
-      <Dashboard orders={orders} users={users} />
+      <Dashboard />
 
       <div className="mt-8 flex flex-wrap gap-2 border-b border-border">
         <TabBtn active={tab === "dashboard"} onClick={() => setTab("dashboard")}><Package className="mr-1.5 inline h-4 w-4" /> Dashboard</TabBtn>
@@ -263,21 +266,31 @@ function AdminPage() {
   );
 }
 
-function Dashboard({ orders, users }: { orders: Order[]; users: Profile[] }) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const completed = orders.filter((o) => o.status === "completed" || o.status === "delivered");
-  const revenueToday = completed.filter((o) => o.completed_at && new Date(o.completed_at) >= today).reduce((s, o) => s + (Number(o.amount_inr) || 0), 0);
-  const pending = orders.filter((o) => o.status === "pending_payment" || o.status === "pending_verification" || o.status === "awaiting_verification").length;
+/** Live KPI grid — every value is derived from Supabase and refreshes in realtime. */
+function Dashboard() {
+  const { orders, visitors, metrics, loading } = useAdminMetrics();
   return (
     <>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Stat label="Total orders" value={orders.length.toString()} />
-        <Stat label="Pending" value={pending.toString()} highlight />
-        <Stat label="Completed" value={completed.length.toString()} />
-        <Stat label="Registered users" value={users.length.toString()} />
-        <Stat label="Revenue today" value={`₹${revenueToday.toFixed(0)}`} />
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Revenue today" value={inr(metrics.revenueToday)} tone="good" loading={loading} />
+        <StatCard label="Total revenue (all time)" value={inr(metrics.revenueTotal)} tone="neon" loading={loading} />
+        <StatCard label="Average order value" value={inr(metrics.avgOrderValue)} loading={loading} />
+        <StatCard label="Conversion rate" value={`${metrics.conversionRate.toFixed(2)}%`} sub="orders / visitors" loading={loading} />
+        <StatCard label="Total orders" value={metrics.totalOrders.toString()} loading={loading} />
+        <StatCard label="Pending orders" value={metrics.pendingOrders.toString()} tone="warn" loading={loading} />
+        <StatCard label="Completed orders" value={metrics.completedOrders.toString()} loading={loading} />
+        <StatCard label="Cancelled orders" value={metrics.cancelledOrders.toString()} tone="bad" loading={loading} />
+        <StatCard label="Registered users" value={metrics.registeredUsers.toString()} loading={loading} />
+        <StatCard label="Repeat customers" value={metrics.repeatCustomers.toString()} sub={`${metrics.uniqueBuyers} unique buyers`} loading={loading} />
+        <StatCard label="Online visitors" value={visitors.online.toString()} tone="good" loading={loading} />
+        <StatCard label="Visitors today" value={visitors.today.toString()} loading={loading} />
+        <StatCard label="Total visitors" value={visitors.total.toString()} loading={loading} />
+        <StatCard label="Desktop visitors" value={visitors.desktop.toString()} loading={loading} />
+        <StatCard label="Mobile visitors" value={visitors.mobile.toString()} loading={loading} />
+        <StatCard label="Tablet visitors" value={visitors.tablet.toString()} loading={loading} />
       </div>
       <VisitorAnalytics />
+      <RecentPurchases orders={orders} />
     </>
   );
 }

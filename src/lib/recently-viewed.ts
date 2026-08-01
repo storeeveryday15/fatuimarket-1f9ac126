@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { getDeviceType, getVisitorSessionId } from "@/lib/visitor-session";
 
 export type ViewedItem = { slug: string; tier?: string; at: number };
 
@@ -28,6 +30,15 @@ export function recordProductView(slug: string, tier?: string) {
   } catch {
     /* storage may be unavailable (private mode) — viewing history is optional */
   }
+  // Anonymous view analytics for the admin dashboard (no personal data).
+  void supabase
+    .rpc("record_product_view", {
+      _product_slug: slug,
+      _tier_label: tier ?? undefined,
+      _session_id: getVisitorSessionId() || undefined,
+      _device_type: getDeviceType(),
+    })
+    .then(undefined, () => undefined);
   window.dispatchEvent(new Event(EVENT));
 }
 

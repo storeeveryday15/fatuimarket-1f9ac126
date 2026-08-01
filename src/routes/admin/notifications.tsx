@@ -1,6 +1,12 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { Bell } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { Bell, Megaphone, Send } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { NotificationCenter } from "@/components/admin/notification-center";
+import { sendCustomerMessage } from "@/lib/admin-messaging.functions";
+import { PRODUCTS } from "@/lib/products";
 
 export const Route = createFileRoute("/admin/notifications")({
   head: () => ({
@@ -8,10 +14,10 @@ export const Route = createFileRoute("/admin/notifications")({
       { title: "Notifications — Fatui Market Admin" },
       {
         name: "description",
-        content: "Live operational alerts for Fatui Market: supplier health, pricing changes, orders and wallet warnings.",
+        content: "Send announcements, schedule campaigns and monitor operational alerts for Fatui Market.",
       },
       { property: "og:title", content: "Notifications — Fatui Market Admin" },
-      { property: "og:description", content: "Live operational alerts for Fatui Market admins." },
+      { property: "og:description", content: "Announcements, campaigns and operational alerts for Fatui Market admins." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -23,8 +29,181 @@ export const Route = createFileRoute("/admin/notifications")({
   ),
 });
 
+type Announcement = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  image_url: string | null;
+  target_games: string[];
+  starts_at: string;
+  status: string;
+  send_email: boolean;
+  created_at: string;
+};
+
 function NotificationsPage() {
-  return <NotificationCenter />;
+  const [tab, setTab] = useState<"compose" | "alerts">("compose");
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap gap-2 border-b border-border">
+        <button onClick={() => setTab("compose")} className={`px-3 py-2 text-sm font-semibold ${tab === "compose" ? "border-b-2 border-[var(--neon)] text-foreground" : "text-muted-foreground"}`}>
+          <Megaphone className="mr-1.5 inline h-4 w-4" /> Announcements
+        </button>
+        <button onClick={() => setTab("alerts")} className={`px-3 py-2 text-sm font-semibold ${tab === "alerts" ? "border-b-2 border-[var(--neon)] text-foreground" : "text-muted-foreground"}`}>
+          <Bell className="mr-1.5 inline h-4 w-4" /> System alerts
+        </button>
+      </div>
+      {tab === "compose" ? <Composer /> : <NotificationCenter />}
+    </div>
+  );
+}
+
+function Composer() {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [link, setLink] = useState("");
+  const [game, setGame] = useState("all");
+  const [scheduleAt, setScheduleAt] = useState("");
+  const [email, setEmail] = useState(false);
+  const [inApp, setInApp] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [list, setList] = useState<Announcement[]>([]);
+  const send = useServerFn(sendCustomerMessage);
+
+  const load = async () => {
+    const { data } = await supabase
+      .from("announcements")
+      .select("id,type,title,description,image_url,target_games,starts_at,status,send_email,created_at")
+      .order("created_at", { ascending: false })
+      .limit(30);
+    setList((data ?? []) as Announcement[]);
+  };
+
+  useEffect(() => {
+    void load();
+    const ch = supabase
+      .channel("admin-announcements")
+      .on("postgres_changes", { event: "*", schema: "public", table: "announcements" }, () => void load())
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, []);
+
+  // Deliver any scheduled announcement whose time has come.
+  useEffect(() => {
+    const due = list.filter((a) => a.status === "scheduled" && new Date(a.starts_at) <= new Date());
+    if (!due.length) return;
+    void (async () => {
+      for (const a of due) await deliver(a);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list]);
+
+  const deliver = async (a: Announcement) => {
+    const { data: profiles } = await supabase.from("profiles").select("id,email");
+    const targets = (profiles ?? []).map((p) => ({ user_id: p.id, email: p.email }));
+    try {
+      const res = await send({
+        data: {
+          targets,
+          title: a.title,
+          body: a.description,
+          image_url: a.image_url,
+          link: link || null,
+          game_slug: a.target_games?.[0] && a.target_games[0] !== "all" ? a.target_games[0] : null,
+          email: a.send_email,
+          announcement_id: a.id,
+        },
+      });
+      await supabase.from("announcements").update({ status: "sent", emailed_at: a.send_email ? new Date().toISOString() : null }).eq("id", a.id);
+      toast.success(`Delivered to ${res.inApp} customers${res.emails ? ` · ${res.emails} emails` : ""}`);
+      void load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Delivery failed");
+    }
+  };
+
+  const submit = async () => {
+    if (!title.trim() || !description.trim()) return toast.error("Add a title and message");
+    setBusy(true);
+    const startsAt = scheduleAt ? new Date(scheduleAt).toISOString() : new Date().toISOString();
+    const scheduled = Boolean(scheduleAt) && new Date(scheduleAt) > new Date();
+    const { data, error } = await supabase
+      .from("announcements")
+      .insert({
+        type: "announcement",
+        title: title.trim(),
+        description: description.trim(),
+        image_url: imageUrl.trim() || null,
+        button_link: link.trim() || null,
+        target_games: game === "all" ? ["all"] : [game],
+        placements: ["home"],
+        starts_at: startsAt,
+        status: scheduled ? "scheduled" : "active",
+        send_email: email,
+      })
+      .select("id,type,title,description,image_url,target_games,starts_at,status,send_email,created_at")
+      .single();
+    setBusy(false);
+    if (error || !data) return toast.error(error?.message ?? "Could not save announcement");
+    toast.success(scheduled ? "Announcement scheduled" : "Announcement created");
+    setTitle(""); setDescription(""); setImageUrl(""); setLink(""); setScheduleAt("");
+    if (!scheduled && inApp) await deliver(data as Announcement);
+    void load();
+  };
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="surface-card space-y-3 p-4">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">New announcement</h3>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Message to customers" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Banner / event image URL" className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+          <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Link (optional)" className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+          <select value={game} onChange={(e) => setGame(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm">
+            <option value="all">All customers</option>
+            {PRODUCTS.map((p) => <option key={p.slug} value={p.slug}>{p.name} players</option>)}
+          </select>
+          <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+        </div>
+        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+          <label className="flex items-center gap-2"><input type="checkbox" checked={inApp} onChange={(e) => setInApp(e.target.checked)} /> In-app notification</label>
+          <label className="flex items-center gap-2"><input type="checkbox" checked={email} onChange={(e) => setEmail(e.target.checked)} /> Email</label>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Customers who turned off announcements or email in their preferences are skipped automatically.
+        </p>
+        <button onClick={() => void submit()} disabled={busy} className="inline-flex items-center gap-2 rounded-lg bg-[var(--neon)]/15 px-4 py-2 text-sm font-semibold text-[var(--neon)] disabled:opacity-50">
+          <Send className="h-4 w-4" /> {busy ? "Saving…" : scheduleAt ? "Schedule" : "Send now"}
+        </button>
+      </div>
+
+      <div className="surface-card p-4">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Recent announcements</h3>
+        <ul className="mt-3 divide-y divide-border">
+          {list.map((a) => (
+            <li key={a.id} className="py-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-sm font-semibold">{a.title}</span>
+                <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase">{a.status}</span>
+              </div>
+              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{a.description}</p>
+              <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+                <span>{new Date(a.starts_at).toLocaleString()}</span>
+                {a.status !== "sent" && (
+                  <button onClick={() => void deliver(a)} className="rounded-md border border-border px-2 py-0.5">Send now</button>
+                )}
+                <button onClick={async () => { await supabase.from("announcements").delete().eq("id", a.id); void load(); }} className="rounded-md border border-border px-2 py-0.5">Delete</button>
+              </div>
+            </li>
+          ))}
+          {list.length === 0 && <li className="py-3 text-xs text-muted-foreground">No announcements yet.</li>}
+        </ul>
+      </div>
+    </div>
+  );
 }
 
 function NotificationsError({ error, reset }: { error: Error; reset: () => void }) {
