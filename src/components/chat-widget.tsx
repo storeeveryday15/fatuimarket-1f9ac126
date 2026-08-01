@@ -1,24 +1,49 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Instagram, RotateCcw } from "lucide-react";
+import { MessageCircle, X, Send, Instagram, RotateCcw, Bot, Minus, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { askFatuiAssistant } from "@/lib/assistant.functions";
+import { askFatuiAssistant, getAssistantConfig } from "@/lib/assistant.functions";
 import { WHATSAPP_LINK, INSTAGRAM_LINK, TELEGRAM_LINK } from "@/lib/products";
 
-type Msg = { role: "bot" | "user"; text: string };
+type Msg = { role: "bot" | "user"; text: string; at: number; chatId?: string | null; rated?: 1 | -1 };
 
-const GREETING: Msg = {
-  role: "bot",
-  text: "Hi! I'm Fatui AI ✨ — ask me about any game top-up, prices, delivery, wallet, refunds or the latest in-game events.",
-};
+const DEFAULT_GREETING =
+  "Hi! I'm Fatui AI ✨ — ask me about any game top-up, prices, delivery, wallet, refunds or the latest in-game events.";
 
 const QUICK = [
-  "How long does delivery take?",
-  "What do I need for a Mobile Legends top-up?",
-  "What's new in Genshin Impact?",
-  "Refund policy",
-  "Talk to a human",
+  "🎮 Top Up Guide",
+  "💰 Cheapest Products",
+  "📦 Track Order",
+  "🎁 Current Events",
+  "💳 Payment Help",
+  "🎟 Coupons",
+  "📞 Contact Support",
 ];
+
+const QUICK_PROMPTS: Record<string, string> = {
+  "🎮 Top Up Guide": "How do I top up? What details do you need for my game?",
+  "💰 Cheapest Products": "What are the cheapest packs available right now?",
+  "📦 Track Order": "How do I track my order and what do the order statuses mean?",
+  "🎁 Current Events": "What official in-game events, banners or codes are running now?",
+  "💳 Payment Help": "What payment methods can I use and how does payment work?",
+  "🎟 Coupons": "How do coupons work and can I combine them with my wallet?",
+  "📞 Contact Support": "I need to talk to a human — how do I reach support?",
+};
+
+const STORAGE_KEY = "fatui-ai-chat";
+const SESSION_KEY = "fatui-ai-session";
+
+const time = (t: number) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+function getSessionId() {
+  if (typeof window === "undefined") return undefined;
+  let id = sessionStorage.getItem(SESSION_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    sessionStorage.setItem(SESSION_KEY, id);
+  }
+  return id;
+}
 
 /** Pulls the signed-in customer's own recent orders (RLS-scoped) for context. */
 async function ownOrderContext(): Promise<string | undefined> {
@@ -65,21 +90,57 @@ type Orbit = {
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [msgs, setMsgs] = useState<Msg[]>([GREETING]);
+  const [minimized, setMinimized] = useState(false);
+  const [enabled, setEnabled] = useState(true);
+  const [greeting, setGreeting] = useState(DEFAULT_GREETING);
+  const [msgs, setMsgs] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const ask = useServerFn(askFatuiAssistant);
+  const loadConfig = useServerFn(getAssistantConfig);
+
+  // Restore this browsing session's conversation.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (raw) setMsgs(JSON.parse(raw) as Msg[]);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(msgs.slice(-40)));
+    } catch {
+      /* ignore */
+    }
+  }, [msgs]);
+
+  useEffect(() => {
+    let alive = true;
+    loadConfig({})
+      .then((c) => {
+        if (!alive) return;
+        setEnabled(c.enabled);
+        setGreeting(c.welcome);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [loadConfig]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [msgs, chatOpen]);
+  }, [msgs, chatOpen, minimized]);
 
   useEffect(() => {
-    if (chatOpen && !busy) inputRef.current?.focus();
-  }, [chatOpen, busy]);
+    if (chatOpen && !minimized && !busy) inputRef.current?.focus();
+  }, [chatOpen, minimized, busy]);
 
   // Close orbital menu on outside click / Escape
   useEffect(() => {
@@ -98,10 +159,17 @@ export function ChatWidget() {
     };
   }, [open]);
 
+  const rate = async (i: number, value: 1 | -1) => {
+    const m = msgs[i];
+    if (!m?.chatId || m.rated) return;
+    setMsgs((prev) => prev.map((x, j) => (j === i ? { ...x, rated: value } : x)));
+    await supabase.rpc("rate_assistant_chat", { _chat_id: m.chatId, _rating: value }).catch(() => undefined);
+  };
+
   const send = async (text: string) => {
-    const q = text.trim();
+    const q = (QUICK_PROMPTS[text] ?? text).trim();
     if (!q || busy) return;
-    const next: Msg[] = [...msgs, { role: "user", text: q }];
+    const next: Msg[] = [...msgs, { role: "user", text: q, at: Date.now() }];
     setMsgs(next);
     setInput("");
     setBusy(true);
@@ -109,17 +177,17 @@ export function ChatWidget() {
     try {
       const orderContext = await ownOrderContext().catch(() => undefined);
       const history = next
-        .filter((m) => m !== GREETING)
         .slice(-16)
         .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.text }));
-      const { reply } = await ask({ data: { messages: history, orderContext } });
-      setMsgs((m) => [...m, { role: "bot", text: reply }]);
+      const { reply, chatId } = await ask({ data: { messages: history, orderContext, sessionId: getSessionId() } });
+      setMsgs((m) => [...m, { role: "bot", text: reply, at: Date.now(), chatId }]);
     } catch (err) {
       console.error("[ChatWidget] assistant failed", err);
       setMsgs((m) => [
         ...m,
         {
           role: "bot",
+          at: Date.now(),
           text: `${err instanceof Error ? err.message : "Something went wrong."} You can also reach a human here: ${WHATSAPP_LINK}`,
         },
       ]);
@@ -138,6 +206,11 @@ export function ChatWidget() {
     }
   };
 
+  const openChat = () => {
+    setChatOpen(true);
+    setMinimized(false);
+    setOpen(false);
+  };
 
   const orbits: Orbit[] = [
     {
@@ -174,11 +247,8 @@ export function ChatWidget() {
     },
     {
       key: "livechat",
-      label: "Live Chat",
-      onClick: () => {
-        setChatOpen(true);
-        setOpen(false);
-      },
+      label: "Ask Fatui AI",
+      onClick: openChat,
       icon: <MessageCircle className="h-5 w-5" />,
       color: "linear-gradient(135deg,#8B5CF6,#3B82F6)",
       glow: "0 0 18px rgba(139,92,246,.6)",
@@ -190,6 +260,8 @@ export function ChatWidget() {
   const startDeg = 10;
   const endDeg = 82;
   const step = (endDeg - startDeg) / (orbits.length - 1);
+
+  const shown: Msg[] = msgs.length ? msgs : [{ role: "bot", text: greeting, at: Date.now() }];
 
   return (
     <>
@@ -334,22 +406,65 @@ export function ChatWidget() {
         </button>
       </div>
 
-      {/* Live Chat panel */}
-      {chatOpen && (
-        <div className="fixed bottom-24 left-5 z-50 flex h-[min(540px,80vh)] w-[min(360px,92vw)] flex-col rounded-2xl border border-border bg-card shadow-2xl animate-scale-in">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <div>
-              <div className="text-sm font-semibold">Fatui AI Assistant</div>
-              <div className="text-[11px] text-success">● online · answers instantly</div>
+      {/* Floating "Ask Fatui AI" button */}
+      {enabled && (!chatOpen || minimized) && (
+        <button
+          type="button"
+          onClick={openChat}
+          aria-label="Ask Fatui AI"
+          className="fixed bottom-5 right-4 z-40 inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-105 active:scale-95 sm:right-5"
+          style={{
+            background: "var(--gradient-primary)",
+            boxShadow: "0 0 22px rgba(139,92,246,.55), 0 0 44px rgba(59,130,246,.25)",
+          }}
+        >
+          <Bot className="h-5 w-5" />
+          <span className="hidden xs:inline sm:inline">Ask Fatui AI</span>
+        </button>
+      )}
+
+      {/* AI chat panel */}
+      {enabled && chatOpen && !minimized && (
+        <div
+          className="fixed bottom-4 right-3 z-50 flex h-[min(600px,78vh)] w-[min(380px,94vw)] flex-col overflow-hidden rounded-3xl border border-primary/25 shadow-2xl animate-scale-in sm:right-5"
+          style={{
+            background: "color-mix(in oklab, var(--card) 78%, transparent)",
+            backdropFilter: "blur(18px)",
+            boxShadow: "0 0 40px rgba(139,92,246,.25), 0 20px 60px rgba(0,0,0,.45)",
+          }}
+        >
+          <div
+            className="flex items-center justify-between border-b border-primary/20 px-4 py-3"
+            style={{ background: "linear-gradient(135deg, rgba(139,92,246,.18), rgba(59,130,246,.12))" }}
+          >
+            <div className="flex items-center gap-2.5">
+              <span
+                className="grid h-9 w-9 place-items-center rounded-full text-primary-foreground"
+                style={{ background: "var(--gradient-primary)", boxShadow: "0 0 16px rgba(139,92,246,.5)" }}
+              >
+                <Bot className="h-5 w-5" />
+              </span>
+              <div>
+                <div className="text-sm font-semibold">Fatui AI Assistant</div>
+                <div className="text-[11px] text-success">● online · answers instantly</div>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
-                onClick={() => setMsgs([GREETING])}
+                onClick={() => setMsgs([])}
                 aria-label="New chat"
                 title="New chat"
                 className="text-muted-foreground hover:text-foreground"
               >
                 <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setMinimized(true)}
+                aria-label="Minimize"
+                title="Minimize"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Minus className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setChatOpen(false)}
@@ -361,43 +476,75 @@ export function ChatWidget() {
             </div>
           </div>
 
-          <div className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
-            {msgs.map((m, i) => (
-              <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+          <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
+            {shown.map((m, i) => (
+              <div key={i} className={m.role === "user" ? "flex flex-col items-end" : "flex flex-col items-start"}>
                 <div
-                  className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
+                  className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                     m.role === "user"
                       ? "bg-[image:var(--gradient-primary)] text-primary-foreground"
-                      : "bg-secondary text-foreground"
+                      : "border border-border/60 bg-secondary/70 text-foreground backdrop-blur"
                   }`}
                 >
-                  {m.text.split(/(\bhttps?:\/\/\S+)/g).map((part, j) =>
-                    part.startsWith("http") ? (
-                      <a key={j} href={part} target="_blank" rel="noreferrer" className="underline">
-                        {part}
-                      </a>
-                    ) : (
-                      <span key={j}>{part}</span>
-                    )
+                  <div className="whitespace-pre-wrap">
+                    {m.text.split(/(\bhttps?:\/\/\S+)/g).map((part, j) =>
+                      part.startsWith("http") ? (
+                        <a key={j} href={part} target="_blank" rel="noreferrer" className="underline">
+                          {part}
+                        </a>
+                      ) : (
+                        <span key={j}>{part}</span>
+                      ),
+                    )}
+                  </div>
+                </div>
+                <div className="mt-1 flex items-center gap-2 px-1 text-[10px] text-muted-foreground">
+                  <span>{time(m.at)}</span>
+                  {m.role === "bot" && m.chatId && (
+                    <>
+                      <button
+                        onClick={() => void rate(i, 1)}
+                        aria-label="Helpful"
+                        className={m.rated === 1 ? "text-success" : "hover:text-foreground"}
+                      >
+                        <ThumbsUp className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => void rate(i, -1)}
+                        aria-label="Not helpful"
+                        className={m.rated === -1 ? "text-destructive" : "hover:text-foreground"}
+                      >
+                        <ThumbsDown className="h-3 w-3" />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
             ))}
             {busy && (
               <div className="flex justify-start">
-                <div className="rounded-2xl bg-secondary px-3 py-2 text-sm text-muted-foreground">Fatui AI is typing…</div>
+                <div className="flex items-center gap-1.5 rounded-2xl border border-border/60 bg-secondary/70 px-3 py-2.5 backdrop-blur">
+                  {[0, 1, 2].map((d) => (
+                    <span
+                      key={d}
+                      className="h-1.5 w-1.5 rounded-full bg-primary"
+                      style={{ animation: `pulse 1s ease-in-out ${d * 0.18}s infinite` }}
+                    />
+                  ))}
+                </div>
               </div>
             )}
             <div ref={endRef} />
           </div>
-          <div className="border-t border-border px-3 py-2">
-            <div className="mb-2 flex flex-wrap gap-1.5">
+
+          <div className="border-t border-border/60 px-3 py-2">
+            <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
               {QUICK.map((q) => (
                 <button
                   key={q}
-                  onClick={() => send(q)}
+                  onClick={() => void send(q)}
                   disabled={busy}
-                  className="rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] text-muted-foreground hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
+                  className="shrink-0 rounded-full border border-primary/25 bg-background/60 px-2.5 py-1 text-[11px] text-muted-foreground backdrop-blur hover:border-primary/60 hover:text-foreground disabled:opacity-50"
                 >
                   {q}
                 </button>
@@ -415,18 +562,17 @@ export function ChatWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about top-ups, prices, delivery…"
-                className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                className="flex-1 rounded-xl border border-input bg-background/70 px-3 py-2 text-sm outline-none backdrop-blur focus:ring-2 focus:ring-ring"
               />
               <button
                 type="submit"
                 disabled={busy}
-                className="grid h-9 w-9 place-items-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground disabled:opacity-50"
+                className="grid h-9 w-9 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </button>
             </form>
           </div>
-
         </div>
       )}
     </>
