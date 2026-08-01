@@ -19,7 +19,7 @@ export function useProductStock(productSlug: string, tierLabel: string): StockIn
   useEffect(() => {
     let alive = true;
     supabase
-      .from("catalog_products")
+      .from("catalog_products_public")
       .select("id,tier_label,name,product_type,stock,status")
       .eq("product_slug", productSlug)
       .then(({ data, error }) => {
