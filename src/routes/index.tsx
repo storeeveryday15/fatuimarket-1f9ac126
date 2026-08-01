@@ -1,6 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { PRODUCTS } from "@/lib/products";
-import { Zap, ShieldCheck, Clock, ArrowRight, Users } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { Zap, ShieldCheck, Clock, Users } from "lucide-react";
 import { LiveOrdersTicker } from "@/components/live-orders-ticker";
 import { ReviewsList } from "@/components/reviews-list";
 import { ReviewForm } from "@/components/review-form";
@@ -8,8 +7,8 @@ import { BannerSlider } from "@/components/banner-slider";
 import { TopCustomers } from "@/components/top-customers";
 import { OrderStats } from "@/components/order-stats";
 import { RecentPurchases } from "@/components/recent-purchases";
-import { StockOverlay, stockImageClass } from "@/components/stock-overlay";
-import { useCatalogStatus } from "@/hooks/use-catalog-status";
+import { ProductExplorer } from "@/components/product-explorer";
+import { RecentlyViewedRail, RecommendedRail } from "@/components/product-rails";
 
 
 export const Route = createFileRoute("/")({
