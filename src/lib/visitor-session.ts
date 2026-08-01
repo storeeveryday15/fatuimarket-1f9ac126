@@ -28,7 +28,7 @@ export function getDeviceType(): "mobile" | "tablet" | "desktop" {
 export async function sendVisitorHeartbeat() {
   const sessionId = getVisitorSessionId();
   if (!sessionId) return;
-  let referrer: string | null = null;
+  let referrer: string | undefined;
   try {
     if (document.referrer && !document.referrer.includes(location.host)) {
       referrer = new URL(document.referrer).hostname;
