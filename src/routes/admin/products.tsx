@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRealtimeTable } from "@/hooks/use-realtime-table";
+import { useAdminProducts } from "@/hooks/use-admin-products";
 import { ProductEditor } from "@/components/admin/product-editor";
 import { inr } from "@/lib/admin/pricing";
 import {
@@ -33,10 +34,7 @@ function ProductsPage() {
     orderBy: "sort_order",
     ascending: true,
   });
-  const { rows: products, loading } = useRealtimeTable<InventoryProduct>("catalog_products", {
-    orderBy: "name",
-    ascending: true,
-  });
+  const { rows: products, loading } = useAdminProducts();
 
   const [stats, setStats] = useState<CategoryStats[]>([]);
   const [activeCat, setActiveCat] = useState<string | null>(null);

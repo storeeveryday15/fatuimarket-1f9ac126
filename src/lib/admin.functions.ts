@@ -66,7 +66,7 @@ async function buildSnapshot(supabase: any) {
       .gte("created_at", since)
       .order("created_at", { ascending: false })
       .limit(1000),
-    supabase.from("catalog_products").select("product_slug,tier_label,category,price_inr,supplier_cost_inr,visible,stock_status,featured"),
+    supabase.rpc("admin_catalog_products"),
     supabase.from("suppliers").select("name,status,priority,error_count,avg_response_ms,last_checked_at,auto_pricing_enabled,wallet_balance_inr"),
     supabase.from("profiles").select("id,created_at,wallet_balance"),
     supabase.from("support_tickets").select("status,priority,subject,created_at").limit(100),
@@ -349,10 +349,8 @@ export const runAutoPricing = createServerFn({ method: "POST" })
       price_rounding: settings.price_rounding as import("@/lib/admin/pricing").PriceRounding,
     };
 
-    const { data: products } = await context.supabase
-      .from("catalog_products")
-      .select("*")
-      .eq("auto_pricing", true);
+    const { data: allProducts } = await context.supabase.rpc("admin_catalog_products");
+    const products = ((allProducts ?? []) as Array<Record<string, any>>).filter((p) => p.auto_pricing);
 
     const changes: Array<{ id: string; sku: string; old_price: number; new_price: number; reason: string }> = [];
 
