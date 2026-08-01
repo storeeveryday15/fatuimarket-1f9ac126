@@ -157,7 +157,7 @@ function AdminPage() {
 
   return (
     <div>
-      <Dashboard orders={orders} users={users} />
+      <Dashboard />
 
       <div className="mt-8 flex flex-wrap gap-2 border-b border-border">
         <TabBtn active={tab === "dashboard"} onClick={() => setTab("dashboard")}><Package className="mr-1.5 inline h-4 w-4" /> Dashboard</TabBtn>
