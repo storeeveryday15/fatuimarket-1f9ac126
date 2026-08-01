@@ -6,7 +6,7 @@ import { ReviewForm } from "@/components/review-form";
 import { BannerSlider } from "@/components/banner-slider";
 import { TopCustomers } from "@/components/top-customers";
 import { OrderStats } from "@/components/order-stats";
-import { RecentPurchases } from "@/components/recent-purchases";
+
 import { ProductExplorer } from "@/components/product-explorer";
 import { RecentlyViewedRail, RecommendedRail } from "@/components/product-rails";
 
