@@ -49,15 +49,19 @@ export function LiveVisitors() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="group inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 backdrop-blur transition-all hover:border-emerald-400/50 hover:bg-emerald-500/20"
+        className="group inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-300 backdrop-blur transition-all hover:border-emerald-400/50 hover:bg-emerald-500/20 sm:gap-2 sm:px-3 sm:text-xs"
         aria-label="View live visitor stats"
       >
-        <span className="relative flex h-2.5 w-2.5">
+        <span className="relative flex h-2.5 w-2.5 shrink-0">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
         </span>
-        <span>{stats.online} online now</span>
+        <span className="whitespace-nowrap">
+          {stats.online} <span className="hidden xs:inline sm:inline">online now</span>
+          <span className="inline xs:hidden sm:hidden">live</span>
+        </span>
       </button>
+
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="border-purple-500/20 bg-black/90 backdrop-blur-xl">
