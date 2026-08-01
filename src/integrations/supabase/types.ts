@@ -1063,6 +1063,40 @@ export type Database = {
       }
     }
     Functions: {
+      admin_catalog_products: {
+        Args: never
+        Returns: {
+          auto_pricing: boolean
+          category: string | null
+          category_id: string | null
+          created_at: string
+          description: string | null
+          featured: boolean
+          id: string
+          image_url: string | null
+          name: string | null
+          price_inr: number
+          product_slug: string
+          product_type: string
+          sort_order: number
+          status: string
+          stock: number
+          stock_status: string
+          supplier_cost_inr: number
+          supplier_id: string | null
+          supplier_name: string | null
+          supplier_url: string | null
+          tier_label: string
+          updated_at: string
+          visible: boolean
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "catalog_products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       compute_cashback_inr: { Args: { amount: number }; Returns: number }
       expire_stale_orders: { Args: never; Returns: undefined }
       get_category_stats: {
