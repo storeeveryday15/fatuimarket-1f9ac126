@@ -24,9 +24,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const catalog = useCatalogStatus();
-
   return (
+
     <div>
       {/* Hero carousel */}
       <section className="container mx-auto max-w-7xl px-4 pt-6 md:pt-10">
