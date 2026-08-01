@@ -29,6 +29,7 @@ import { Route as GuidesGenshinImpactTopUpRouteImport } from './routes/guides.ge
 import { Route as BuySlugRouteImport } from './routes/buy.$slug'
 import { Route as AdminSuppliersRouteImport } from './routes/admin/suppliers'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminServersRouteImport } from './routes/admin/servers'
 import { Route as AdminProductsRouteImport } from './routes/admin/products'
 import { Route as AdminPricingRouteImport } from './routes/admin/pricing'
 import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
@@ -139,6 +140,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminServersRoute = AdminServersRouteImport.update({
+  id: '/servers',
+  path: '/servers',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminProductsRoute = AdminProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/servers': typeof AdminServersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/servers': typeof AdminServersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
@@ -259,6 +267,7 @@ export interface FileRoutesById {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/servers': typeof AdminServersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
@@ -291,6 +300,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/pricing'
     | '/admin/products'
+    | '/admin/servers'
     | '/admin/settings'
     | '/admin/suppliers'
     | '/buy/$slug'
@@ -320,6 +330,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/pricing'
     | '/admin/products'
+    | '/admin/servers'
     | '/admin/settings'
     | '/admin/suppliers'
     | '/buy/$slug'
@@ -350,6 +361,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/pricing'
     | '/admin/products'
+    | '/admin/servers'
     | '/admin/settings'
     | '/admin/suppliers'
     | '/buy/$slug'
@@ -526,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/servers': {
+      id: '/admin/servers'
+      path: '/servers'
+      fullPath: '/admin/servers'
+      preLoaderRoute: typeof AdminServersRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/products': {
       id: '/admin/products'
       path: '/products'
@@ -592,6 +611,7 @@ interface AdminRouteRouteChildren {
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminPricingRoute: typeof AdminPricingRoute
   AdminProductsRoute: typeof AdminProductsRoute
+  AdminServersRoute: typeof AdminServersRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSuppliersRoute: typeof AdminSuppliersRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -604,6 +624,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminPricingRoute: AdminPricingRoute,
   AdminProductsRoute: AdminProductsRoute,
+  AdminServersRoute: AdminServersRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSuppliersRoute: AdminSuppliersRoute,
   AdminIndexRoute: AdminIndexRoute,
@@ -637,13 +658,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

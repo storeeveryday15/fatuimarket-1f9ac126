@@ -248,6 +248,39 @@ export type Database = {
         }
         Relationships: []
       }
+      game_servers: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          label: string
+          product_slug: string
+          server_code: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label: string
+          product_slug: string
+          server_code: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          label?: string
+          product_slug?: string
+          server_code?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory_history: {
         Row: {
           actor_id: string | null

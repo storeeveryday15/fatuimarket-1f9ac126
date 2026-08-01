@@ -9,6 +9,7 @@ import {
   Bot,
   Bell,
   TrendingUp,
+  Globe,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -17,6 +18,7 @@ const LINKS: Array<{ to: string; label: string; icon: ComponentType<{ className?
   { to: "/admin/assistant", label: "AI Assistant", icon: Bot },
   { to: "/admin/suppliers", label: "Suppliers", icon: Truck },
   { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/servers", label: "Game Servers", icon: Globe },
   { to: "/admin/pricing", label: "Price Engine", icon: TrendingUp },
   { to: "/admin/analytics", label: "Analytics", icon: LineChart },
   { to: "/admin/customers", label: "Customers", icon: Users },

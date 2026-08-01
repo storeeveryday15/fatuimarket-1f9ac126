@@ -18,6 +18,7 @@ import { z } from "zod";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewsList } from "@/components/reviews-list";
 import { notifyOrder } from "@/lib/notify-order";
+import { useGameServers } from "@/hooks/use-game-servers";
 import { useProductStock } from "@/hooks/use-product-stock";
 
 
@@ -115,6 +116,7 @@ function ProductPage() {
   const [playerName, setPlayerName] = useState("");
   const [playerId, setPlayerId] = useState("");
   const [zone, setZone] = useState("");
+  const { servers: gameServers } = useGameServers(product.slug, product.servers ?? []);
   const [serverRegion, setServerRegion] = useState<string>(product.servers?.[0]?.id ?? "");
   const [email, setEmail] = useState("");
   const [placing, setPlacing] = useState(false);
@@ -123,6 +125,11 @@ function ProductPage() {
   const [useWallet, setUseWallet] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
   const [hasUsedWelcome, setHasUsedWelcome] = useState(true);
+
+  useEffect(() => {
+    if (!gameServers.length) return;
+    if (!gameServers.some((s) => s.id === serverRegion)) setServerRegion(gameServers[0]!.id);
+  }, [gameServers, serverRegion]);
 
   const isGiftCard = !product.needsPlayerId;
   const showEmailInput = isGiftCard || !user;
@@ -156,7 +163,7 @@ function ProductPage() {
 
   const needsId = product.needsPlayerId;
   const needsZone = product.slug === "mobile-legends";
-  const needsServer = !!product.needsServer && !!product.servers?.length;
+  const needsServer = gameServers.length > 0;
 
   const filled = (() => {
     if (!playerName.trim()) return false;
@@ -313,7 +320,7 @@ function ProductPage() {
                   <div className="md:col-span-2">
                     <label className="text-xs font-medium text-muted-foreground">Server / Region</label>
                     <select required value={serverRegion} onChange={(e) => setServerRegion(e.target.value)} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring">
-                      {product.servers!.map((s: Server) => (
+                      {gameServers.map((s: Server) => (
                         <option key={s.id} value={s.id}>{s.label}</option>
                       ))}
                     </select>
@@ -430,7 +437,7 @@ function ProductPage() {
               <Row label="Player" value={playerName || "—"} />
               {needsId && <Row label={product.idLabel ?? "UID"} value={playerId || "—"} />}
               {needsZone && <Row label="Zone" value={zone || "—"} />}
-              {needsServer && <Row label="Server" value={product.servers?.find((s: Server) => s.id === serverRegion)?.label ?? "—"} />}
+              {needsServer && <Row label="Server" value={gameServers.find((s: Server) => s.id === serverRegion)?.label ?? "—"} />}
               <Row label="Email" value={email || user?.email || "—"} />
               {region === "IN" && discountInr > 0 && <Row label="Coupon" value={`− ₹${discountInr}`} />}
               {region === "IN" && walletApplyInr > 0 && <Row label="Wallet" value={`− ₹${walletApplyInr.toFixed(2)}`} />}
