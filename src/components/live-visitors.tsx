@@ -57,8 +57,8 @@ export function LiveVisitors() {
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.9)]" />
         </span>
         <span className="whitespace-nowrap">
-          {stats.online} <span className="hidden xs:inline sm:inline">online now</span>
-          <span className="inline xs:hidden sm:hidden">live</span>
+          {stats.online} <span className="hidden sm:inline">online now</span>
+          <span className="sm:hidden">live</span>
         </span>
       </button>
 
