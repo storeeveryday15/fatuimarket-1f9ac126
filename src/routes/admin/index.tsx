@@ -5,6 +5,9 @@ import { toast } from "sonner";
 import { MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
 import { notifyOrder } from "@/lib/notify-order";
 import { VisitorAnalytics } from "@/components/admin/visitor-analytics";
+import { StatCard } from "@/components/admin/stat-card";
+import { RecentPurchases } from "@/components/admin/recent-purchases";
+import { inr, useAdminMetrics } from "@/hooks/use-admin-metrics";
 
 
 export const Route = createFileRoute("/admin/")({
