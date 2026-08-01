@@ -85,7 +85,7 @@ export function LiveOrdersTicker() {
         Live orders
       </span>
       <span className="hidden text-muted-foreground sm:inline">•</span>
-      <div key={row.order_code + index} className="min-w-0 flex-1 animate-fade-in truncate text-xs sm:text-sm">
+      <div key={row.order_code + index} className="min-w-0 flex-1 animate-fade-up truncate text-xs sm:text-sm">
         <span className="font-semibold text-[var(--neon)]">{row.masked_buyer ?? "Player"}</span>
         <span className="text-muted-foreground"> purchased </span>
         <span className="font-semibold">{row.tier_label}</span>
