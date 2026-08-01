@@ -1511,6 +1511,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_verified_buyer: { Args: { _user_id: string }; Returns: boolean }
       rate_assistant_chat: {
         Args: { _chat_id: string; _rating: number }
         Returns: undefined
