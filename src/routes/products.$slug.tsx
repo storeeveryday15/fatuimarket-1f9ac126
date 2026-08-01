@@ -22,6 +22,8 @@ import { useGameServers } from "@/hooks/use-game-servers";
 import { useProductStock } from "@/hooks/use-product-stock";
 import { useCatalogStatus } from "@/hooks/use-catalog-status";
 import { StockOverlay, stockImageClass } from "@/components/stock-overlay";
+import { RelatedProducts } from "@/components/product-rails";
+import { recordProductView } from "@/lib/recently-viewed";
 
 
 
@@ -176,6 +178,10 @@ function ProductPage() {
     if (showEmailInput && !email.trim()) return false;
     return true;
   })();
+
+  useEffect(() => {
+    recordProductView(product.slug, selected.label);
+  }, [product.slug, selected.label]);
 
   const stockInfo = useProductStock(product.slug, selected.label);
   const catalog = useCatalogStatus();
@@ -483,23 +489,12 @@ function ProductPage() {
             </p>
           </div>
 
-          <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-            {PRODUCTS.filter((p) => p.slug !== product.slug).slice(0, 3).map((p) => {
-              const rState = catalog.gameState(p.slug);
-              return (
-                <Link key={p.slug} to="/products/$slug" params={{ slug: p.slug }} className="surface-card overflow-hidden">
-                  <div className="relative">
-                    <img src={p.image} alt={p.name} loading="lazy" decoding="async" width={400} height={400} className={`aspect-square w-full object-cover ${stockImageClass(rState)}`} />
-                    <StockOverlay state={rState} size="sm" />
-                  </div>
-                  <div className="p-2 text-[11px] font-medium">{p.name}</div>
-                </Link>
-              );
-            })}
-
-          </div>
         </aside>
       </div>
+
+      <section className="mt-14">
+        <RelatedProducts slug={product.slug} tierLabel={selected.label} />
+      </section>
 
       <section className="mt-16 grid gap-8 lg:grid-cols-[1fr,400px]">
         <div>
