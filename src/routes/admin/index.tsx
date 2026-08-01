@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
 import { notifyOrder } from "@/lib/notify-order";
+import { VisitorAnalytics } from "@/components/admin/visitor-analytics";
 
 
 export const Route = createFileRoute("/admin/")({
@@ -268,13 +269,16 @@ function Dashboard({ orders, users }: { orders: Order[]; users: Profile[] }) {
   const revenueToday = completed.filter((o) => o.completed_at && new Date(o.completed_at) >= today).reduce((s, o) => s + (Number(o.amount_inr) || 0), 0);
   const pending = orders.filter((o) => o.status === "pending_payment" || o.status === "pending_verification" || o.status === "awaiting_verification").length;
   return (
-    <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      <Stat label="Total orders" value={orders.length.toString()} />
-      <Stat label="Pending" value={pending.toString()} highlight />
-      <Stat label="Completed" value={completed.length.toString()} />
-      <Stat label="Registered users" value={users.length.toString()} />
-      <Stat label="Revenue today" value={`₹${revenueToday.toFixed(0)}`} />
-    </div>
+    <>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <Stat label="Total orders" value={orders.length.toString()} />
+        <Stat label="Pending" value={pending.toString()} highlight />
+        <Stat label="Completed" value={completed.length.toString()} />
+        <Stat label="Registered users" value={users.length.toString()} />
+        <Stat label="Revenue today" value={`₹${revenueToday.toFixed(0)}`} />
+      </div>
+      <VisitorAnalytics />
+    </>
   );
 }
 

@@ -1,49 +1,58 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getVisitorSessionId } from "@/lib/visitor-session";
+import {
+  EMPTY_VISITOR_STATS,
+  fetchVisitorStats,
+  sendVisitorHeartbeat,
+  type VisitorStats,
+} from "@/lib/visitor-session";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-type Stats = { online: number; today: number; total: number };
+const HEARTBEAT_MS = 15_000;
+const REFRESH_MS = 15_000;
 
 export function LiveVisitors() {
-  const [stats, setStats] = useState<Stats>({ online: 0, today: 0, total: 0 });
+  const [stats, setStats] = useState<VisitorStats>(EMPTY_VISITOR_STATS);
   const [open, setOpen] = useState(false);
+  const lastFetch = useRef(0);
 
-  const fetchStats = async () => {
-    const { data } = await supabase.rpc("get_visitor_stats");
-    if (data && Array.isArray(data) && data[0]) {
-      setStats({ online: data[0].online ?? 0, today: data[0].today ?? 0, total: data[0].total ?? 0 });
-    }
-  };
+  const refresh = useCallback(async (force = false) => {
+    const now = Date.now();
+    if (!force && now - lastFetch.current < 5_000) return; // avoid realtime bursts
+    lastFetch.current = now;
+    const next = await fetchVisitorStats();
+    if (next) setStats(next);
+  }, []);
 
   useEffect(() => {
-    const sessionId = getVisitorSessionId();
-    if (!sessionId) return;
+    let alive = true;
 
-    const heartbeat = async () => {
-      await supabase.from("site_visitors").upsert(
-        { session_id: sessionId, last_seen_at: new Date().toISOString() },
-        { onConflict: "session_id" },
-      );
+    const beat = async () => {
+      if (document.visibilityState === "hidden") return; // inactive tabs go stale after 60s
+      await sendVisitorHeartbeat();
+      if (alive) refresh(true);
     };
 
-    heartbeat();
-    fetchStats();
+    beat();
 
-    const hb = setInterval(heartbeat, 30_000);
-    const st = setInterval(fetchStats, 15_000);
+    const hb = setInterval(beat, HEARTBEAT_MS);
+    const st = setInterval(() => refresh(true), REFRESH_MS);
+    const onVisible = () => { if (document.visibilityState === "visible") beat(); };
+    document.addEventListener("visibilitychange", onVisible);
 
     const ch = supabase
       .channel("visitor-stats")
-      .on("postgres_changes", { event: "*", schema: "public", table: "site_visitors" }, () => fetchStats())
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_visitors" }, () => refresh())
       .subscribe();
 
     return () => {
+      alive = false;
       clearInterval(hb);
       clearInterval(st);
+      document.removeEventListener("visibilitychange", onVisible);
       supabase.removeChannel(ch);
     };
-  }, []);
+  }, [refresh]);
 
   return (
     <>
@@ -62,7 +71,6 @@ export function LiveVisitors() {
         </span>
       </button>
 
-
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="border-purple-500/20 bg-black/90 backdrop-blur-xl">
           <DialogHeader>
@@ -72,6 +80,10 @@ export function LiveVisitors() {
             <StatRow label="🟢 Online now" value={stats.online} accent="text-emerald-400" />
             <StatRow label="📅 Visitors today" value={stats.today} accent="text-purple-300" />
             <StatRow label="🌍 Total visitors" value={stats.total} accent="text-blue-300" />
+            <div className="grid grid-cols-2 gap-3">
+              <StatRow label="🖥 Desktop" value={stats.desktop} accent="text-sky-300" />
+              <StatRow label="📱 Mobile" value={stats.mobile} accent="text-pink-300" />
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -81,7 +93,7 @@ export function LiveVisitors() {
 
 function StatRow({ label, value, accent }: { label: string; value: number; accent: string }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+    <div className="flex items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className={`text-2xl font-bold ${accent}`}>{value.toLocaleString()}</span>
     </div>
