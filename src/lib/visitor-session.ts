@@ -24,6 +24,19 @@ export function getDeviceType(): "mobile" | "tablet" | "desktop" {
   return "desktop";
 }
 
+/** Coarse browser family — used only for aggregate analytics. */
+export function getBrowser(): string {
+  if (typeof navigator === "undefined") return "Unknown";
+  const ua = navigator.userAgent;
+  if (/Edg\//i.test(ua)) return "Edge";
+  if (/OPR\/|Opera/i.test(ua)) return "Opera";
+  if (/SamsungBrowser/i.test(ua)) return "Samsung";
+  if (/Firefox\//i.test(ua)) return "Firefox";
+  if (/Chrome\//i.test(ua)) return "Chrome";
+  if (/Safari\//i.test(ua)) return "Safari";
+  return "Other";
+}
+
 /** Records/refreshes the anonymous visitor session. No IPs or personal data. */
 export async function sendVisitorHeartbeat() {
   const sessionId = getVisitorSessionId();
@@ -39,6 +52,7 @@ export async function sendVisitorHeartbeat() {
     _session_id: sessionId,
     _device_type: getDeviceType(),
     _referrer: referrer,
+    _browser: getBrowser(),
   });
 }
 
