@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { getDeviceType, getVisitorSessionId } from "@/lib/visitor-session";
 
 export type ViewedItem = { slug: string; tier?: string; at: number };
 
