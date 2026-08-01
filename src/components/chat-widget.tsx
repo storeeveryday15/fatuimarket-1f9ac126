@@ -383,6 +383,11 @@ export function ChatWidget() {
                 </div>
               </div>
             ))}
+            {busy && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl bg-secondary px-3 py-2 text-sm text-muted-foreground">Fatui AI is typing…</div>
+              </div>
+            )}
             <div ref={endRef} />
           </div>
           <div className="border-t border-border px-3 py-2">
@@ -391,7 +396,8 @@ export function ChatWidget() {
                 <button
                   key={q}
                   onClick={() => send(q)}
-                  className="rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                  disabled={busy}
+                  className="rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] text-muted-foreground hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
                 >
                   {q}
                 </button>
@@ -400,24 +406,27 @@ export function ChatWidget() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                send(input);
+                void send(input);
               }}
               className="flex gap-2"
             >
               <input
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type a message…"
+                placeholder="Ask about top-ups, prices, delivery…"
                 className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
               <button
                 type="submit"
-                className="grid h-9 w-9 place-items-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground"
+                disabled={busy}
+                className="grid h-9 w-9 place-items-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </button>
             </form>
           </div>
+
         </div>
       )}
     </>
