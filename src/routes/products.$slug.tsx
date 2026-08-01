@@ -224,7 +224,9 @@ function ProductPage() {
         customer_contact: null,
         game_id,
         server_id: needsZone ? zone.trim() : null,
-        server_region: needsServer ? serverRegion : null,
+        server_region: needsServer
+          ? (gameServers.find((s) => s.id === serverRegion)?.label ?? serverRegion)
+          : null,
         player_name: playerName.trim(),
         product_slug: product.slug,
         product_name: product.name,

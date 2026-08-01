@@ -28,6 +28,7 @@ type Order = {
   player_name: string | null;
   game_id: string | null;
   server_id: string | null;
+  server_region: string | null;
   product_name: string;
   tier_label: string;
   amount_inr: number | null;
@@ -283,7 +284,7 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
       <table className="w-full text-sm">
         <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
           <tr>
-            <th className="px-3 py-3">Order</th><th className="px-3 py-3">Customer</th><th className="px-3 py-3">Product</th><th className="px-3 py-3">Amount</th><th className="px-3 py-3">Proof</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Actions</th>
+            <th className="px-3 py-3">Order</th><th className="px-3 py-3">Customer</th><th className="px-3 py-3">Product</th><th className="px-3 py-3">Server / Region</th><th className="px-3 py-3">Amount</th><th className="px-3 py-3">Proof</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -301,6 +302,15 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
               <td className="px-3 py-3">
                 <div className="font-semibold">{o.product_name}</div>
                 <div className="text-xs text-muted-foreground">{o.tier_label}</div>
+              </td>
+              <td className="px-3 py-3">
+                {o.server_region ? (
+                  <span className="inline-block rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold">{o.server_region}</span>
+                ) : o.server_id ? (
+                  <span className="text-xs">Zone/Server: <span className="font-mono">{o.server_id}</span></span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
               </td>
               <td className="px-3 py-3 font-semibold">
                 {o.currency === "INR" ? `₹${o.amount_inr}` : `$${o.amount_usd}`}
@@ -322,7 +332,7 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
               </td>
             </tr>
           ))}
-          {orders.length === 0 && <tr><td colSpan={7} className="px-3 py-10 text-center text-sm text-muted-foreground">No orders.</td></tr>}
+          {orders.length === 0 && <tr><td colSpan={8} className="px-3 py-10 text-center text-sm text-muted-foreground">No orders.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -354,7 +364,8 @@ function OrderDrawer({ order, screenshotUrl, onClose, onAction }: {
           <KV k="Product" v={`${order.product_name} — ${order.tier_label}`} />
           <KV k="Player" v={order.player_name ?? "—"} />
           <KV k="Game UID" v={order.game_id ?? "—"} />
-          {order.server_id && <KV k="Server" v={order.server_id} />}
+          {order.server_region && <KV k="Server / Region" v={order.server_region} />}
+          {order.server_id && <KV k="Zone / Server ID" v={order.server_id} />}
           <KV k="Email" v={order.customer_email ?? "—"} />
           <KV k="Amount" v={order.currency === "INR" ? `₹${order.amount_inr}` : `$${order.amount_usd}`} />
           <KV k="UTR" v={order.utr ?? "—"} />
