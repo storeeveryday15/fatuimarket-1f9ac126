@@ -117,6 +117,11 @@ function DashboardPage() {
           ))
         )}
       </div>
+
+      <div className="mt-14 space-y-12">
+        <RecentlyViewedRail />
+        <RecommendedRail />
+      </div>
     </div>
   );
 }
