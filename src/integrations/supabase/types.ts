@@ -324,6 +324,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "inventory_history_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "inventory_history_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -464,6 +471,13 @@ export type Database = {
             referencedRelation: "catalog_products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       platform_settings: {
@@ -566,6 +580,13 @@ export type Database = {
             columns: ["catalog_product_id"]
             isOneToOne: false
             referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_history_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products_public"
             referencedColumns: ["id"]
           },
           {
@@ -928,6 +949,77 @@ export type Database = {
       }
     }
     Views: {
+      catalog_products_public: {
+        Row: {
+          category: string | null
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          featured: boolean | null
+          id: string | null
+          image_url: string | null
+          name: string | null
+          price_inr: number | null
+          product_slug: string | null
+          product_type: string | null
+          sort_order: number | null
+          status: string | null
+          stock: number | null
+          stock_status: string | null
+          tier_label: string | null
+          updated_at: string | null
+          visible: boolean | null
+        }
+        Insert: {
+          category?: string | null
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          id?: string | null
+          image_url?: string | null
+          name?: string | null
+          price_inr?: number | null
+          product_slug?: string | null
+          product_type?: string | null
+          sort_order?: number | null
+          status?: string | null
+          stock?: number | null
+          stock_status?: string | null
+          tier_label?: string | null
+          updated_at?: string | null
+          visible?: boolean | null
+        }
+        Update: {
+          category?: string | null
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          id?: string | null
+          image_url?: string | null
+          name?: string | null
+          price_inr?: number | null
+          product_slug?: string | null
+          product_type?: string | null
+          sort_order?: number | null
+          status?: string | null
+          stock?: number | null
+          stock_status?: string | null
+          tier_label?: string | null
+          updated_at?: string | null
+          visible?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_orders_feed: {
         Row: {
           amount_inr: number | null
