@@ -20,6 +20,9 @@ import { ReviewsList } from "@/components/reviews-list";
 import { notifyOrder } from "@/lib/notify-order";
 import { useGameServers } from "@/hooks/use-game-servers";
 import { useProductStock } from "@/hooks/use-product-stock";
+import { useCatalogStatus } from "@/hooks/use-catalog-status";
+import { StockOverlay, stockImageClass } from "@/components/stock-overlay";
+
 
 
 
@@ -175,6 +178,11 @@ function ProductPage() {
   })();
 
   const stockInfo = useProductStock(product.slug, selected.label);
+  const catalog = useCatalogStatus();
+  const gameState = catalog.gameState(product.slug);
+  const tierState = catalog.tierState(product.slug, selected.label);
+  const purchaseBlocked = stockInfo.soldOut || tierState.blocked;
+
 
 
   const copyUid = async () => {
@@ -270,7 +278,9 @@ function ProductPage() {
         <div className="space-y-6">
           <div className="surface-card overflow-hidden">
             <div className="relative h-48 md:h-64">
-              <img src={product.image} alt={product.name} width={1200} height={900} decoding="async" fetchPriority="high" className="h-full w-full object-cover" />
+              <img src={product.image} alt={product.name} width={1200} height={900} decoding="async" fetchPriority="high" className={`h-full w-full object-cover ${stockImageClass(gameState)}`} />
+              <StockOverlay state={gameState} size="lg" />
+
               <div className={`absolute inset-0 bg-gradient-to-t ${product.accent} opacity-40 mix-blend-overlay`} />
               <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
               <div className="absolute bottom-4 left-5">
@@ -389,15 +399,18 @@ function ProductPage() {
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {product.denominations.map((d: Denomination) => {
                   const active = selected.id === d.id;
+                  const dState = catalog.tierState(product.slug, d.label);
                   return (
-                    <button type="button" key={d.id} onClick={() => setSelected(d)} className={cn("group relative rounded-xl border bg-background/40 p-4 text-left transition-all", active ? "border-[var(--neon)] glow-ring" : "border-border hover:border-foreground/30")}>
-                      {d.bonus && <span className="absolute right-2 top-2 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">{d.bonus}</span>}
+                    <button type="button" key={d.id} onClick={() => setSelected(d)} disabled={dState.blocked} className={cn("group relative overflow-hidden rounded-xl border bg-background/40 p-4 text-left transition-all", active ? "border-[var(--neon)] glow-ring" : "border-border hover:border-foreground/30", dState.blocked && "cursor-not-allowed opacity-70")}>
+                      {d.bonus && !dState.blocked && <span className="absolute right-2 top-2 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold text-success">{d.bonus}</span>}
                       <div className="text-sm font-semibold">{d.label}</div>
                       <div className="mt-1 text-xs text-muted-foreground">{region === "IN" ? `₹${getINR(d)}` : `$${d.price.toFixed(2)} USD`}</div>
-                      {active && <Check className="absolute bottom-3 right-3 h-4 w-4 text-[var(--neon)]" />}
+                      {active && !dState.blocked && <Check className="absolute bottom-3 right-3 h-4 w-4 text-[var(--neon)]" />}
+                      <StockOverlay state={dState} size="sm" />
                     </button>
                   );
                 })}
+
               </div>
               {stockInfo.tracked && stockInfo.label && (
                 <div className={cn("mt-3 inline-flex rounded-lg px-3 py-1.5 text-xs font-semibold", stockInfo.soldOut ? "bg-destructive/15 text-destructive" : stockInfo.low ? "bg-warning/15 text-warning" : "bg-success/15 text-success")}>
@@ -450,8 +463,9 @@ function ProductPage() {
               </div>
             </div>
 
-            <button type="button" disabled={placing || !filled || stockInfo.soldOut} onClick={continueToPayment} className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform hover:scale-[1.01] disabled:opacity-50">
-              {stockInfo.soldOut ? "Out of Stock" : placing ? "Creating order…" : <>Continue to payment <ArrowRight className="h-4 w-4" /></>}
+            <button type="button" disabled={placing || !filled || purchaseBlocked} onClick={continueToPayment} className="mt-6 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-transform hover:scale-[1.01] disabled:opacity-50">
+              {purchaseBlocked ? (tierState.blocked ? tierState.label : "Out of Stock") : placing ? "Creating order…" : <>Continue to payment <ArrowRight className="h-4 w-4" /></>}
+
             </button>
 
 
@@ -470,12 +484,19 @@ function ProductPage() {
           </div>
 
           <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-            {PRODUCTS.filter((p) => p.slug !== product.slug).slice(0, 3).map((p) => (
-              <Link key={p.slug} to="/products/$slug" params={{ slug: p.slug }} className="surface-card overflow-hidden">
-                <img src={p.image} alt={p.name} loading="lazy" decoding="async" width={400} height={400} className="aspect-square w-full object-cover" />
-                <div className="p-2 text-[11px] font-medium">{p.name}</div>
-              </Link>
-            ))}
+            {PRODUCTS.filter((p) => p.slug !== product.slug).slice(0, 3).map((p) => {
+              const rState = catalog.gameState(p.slug);
+              return (
+                <Link key={p.slug} to="/products/$slug" params={{ slug: p.slug }} className="surface-card overflow-hidden">
+                  <div className="relative">
+                    <img src={p.image} alt={p.name} loading="lazy" decoding="async" width={400} height={400} className={`aspect-square w-full object-cover ${stockImageClass(rState)}`} />
+                    <StockOverlay state={rState} size="sm" />
+                  </div>
+                  <div className="p-2 text-[11px] font-medium">{p.name}</div>
+                </Link>
+              );
+            })}
+
           </div>
         </aside>
       </div>

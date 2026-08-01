@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Category, InventoryProduct } from "@/lib/admin/inventory";
+import { DEFAULT_LOW_STOCK_THRESHOLD, DISPLAY_STATUS_OPTIONS } from "@/lib/stock-status";
 
 type FormState = {
   name: string;
@@ -13,6 +14,9 @@ type FormState = {
   product_type: string;
   stock: number;
   status: string;
+  display_status: string;
+  low_stock_threshold: number;
+  auto_status: boolean;
   supplier_name: string;
   image_url: string;
   description: string;
@@ -28,10 +32,14 @@ const blank = (categoryId: string, slug: string): FormState => ({
   product_type: "unlimited",
   stock: 0,
   status: "active",
+  display_status: "auto",
+  low_stock_threshold: DEFAULT_LOW_STOCK_THRESHOLD,
+  auto_status: true,
   supplier_name: "",
   image_url: "",
   description: "",
 });
+
 
 const field =
   "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm";
@@ -68,6 +76,10 @@ export function ProductEditor({
         product_type: product.product_type,
         stock: Number(product.stock ?? 0),
         status: product.status,
+        display_status: product.display_status ?? "auto",
+        low_stock_threshold: Number(product.low_stock_threshold ?? DEFAULT_LOW_STOCK_THRESHOLD),
+        auto_status: product.auto_status !== false,
+
         supplier_name: product.supplier_name ?? "",
         image_url: product.image_url ?? "",
         description: product.description ?? "",
@@ -97,6 +109,10 @@ export function ProductEditor({
       product_type: form.product_type,
       stock: form.product_type === "limited" ? Math.max(0, Number(form.stock) || 0) : 0,
       status: form.status,
+      display_status: form.display_status,
+      low_stock_threshold: Math.max(0, Math.trunc(Number(form.low_stock_threshold) || 0)),
+      auto_status: form.auto_status,
+
       supplier_name: form.supplier_name.trim() || null,
       image_url: form.image_url.trim() || null,
       description: form.description.trim() || null,
@@ -197,9 +213,49 @@ export function ProductEditor({
                 <option value="active">Active</option>
                 <option value="hidden">Hidden</option>
                 <option value="out_of_stock">Out of Stock</option>
+                <option value="restocking">Restocking</option>
+                <option value="coming_soon">Coming Soon</option>
+                <option value="disabled">Disabled</option>
               </select>
             </label>
           </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+              Display status
+              <select className={field} value={form.display_status} onChange={(e) => set("display_status", e.target.value)}>
+                {DISPLAY_STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+              Low stock threshold
+              <input
+                type="number"
+                min={0}
+                className={field}
+                value={form.low_stock_threshold}
+                onChange={(e) => set("low_stock_threshold", Number(e.target.value))}
+              />
+            </label>
+          </div>
+
+          <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-border bg-background/40 p-3 text-sm">
+            <input
+              type="checkbox"
+              checked={form.auto_status}
+              onChange={(e) => set("auto_status", e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[var(--neon)]"
+            />
+            <span>
+              <span className="font-medium">Automatically apply status based on stock</span>
+              <span className="block text-[11px] text-muted-foreground">
+                Marks the product Limited at or below the threshold and Sold Out at zero stock.
+              </span>
+            </span>
+          </label>
+
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1 text-xs font-medium text-muted-foreground">

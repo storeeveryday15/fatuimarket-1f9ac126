@@ -1,6 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getSeoLanding, seoBaseUrl, SEO_LANDINGS, type SeoLanding } from "@/lib/seo-landings";
 import { getProduct } from "@/lib/products";
+import { useCatalogStatus } from "@/hooks/use-catalog-status";
+import { StockOverlay, stockImageClass } from "@/components/stock-overlay";
+
 
 export const Route = createFileRoute("/buy/$slug")({
   loader: ({ params }): { landing: SeoLanding } => {
@@ -105,6 +108,9 @@ function SeoLandingPage() {
   const product = l.productSlug ? getProduct(l.productSlug) : undefined;
   const heroImage = l.image ?? product?.image;
   const imageAlt = l.imageAlt ?? `${l.h1} — Fatui Market`;
+  const catalog = useCatalogStatus();
+  const landingState = catalog.gameState(product?.slug ?? "");
+
 
   return (
     <article className="mx-auto max-w-3xl px-4 py-10">
@@ -121,25 +127,35 @@ function SeoLandingPage() {
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{l.h1}</h1>
         <p className="mt-3 text-muted-foreground">{l.intro}</p>
         {heroImage && (
-          <img
-            src={heroImage}
-            alt={imageAlt}
-            width={1200}
-            height={630}
-            loading="lazy"
-            decoding="async"
-            className="mt-6 aspect-[1200/630] w-full rounded-xl border border-border object-cover"
-          />
+          <div className="relative mt-6 overflow-hidden rounded-xl border border-border">
+            <img
+              src={heroImage}
+              alt={imageAlt}
+              width={1200}
+              height={630}
+              loading="lazy"
+              decoding="async"
+              className={`aspect-[1200/630] w-full object-cover ${stockImageClass(landingState)}`}
+            />
+            <StockOverlay state={landingState} size="lg" />
+          </div>
         )}
         {product && (
           <div className="mt-5 flex flex-wrap gap-2">
-            <Link
-              to="/products/$slug"
-              params={{ slug: product.slug }}
-              className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Top up {product.name} now
-            </Link>
+            {landingState.blocked ? (
+              <span className="inline-flex items-center rounded-md border border-border bg-secondary px-4 py-2 text-sm font-medium text-muted-foreground">
+                {landingState.label}
+              </span>
+            ) : (
+              <Link
+                to="/products/$slug"
+                params={{ slug: product.slug }}
+                className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Top up {product.name} now
+              </Link>
+            )}
+
             <Link
               to="/track"
               className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent"
