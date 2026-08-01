@@ -332,7 +332,7 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
               </td>
             </tr>
           ))}
-          {orders.length === 0 && <tr><td colSpan={7} className="px-3 py-10 text-center text-sm text-muted-foreground">No orders.</td></tr>}
+          {orders.length === 0 && <tr><td colSpan={8} className="px-3 py-10 text-center text-sm text-muted-foreground">No orders.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -364,7 +364,8 @@ function OrderDrawer({ order, screenshotUrl, onClose, onAction }: {
           <KV k="Product" v={`${order.product_name} — ${order.tier_label}`} />
           <KV k="Player" v={order.player_name ?? "—"} />
           <KV k="Game UID" v={order.game_id ?? "—"} />
-          {order.server_id && <KV k="Server" v={order.server_id} />}
+          {order.server_region && <KV k="Server / Region" v={order.server_region} />}
+          {order.server_id && <KV k="Zone / Server ID" v={order.server_id} />}
           <KV k="Email" v={order.customer_email ?? "—"} />
           <KV k="Amount" v={order.currency === "INR" ? `₹${order.amount_inr}` : `$${order.amount_usd}`} />
           <KV k="UTR" v={order.utr ?? "—"} />
