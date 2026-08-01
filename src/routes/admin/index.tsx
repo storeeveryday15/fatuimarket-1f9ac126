@@ -284,7 +284,7 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
       <table className="w-full text-sm">
         <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
           <tr>
-            <th className="px-3 py-3">Order</th><th className="px-3 py-3">Customer</th><th className="px-3 py-3">Product</th><th className="px-3 py-3">Amount</th><th className="px-3 py-3">Proof</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Actions</th>
+            <th className="px-3 py-3">Order</th><th className="px-3 py-3">Customer</th><th className="px-3 py-3">Product</th><th className="px-3 py-3">Server / Region</th><th className="px-3 py-3">Amount</th><th className="px-3 py-3">Proof</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -302,6 +302,15 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
               <td className="px-3 py-3">
                 <div className="font-semibold">{o.product_name}</div>
                 <div className="text-xs text-muted-foreground">{o.tier_label}</div>
+              </td>
+              <td className="px-3 py-3">
+                {o.server_region ? (
+                  <span className="inline-block rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold">{o.server_region}</span>
+                ) : o.server_id ? (
+                  <span className="text-xs">Zone/Server: <span className="font-mono">{o.server_id}</span></span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
               </td>
               <td className="px-3 py-3 font-semibold">
                 {o.currency === "INR" ? `₹${o.amount_inr}` : `$${o.amount_usd}`}
