@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Package, ArrowRight } from "lucide-react";
+import { RecentlyViewedRail, RecommendedRail } from "@/components/product-rails";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -115,6 +116,11 @@ function DashboardPage() {
             </Link>
           ))
         )}
+      </div>
+
+      <div className="mt-14 space-y-12">
+        <RecentlyViewedRail />
+        <RecommendedRail />
       </div>
     </div>
   );

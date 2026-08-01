@@ -78,8 +78,8 @@ export function SiteHeader() {
           )}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:block"><LiveVisitors /></div>
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="shrink-0"><LiveVisitors /></div>
           {userEmail ? (
             <button
               onClick={signOut}
