@@ -34,8 +34,8 @@ export function recordProductView(slug: string, tier?: string) {
   void supabase
     .rpc("record_product_view", {
       _product_slug: slug,
-      _tier_label: tier ?? null,
-      _session_id: getVisitorSessionId() || null,
+      _tier_label: tier ?? undefined,
+      _session_id: getVisitorSessionId() || undefined,
       _device_type: getDeviceType(),
     })
     .then(undefined, () => undefined);
