@@ -163,7 +163,11 @@ export function ChatWidget() {
     const m = msgs[i];
     if (!m?.chatId || m.rated) return;
     setMsgs((prev) => prev.map((x, j) => (j === i ? { ...x, rated: value } : x)));
-    await supabase.rpc("rate_assistant_chat", { _chat_id: m.chatId, _rating: value }).catch(() => undefined);
+    try {
+      await supabase.rpc("rate_assistant_chat", { _chat_id: m.chatId, _rating: value });
+    } catch {
+      /* rating is best-effort */
+    }
   };
 
   const send = async (text: string) => {
