@@ -1,43 +1,43 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Instagram } from "lucide-react";
+import { MessageCircle, X, Send, Instagram, RotateCcw } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { askFatuiAssistant } from "@/lib/assistant.functions";
 import { WHATSAPP_LINK, INSTAGRAM_LINK, TELEGRAM_LINK } from "@/lib/products";
 
 type Msg = { role: "bot" | "user"; text: string };
 
+const GREETING: Msg = {
+  role: "bot",
+  text: "Hi! I'm Fatui AI ✨ — ask me about any game top-up, prices, delivery, wallet, refunds or the latest in-game events.",
+};
+
 const QUICK = [
   "How long does delivery take?",
-  "How do I pay with UPI?",
-  "I paid but no top-up",
+  "What do I need for a Mobile Legends top-up?",
+  "What's new in Genshin Impact?",
   "Refund policy",
   "Talk to a human",
 ];
 
-function reply(q: string): string {
-  const t = q.toLowerCase();
-  if (t.includes("how long") || t.includes("delivery") || t.includes("take")) {
-    return "⚡ Most orders are delivered in under 60 seconds after we verify your payment. Diamonds top-ups go straight to your game ID; gift codes are emailed.";
-  }
-  if (t.includes("upi") || t.includes("pay")) {
-    return "📱 Pick a product, choose your pack, and scan the UPI QR or tap 'Pay with UPI'. The exact amount is pre-filled. After paying, paste your 12-digit UTR on the order page so we can verify instantly.";
-  }
-  if (t.includes("paid") && (t.includes("no") || t.includes("not") || t.includes("didn"))) {
-    return "I'm sorry! Please share your Order ID (starts with FM-) and a screenshot of payment. Tap 'Talk to a human' below and we'll fix it within minutes.";
-  }
-  if (t.includes("refund")) {
-    return "💸 Full refund within 30 minutes if delivery hasn't started. After delivery, refunds depend on the publisher. See /refund for full policy.";
-  }
-  if (t.includes("human") || t.includes("agent") || t.includes("support") || t.includes("whatsapp")) {
-    return `👤 Connecting you to a human. Tap here: ${WHATSAPP_LINK}`;
-  }
-  if (t.includes("price") || t.includes("cost")) {
-    return "All prices are listed on the product page. India: INR (UPI). International: USD (Card/PayPal). No hidden fees.";
-  }
-  if (t.includes("hi") || t.includes("hello") || t.includes("hey")) {
-    return "Hey! 👋 Welcome to Fatui Market. How can I help?";
-  }
-  return "I'll escalate that to our team. Tap 'Talk to a human' below for WhatsApp support, or share your question and we'll get back fast.";
+/** Pulls the signed-in customer's own recent orders (RLS-scoped) for context. */
+async function ownOrderContext(): Promise<string | undefined> {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u.user) return undefined;
+  const { data } = await supabase
+    .from("orders")
+    .select("order_code,product_name,tier_label,status,server_region,created_at")
+    .order("created_at", { ascending: false })
+    .limit(5);
+  if (!data?.length) return undefined;
+  return data
+    .map(
+      (o) =>
+        `${o.order_code}: ${o.product_name} ${o.tier_label} — ${o.status}${o.server_region ? ` (${o.server_region})` : ""} on ${new Date(o.created_at).toLocaleDateString()}`,
+    )
+    .join("\n");
 }
+
 
 // Brand icons (inline SVG for accurate look)
 const WhatsAppIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
@@ -65,16 +65,21 @@ type Orbit = {
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [msgs, setMsgs] = useState<Msg[]>([
-    { role: "bot", text: "Hi! I'm Fatui Bot 🤖. Ask about pricing, delivery, payments, or refunds." },
-  ]);
+  const [msgs, setMsgs] = useState<Msg[]>([GREETING]);
   const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const ask = useServerFn(askFatuiAssistant);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs, chatOpen]);
+
+  useEffect(() => {
+    if (chatOpen && !busy) inputRef.current?.focus();
+  }, [chatOpen, busy]);
 
   // Close orbital menu on outside click / Escape
   useEffect(() => {
@@ -94,21 +99,45 @@ export function ChatWidget() {
   }, [open]);
 
   const send = async (text: string) => {
-    if (!text.trim()) return;
-    const next: Msg[] = [...msgs, { role: "user", text }];
+    const q = text.trim();
+    if (!q || busy) return;
+    const next: Msg[] = [...msgs, { role: "user", text: q }];
     setMsgs(next);
     setInput("");
-    setTimeout(() => setMsgs((m) => [...m, { role: "bot", text: reply(text) }]), 350);
-    if (/human|agent|support|paid|refund|issue|problem/i.test(text)) {
+    setBusy(true);
+
+    try {
+      const orderContext = await ownOrderContext().catch(() => undefined);
+      const history = next
+        .filter((m) => m !== GREETING)
+        .slice(-16)
+        .map((m) => ({ role: m.role === "user" ? ("user" as const) : ("assistant" as const), content: m.text }));
+      const { reply } = await ask({ data: { messages: history, orderContext } });
+      setMsgs((m) => [...m, { role: "bot", text: reply }]);
+    } catch (err) {
+      console.error("[ChatWidget] assistant failed", err);
+      setMsgs((m) => [
+        ...m,
+        {
+          role: "bot",
+          text: `${err instanceof Error ? err.message : "Something went wrong."} You can also reach a human here: ${WHATSAPP_LINK}`,
+        },
+      ]);
+    } finally {
+      setBusy(false);
+    }
+
+    if (/human|agent|support|paid|refund|issue|problem/i.test(q)) {
       const { data: u } = await supabase.auth.getUser();
       await supabase.from("support_messages").insert({
         user_id: u.user?.id ?? null,
         name: u.user?.email ?? "Guest",
         contact: u.user?.email ?? null,
-        message: text,
+        message: q,
       });
     }
   };
+
 
   const orbits: Orbit[] = [
     {
@@ -310,17 +339,28 @@ export function ChatWidget() {
         <div className="fixed bottom-24 left-5 z-50 flex h-[min(540px,80vh)] w-[min(360px,92vw)] flex-col rounded-2xl border border-border bg-card shadow-2xl animate-scale-in">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <div>
-              <div className="text-sm font-semibold">Fatui Support</div>
-              <div className="text-[11px] text-success">● online</div>
+              <div className="text-sm font-semibold">Fatui AI Assistant</div>
+              <div className="text-[11px] text-success">● online · answers instantly</div>
             </div>
-            <button
-              onClick={() => setChatOpen(false)}
-              aria-label="Close"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setMsgs([GREETING])}
+                aria-label="New chat"
+                title="New chat"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setChatOpen(false)}
+                aria-label="Close"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
+
           <div className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
             {msgs.map((m, i) => (
               <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
@@ -343,6 +383,11 @@ export function ChatWidget() {
                 </div>
               </div>
             ))}
+            {busy && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl bg-secondary px-3 py-2 text-sm text-muted-foreground">Fatui AI is typing…</div>
+              </div>
+            )}
             <div ref={endRef} />
           </div>
           <div className="border-t border-border px-3 py-2">
@@ -351,7 +396,8 @@ export function ChatWidget() {
                 <button
                   key={q}
                   onClick={() => send(q)}
-                  className="rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                  disabled={busy}
+                  className="rounded-full border border-border bg-background/60 px-2.5 py-1 text-[11px] text-muted-foreground hover:border-foreground/30 hover:text-foreground disabled:opacity-50"
                 >
                   {q}
                 </button>
@@ -360,24 +406,27 @@ export function ChatWidget() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                send(input);
+                void send(input);
               }}
               className="flex gap-2"
             >
               <input
+                ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type a message…"
+                placeholder="Ask about top-ups, prices, delivery…"
                 className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
               <button
                 type="submit"
-                className="grid h-9 w-9 place-items-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground"
+                disabled={busy}
+                className="grid h-9 w-9 place-items-center rounded-lg bg-[image:var(--gradient-primary)] text-primary-foreground disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </button>
             </form>
           </div>
+
         </div>
       )}
     </>
