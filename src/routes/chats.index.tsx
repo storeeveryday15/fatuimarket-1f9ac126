@@ -34,7 +34,7 @@ export const Route = createFileRoute("/chats/")({
 });
 
 function ChatsPage() {
-  const { ready, user } = useRequireAuth();
+  const { status, user } = useRequireAuth();
   const navigate = useNavigate();
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [query, setQuery] = useState("");
@@ -46,10 +46,10 @@ function ChatsPage() {
   }, [showArchived]);
 
   useEffect(() => {
-    if (!ready || !user) return;
+    if (status !== "authed" || !user) return;
     void load();
     void historyEnabled().then(setSaving);
-  }, [ready, user, load]);
+  }, [status, user, load]);
 
   // Live sync: new chats started on another device appear immediately.
   useEffect(() => {
@@ -63,7 +63,7 @@ function ChatsPage() {
     };
   }, [user, load]);
 
-  if (!ready || !user) return null;
+  if (status !== "authed" || !user) return null;
 
   const startNew = async () => {
     const t = await createThread();

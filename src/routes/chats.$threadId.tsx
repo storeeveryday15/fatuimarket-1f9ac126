@@ -22,7 +22,7 @@ export const Route = createFileRoute("/chats/$threadId")({
 
 function ChatThreadPage() {
   const { threadId } = Route.useParams();
-  const { ready, user } = useRequireAuth();
+  const { status, user } = useRequireAuth();
   const [title, setTitle] = useState("Fatui AI");
 
   useEffect(() => {
@@ -50,7 +50,7 @@ function ChatThreadPage() {
     };
   }, [threadId, user]);
 
-  if (!ready || !user) return null;
+  if (status !== "authed" || !user) return null;
 
   return (
     <main className="mx-auto flex h-[calc(100vh-8rem)] w-full max-w-3xl flex-col px-3 py-4">
