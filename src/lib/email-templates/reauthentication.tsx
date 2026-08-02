@@ -10,7 +10,7 @@ interface ReauthenticationEmailProps {
 export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => (
   <EmailShell preview={`Your Fatui Market confirmation code is ${token}`}>
     <Text style={h1}>Confirm it's you</Text>
-    <Text style={text}>Enter this 6-digit code to confirm your identity.</Text>
+    <Text style={text}>Enter this verification code to confirm your identity.</Text>
     <div style={codeBox}>
       <Text style={codeText}>{token}</Text>
     </div>
