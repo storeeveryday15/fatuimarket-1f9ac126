@@ -72,17 +72,20 @@ function PricingPage() {
 
   const load = async () => {
     const [p, s, h, cfg] = await Promise.all([
-      supabase
-        .from("catalog_products")
-        .select("id,product_slug,tier_label,name,price_inr,supplier_cost_inr,competitor_price_inr,min_safe_price_inr,auto_pricing")
-        .order("product_slug"),
+      // Cost/margin columns are column-level restricted on the table; this
+      // admin-checked routine is the only way to read them.
+      supabase.rpc("admin_catalog_products"),
       supabase.from("price_schedules").select("*").order("apply_at", { ascending: true }),
       supabase.from("price_history").select("id,catalog_product_id,old_price_inr,new_price_inr,supplier_cost_inr,profit_inr,reason,created_at").order("created_at", { ascending: false }).limit(50),
       supabase.from("platform_settings").select("*").eq("id", 1).maybeSingle(),
     ]);
-    setProducts((p.data ?? []) as Product[]);
+    const rows = ((p.data ?? []) as Product[])
+      .slice()
+      .sort((a, b) => a.product_slug.localeCompare(b.product_slug));
+    setProducts(rows);
     setSchedules((s.data ?? []) as Schedule[]);
     setHistory((h.data ?? []) as HistoryRow[]);
+
     if (cfg.data) {
       setRules({
         min_profit_inr: Number(cfg.data.min_profit_inr) || DEFAULT_RULES.min_profit_inr,
