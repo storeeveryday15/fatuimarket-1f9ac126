@@ -455,6 +455,14 @@ export function ChatWidget() {
               </div>
             </div>
             <div className="flex items-center gap-1.5">
+              <a
+                href="/chats"
+                aria-label="Chat history"
+                title="Chat history"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <History className="h-4 w-4" />
+              </a>
               <button
                 onClick={() => setMsgs([])}
                 aria-label="New chat"
