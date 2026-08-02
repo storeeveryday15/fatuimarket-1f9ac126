@@ -25,7 +25,7 @@ const MODEL = "google/gemini-3.6-flash";
 const MAX_TOOL_ROUNDS = 3;
 
 const Attachment = z.object({
-  url: z.string().max(200_000),
+  url: z.string().max(8_000_000),
   name: z.string().max(200).optional(),
   type: z.string().max(100).optional(),
 });
