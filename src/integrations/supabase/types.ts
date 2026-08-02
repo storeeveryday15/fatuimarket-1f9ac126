@@ -278,6 +278,83 @@ export type Database = {
         }
         Relationships: []
       }
+      assistant_thread_messages: {
+        Row: {
+          attachments: Json
+          content: string
+          created_at: string
+          id: string
+          role: string
+          sources: Json
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          attachments?: Json
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          sources?: Json
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          attachments?: Json
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          sources?: Json
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistant_thread_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistant_threads: {
+        Row: {
+          archived: boolean
+          created_at: string
+          id: string
+          last_message: string | null
+          last_message_at: string
+          pinned: boolean
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string
+          pinned?: boolean
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          last_message?: string | null
+          last_message_at?: string
+          pinned?: boolean
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           active: boolean
@@ -1130,6 +1207,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_history_enabled: boolean
           contact: string | null
           country: string | null
           created_at: string
@@ -1142,6 +1220,7 @@ export type Database = {
           wallet_balance: number
         }
         Insert: {
+          ai_history_enabled?: boolean
           contact?: string | null
           country?: string | null
           created_at?: string
@@ -1154,6 +1233,7 @@ export type Database = {
           wallet_balance?: number
         }
         Update: {
+          ai_history_enabled?: boolean
           contact?: string | null
           country?: string | null
           created_at?: string
@@ -1485,6 +1565,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      web_search_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          expires_at: string
+          id: string
+          provider: string
+          query: string
+          results: Json
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider: string
+          query: string
+          results?: Json
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          provider?: string
+          query?: string
+          results?: Json
+        }
+        Relationships: []
       }
     }
     Views: {

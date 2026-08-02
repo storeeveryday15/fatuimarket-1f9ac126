@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Instagram, RotateCcw, Bot, Minus, ThumbsUp, ThumbsDown } from "lucide-react";
+import { MessageCircle, X, Send, Instagram, RotateCcw, Bot, Minus, ThumbsUp, ThumbsDown, History as HistoryIcon } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { askFatuiAssistant, getAssistantConfig } from "@/lib/assistant.functions";
@@ -455,6 +455,14 @@ export function ChatWidget() {
               </div>
             </div>
             <div className="flex items-center gap-1.5">
+              <a
+                href="/chats"
+                aria-label="Chat history"
+                title="Chat history"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <HistoryIcon className="h-4 w-4" />
+              </a>
               <button
                 onClick={() => setMsgs([])}
                 aria-label="New chat"

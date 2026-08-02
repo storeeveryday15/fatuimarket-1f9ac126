@@ -21,11 +21,13 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChatsIndexRouteImport } from './routes/chats.index'
 import { Route as BuyIndexRouteImport } from './routes/buy.index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as OrdersCodeRouteImport } from './routes/orders.$code'
 import { Route as GuidesGenshinImpactTopUpRouteImport } from './routes/guides.genshin-impact-top-up'
+import { Route as ChatsThreadIdRouteImport } from './routes/chats.$threadId'
 import { Route as BuySlugRouteImport } from './routes/buy.$slug'
 import { Route as AdminSuppliersRouteImport } from './routes/admin/suppliers'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
@@ -102,6 +104,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatsIndexRoute = ChatsIndexRouteImport.update({
+  id: '/chats/',
+  path: '/chats/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BuyIndexRoute = BuyIndexRouteImport.update({
   id: '/buy/',
   path: '/buy/',
@@ -128,6 +135,11 @@ const GuidesGenshinImpactTopUpRoute =
     path: '/guides/genshin-impact-top-up',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ChatsThreadIdRoute = ChatsThreadIdRouteImport.update({
+  id: '/chats/$threadId',
+  path: '/chats/$threadId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BuySlugRoute = BuySlugRouteImport.update({
   id: '/buy/$slug',
   path: '/buy/$slug',
@@ -228,11 +240,13 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
+  '/chats/$threadId': typeof ChatsThreadIdRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/buy/': typeof BuyIndexRoute
+  '/chats/': typeof ChatsIndexRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -261,11 +275,13 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
+  '/chats/$threadId': typeof ChatsThreadIdRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/admin': typeof AdminIndexRoute
   '/buy': typeof BuyIndexRoute
+  '/chats': typeof ChatsIndexRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -296,11 +312,13 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
   '/buy/$slug': typeof BuySlugRoute
+  '/chats/$threadId': typeof ChatsThreadIdRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/buy/': typeof BuyIndexRoute
+  '/chats/': typeof ChatsIndexRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -332,11 +350,13 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/suppliers'
     | '/buy/$slug'
+    | '/chats/$threadId'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
     | '/admin/'
     | '/buy/'
+    | '/chats/'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
     | '/lovable/email/auth/preview'
@@ -365,11 +385,13 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/suppliers'
     | '/buy/$slug'
+    | '/chats/$threadId'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
     | '/admin'
     | '/buy'
+    | '/chats'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
     | '/lovable/email/auth/preview'
@@ -399,11 +421,13 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/suppliers'
     | '/buy/$slug'
+    | '/chats/$threadId'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
     | '/admin/'
     | '/buy/'
+    | '/chats/'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
     | '/lovable/email/auth/preview'
@@ -425,10 +449,12 @@ export interface RootRouteChildren {
   TrackRoute: typeof TrackRoute
   WalletRoute: typeof WalletRoute
   BuySlugRoute: typeof BuySlugRoute
+  ChatsThreadIdRoute: typeof ChatsThreadIdRoute
   GuidesGenshinImpactTopUpRoute: typeof GuidesGenshinImpactTopUpRoute
   OrdersCodeRoute: typeof OrdersCodeRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
   BuyIndexRoute: typeof BuyIndexRoute
+  ChatsIndexRoute: typeof ChatsIndexRoute
   ApiPublicClaimAdminRoute: typeof ApiPublicClaimAdminRoute
   ApiPublicNotifyOrderRoute: typeof ApiPublicNotifyOrderRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -522,6 +548,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chats/': {
+      id: '/chats/'
+      path: '/chats'
+      fullPath: '/chats/'
+      preLoaderRoute: typeof ChatsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/buy/': {
       id: '/buy/'
       path: '/buy'
@@ -555,6 +588,13 @@ declare module '@tanstack/react-router' {
       path: '/guides/genshin-impact-top-up'
       fullPath: '/guides/genshin-impact-top-up'
       preLoaderRoute: typeof GuidesGenshinImpactTopUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chats/$threadId': {
+      id: '/chats/$threadId'
+      path: '/chats/$threadId'
+      fullPath: '/chats/$threadId'
+      preLoaderRoute: typeof ChatsThreadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/buy/$slug': {
@@ -709,10 +749,12 @@ const rootRouteChildren: RootRouteChildren = {
   TrackRoute: TrackRoute,
   WalletRoute: WalletRoute,
   BuySlugRoute: BuySlugRoute,
+  ChatsThreadIdRoute: ChatsThreadIdRoute,
   GuidesGenshinImpactTopUpRoute: GuidesGenshinImpactTopUpRoute,
   OrdersCodeRoute: OrdersCodeRoute,
   ProductsSlugRoute: ProductsSlugRoute,
   BuyIndexRoute: BuyIndexRoute,
+  ChatsIndexRoute: ChatsIndexRoute,
   ApiPublicClaimAdminRoute: ApiPublicClaimAdminRoute,
   ApiPublicNotifyOrderRoute: ApiPublicNotifyOrderRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
@@ -722,13 +764,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
