@@ -29,6 +29,7 @@ import { Route as OrdersCodeRouteImport } from './routes/orders.$code'
 import { Route as GuidesGenshinImpactTopUpRouteImport } from './routes/guides.genshin-impact-top-up'
 import { Route as ChatsThreadIdRouteImport } from './routes/chats.$threadId'
 import { Route as BuySlugRouteImport } from './routes/buy.$slug'
+import { Route as ApiAiImageRouteImport } from './routes/api/ai-image'
 import { Route as AdminSuppliersRouteImport } from './routes/admin/suppliers'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminServersRouteImport } from './routes/admin/servers'
@@ -145,6 +146,11 @@ const BuySlugRoute = BuySlugRouteImport.update({
   path: '/buy/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiImageRoute = ApiAiImageRouteImport.update({
+  id: '/api/ai-image',
+  path: '/api/ai-image',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSuppliersRoute = AdminSuppliersRouteImport.update({
   id: '/suppliers',
   path: '/suppliers',
@@ -239,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/admin/servers': typeof AdminServersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
+  '/api/ai-image': typeof ApiAiImageRoute
   '/buy/$slug': typeof BuySlugRoute
   '/chats/$threadId': typeof ChatsThreadIdRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
@@ -274,6 +281,7 @@ export interface FileRoutesByTo {
   '/admin/servers': typeof AdminServersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
+  '/api/ai-image': typeof ApiAiImageRoute
   '/buy/$slug': typeof BuySlugRoute
   '/chats/$threadId': typeof ChatsThreadIdRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
@@ -311,6 +319,7 @@ export interface FileRoutesById {
   '/admin/servers': typeof AdminServersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/suppliers': typeof AdminSuppliersRoute
+  '/api/ai-image': typeof ApiAiImageRoute
   '/buy/$slug': typeof BuySlugRoute
   '/chats/$threadId': typeof ChatsThreadIdRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
@@ -349,6 +358,7 @@ export interface FileRouteTypes {
     | '/admin/servers'
     | '/admin/settings'
     | '/admin/suppliers'
+    | '/api/ai-image'
     | '/buy/$slug'
     | '/chats/$threadId'
     | '/guides/genshin-impact-top-up'
@@ -384,6 +394,7 @@ export interface FileRouteTypes {
     | '/admin/servers'
     | '/admin/settings'
     | '/admin/suppliers'
+    | '/api/ai-image'
     | '/buy/$slug'
     | '/chats/$threadId'
     | '/guides/genshin-impact-top-up'
@@ -420,6 +431,7 @@ export interface FileRouteTypes {
     | '/admin/servers'
     | '/admin/settings'
     | '/admin/suppliers'
+    | '/api/ai-image'
     | '/buy/$slug'
     | '/chats/$threadId'
     | '/guides/genshin-impact-top-up'
@@ -448,6 +460,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
   WalletRoute: typeof WalletRoute
+  ApiAiImageRoute: typeof ApiAiImageRoute
   BuySlugRoute: typeof BuySlugRoute
   ChatsThreadIdRoute: typeof ChatsThreadIdRoute
   GuidesGenshinImpactTopUpRoute: typeof GuidesGenshinImpactTopUpRoute
@@ -604,6 +617,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BuySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai-image': {
+      id: '/api/ai-image'
+      path: '/api/ai-image'
+      fullPath: '/api/ai-image'
+      preLoaderRoute: typeof ApiAiImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/suppliers': {
       id: '/admin/suppliers'
       path: '/suppliers'
@@ -748,6 +768,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
   WalletRoute: WalletRoute,
+  ApiAiImageRoute: ApiAiImageRoute,
   BuySlugRoute: BuySlugRoute,
   ChatsThreadIdRoute: ChatsThreadIdRoute,
   GuidesGenshinImpactTopUpRoute: GuidesGenshinImpactTopUpRoute,
