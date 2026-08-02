@@ -39,7 +39,7 @@ async function ownOrderContext(): Promise<string | undefined> {
     .join("\n");
 }
 
-function readAsDataUrl(file: File): Promise<string> {
+function readAsDataUrl(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
