@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getDeviceType, getVisitorSessionId } from "@/lib/visitor-session";
+import { safeLocalStorage } from "@/lib/safe-browser";
 
 export type ViewedItem = { slug: string; tier?: string; at: number };
 
@@ -11,7 +12,7 @@ const EVENT = "fm:recently-viewed";
 export function readRecentlyViewed(): ViewedItem[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(KEY);
+    const raw = safeLocalStorage.getItem(KEY);
     const parsed: unknown = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) return [];
     return parsed
@@ -24,22 +25,24 @@ export function readRecentlyViewed(): ViewedItem[] {
 
 export function recordProductView(slug: string, tier?: string) {
   if (typeof window === "undefined") return;
-  const next = [{ slug, tier, at: Date.now() }, ...readRecentlyViewed().filter((v) => v.slug !== slug)].slice(0, MAX);
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(next));
+    const next = [{ slug, tier, at: Date.now() }, ...readRecentlyViewed().filter((v) => v.slug !== slug)].slice(0, MAX);
+    safeLocalStorage.setItem(KEY, JSON.stringify(next));
+
+    // Anonymous view analytics for the admin dashboard (no personal data).
+    void supabase
+      .rpc("record_product_view", {
+        _product_slug: slug,
+        _tier_label: tier ?? undefined,
+        _session_id: getVisitorSessionId() || undefined,
+        _device_type: getDeviceType(),
+      })
+      .then(undefined, () => undefined);
+
+    window.dispatchEvent(new Event(EVENT));
   } catch {
-    /* storage may be unavailable (private mode) — viewing history is optional */
+    /* viewing history is optional — never break the product page */
   }
-  // Anonymous view analytics for the admin dashboard (no personal data).
-  void supabase
-    .rpc("record_product_view", {
-      _product_slug: slug,
-      _tier_label: tier ?? undefined,
-      _session_id: getVisitorSessionId() || undefined,
-      _device_type: getDeviceType(),
-    })
-    .then(undefined, () => undefined);
-  window.dispatchEvent(new Event(EVENT));
 }
 
 /** Live list of the last 10 products the customer opened. */
