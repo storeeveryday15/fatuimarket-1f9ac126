@@ -461,7 +461,7 @@ export function ChatWidget() {
                 title="Chat history"
                 className="text-muted-foreground hover:text-foreground"
               >
-                <History className="h-4 w-4" />
+                <HistoryIcon className="h-4 w-4" />
               </a>
               <button
                 onClick={() => setMsgs([])}
