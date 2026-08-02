@@ -1567,6 +1567,10 @@ export type Database = {
         }[]
       }
       compute_cashback_inr: { Args: { amount: number }; Returns: number }
+      credit_wallet_topup: {
+        Args: { _amount: number; _ref: string; _user_id: string }
+        Returns: number
+      }
       expire_stale_orders: { Args: never; Returns: undefined }
       get_assistant_stats: {
         Args: never

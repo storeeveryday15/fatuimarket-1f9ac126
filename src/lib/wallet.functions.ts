@@ -108,47 +108,28 @@ export const verifyWalletTopup = createServerFn({ method: "POST" })
     const amountInr = Number(rzpOrder.amount) / 100;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Idempotency: if we've already credited this payment, return current balance.
-    const { data: existing } = await supabaseAdmin
-      .from("wallet_transactions")
-      .select("id")
-      .eq("user_id", context.userId)
-      .eq("type", "topup")
-      .eq("description", `Razorpay ${data.razorpay_payment_id}`)
-      .maybeSingle();
-
-    if (!existing) {
-      const { data: prof, error: profErr } = await supabaseAdmin
-        .from("profiles")
-        .select("wallet_balance")
-        .eq("id", context.userId)
-        .maybeSingle();
-      if (profErr) throw new Error("Failed to load profile");
-      const current = Number(prof?.wallet_balance ?? 0);
-      const next = current + amountInr;
-      const { error: updErr } = await supabaseAdmin
-        .from("profiles")
-        .update({ wallet_balance: next })
-        .eq("id", context.userId);
-      if (updErr) throw new Error("Failed to credit wallet");
-
-      await supabaseAdmin.from("wallet_transactions").insert({
-        user_id: context.userId,
-        type: "topup",
-        amount_inr: amountInr,
-        description: `Razorpay ${data.razorpay_payment_id}`,
-      });
+    // Atomic + idempotent: the DB function inserts a uniquely-keyed ledger row
+    // and only increments the balance when that insert actually happened, so
+    // concurrent or replayed verifications cannot double-credit the wallet.
+    const { data: balance, error: creditErr } = await (
+      supabaseAdmin.rpc as unknown as (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: number | null; error: { message: string } | null }>
+    )("credit_wallet_topup", {
+      _user_id: context.userId,
+      _amount: amountInr,
+      _ref: `Razorpay ${data.razorpay_payment_id}`,
+    });
+    if (creditErr) {
+      console.error("Wallet credit failed", creditErr.message);
+      throw new Error("Failed to credit wallet");
     }
-
-    const { data: prof2 } = await supabaseAdmin
-      .from("profiles")
-      .select("wallet_balance")
-      .eq("id", context.userId)
-      .maybeSingle();
 
     return {
       verified: true as const,
-      balance: Number(prof2?.wallet_balance ?? 0),
+      balance: Number(balance ?? 0),
       amount_inr: amountInr,
     };
   });
+
