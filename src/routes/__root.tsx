@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { installClientResilience, recoverFromStaleAssets } from "../lib/client-resilience";
 import { ThemeProvider } from "../components/theme-provider";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
@@ -45,6 +46,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
+    // A deploy can invalidate hashed chunks a phone still has cached — reload once.
+    if (recoverFromStaleAssets(error)) return;
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
