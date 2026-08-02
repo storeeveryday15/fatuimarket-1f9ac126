@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { askFatuiAssistant, getAssistantConfig } from "@/lib/assistant.functions";
 import { WHATSAPP_LINK, INSTAGRAM_LINK, TELEGRAM_LINK } from "@/lib/products";
+import { safeSessionStorage, safeUUID } from "@/lib/safe-browser";
 
 type Msg = { role: "bot" | "user"; text: string; at: number; chatId?: string | null; rated?: 1 | -1 };
 
@@ -37,10 +38,10 @@ const time = (t: number) => new Date(t).toLocaleTimeString([], { hour: "2-digit"
 
 function getSessionId() {
   if (typeof window === "undefined") return undefined;
-  let id = sessionStorage.getItem(SESSION_KEY);
+  let id = safeSessionStorage.getItem(SESSION_KEY);
   if (!id) {
-    id = crypto.randomUUID();
-    sessionStorage.setItem(SESSION_KEY, id);
+    id = safeUUID();
+    safeSessionStorage.setItem(SESSION_KEY, id);
   }
   return id;
 }
@@ -105,7 +106,7 @@ export function ChatWidget() {
   // Restore this browsing session's conversation.
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const raw = safeSessionStorage.getItem(STORAGE_KEY);
       if (raw) setMsgs(JSON.parse(raw) as Msg[]);
     } catch {
       /* ignore */
@@ -114,7 +115,7 @@ export function ChatWidget() {
 
   useEffect(() => {
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(msgs.slice(-40)));
+      safeSessionStorage.setItem(STORAGE_KEY, JSON.stringify(msgs.slice(-40)));
     } catch {
       /* ignore */
     }
