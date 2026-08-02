@@ -19,7 +19,7 @@ export const MagicLinkEmail = ({ token }: MagicLinkEmailProps) => (
   <EmailShell preview={`Your Fatui Market login code is ${token}`}>
     <Text style={h1}>Your login code</Text>
     <Text style={text}>
-      Enter this 6-digit code on the Fatui Market sign-in screen to continue.
+      Enter this verification code on the Fatui Market sign-in screen to continue.
     </Text>
     <div style={codeBox}>
       <Text style={codeText}>{token}</Text>

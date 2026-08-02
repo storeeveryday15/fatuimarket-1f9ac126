@@ -35,7 +35,10 @@ async function claimAdmin() {
 }
 
 const emailSchema = z.string().trim().email("Enter a valid email").max(254);
-const otpSchema = z.string().regex(/^\d{6}$/, "Enter the 6-digit code");
+const OTP_LENGTH = 8;
+const otpSchema = z
+  .string()
+  .regex(/^\d{6,8}$/, "Enter the verification code from your email");
 
 function GoogleIcon() {
   return (
@@ -94,7 +97,7 @@ function AuthPage() {
         },
       });
       if (error) throw error;
-      toast.success("We sent a 6-digit code to your email.");
+      toast.success("We sent a verification code to your email.");
       setStep("otp");
       setResendIn(45);
     } catch (err: unknown) {
@@ -156,7 +159,7 @@ function AuthPage() {
         <p className="mt-1 text-sm text-muted-foreground">
           {step === "email"
             ? "Sign in with Google or get a one-time code by email."
-            : `We sent a 6-digit code to ${email}. It expires in 10 minutes.`}
+            : `We sent a verification code to ${email}. It expires in 10 minutes.`}
         </p>
 
         {step === "email" && (
@@ -209,7 +212,7 @@ function AuthPage() {
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] disabled:opacity-60"
               >
                 <KeyRound className="h-4 w-4" />
-                {loading ? "Sending…" : "Send 6-digit code"}
+                {loading ? "Sending…" : "Send verification code"}
               </button>
             </form>
           </>
@@ -218,13 +221,13 @@ function AuthPage() {
         {step === "otp" && (
           <form onSubmit={verifyCode} className="mt-6 space-y-5">
             <div className="flex justify-center">
-              <InputOTP maxLength={6} value={otp} onChange={setOtp} autoFocus>
+              <InputOTP maxLength={OTP_LENGTH} value={otp} onChange={setOtp} autoFocus>
                 <InputOTPGroup>
-                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                  {Array.from({ length: OTP_LENGTH }, (_, i) => i).map((i) => (
                     <InputOTPSlot
                       key={i}
                       index={i}
-                      className="h-12 w-11 text-lg font-bold"
+                      className="h-11 w-9 text-base font-bold sm:h-12 sm:w-10 sm:text-lg"
                     />
                   ))}
                 </InputOTPGroup>
@@ -232,7 +235,7 @@ function AuthPage() {
             </div>
             <button
               type="submit"
-              disabled={loading || otp.length !== 6}
+              disabled={loading || otp.length < 6}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] disabled:opacity-60"
             >
               {loading ? "Verifying…" : "Verify & continue"}

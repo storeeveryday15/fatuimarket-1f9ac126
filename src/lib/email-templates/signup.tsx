@@ -14,7 +14,7 @@ export const SignupEmail = ({ token }: SignupEmailProps) => (
   <EmailShell preview={`Your Fatui Market verification code is ${token}`}>
     <Text style={h1}>Confirm your email</Text>
     <Text style={text}>
-      Welcome to Fatui Market. Enter this 6-digit code on the sign-in screen to
+      Welcome to Fatui Market. Enter this verification code on the sign-in screen to
       verify your email and finish creating your account.
     </Text>
     <div style={codeBox}>
