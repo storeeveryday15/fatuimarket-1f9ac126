@@ -20,6 +20,11 @@ import { AdsterraBanner2 } from "../components/adsterra-banner-2";
 import { ChatWidget } from "../components/chat-widget";
 import { Toaster } from "sonner";
 
+// Must run before any component renders: privacy-restricted Android browsers
+// throw on `localStorage`, which otherwise crashes the header during hydration.
+installClientResilience();
+
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
