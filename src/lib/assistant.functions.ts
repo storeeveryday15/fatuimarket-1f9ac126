@@ -257,14 +257,39 @@ ${data.orderContext ? `\nTHIS CUSTOMER'S RECENT ORDERS\n${data.orderContext}` : 
         ]
       : undefined;
 
+    type ContentPart =
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string } };
+
     type ChatMsg = {
       role: "system" | "user" | "assistant" | "tool";
-      content: string | null;
+      content: string | ContentPart[] | null;
       tool_calls?: Array<{ id: string; type: string; function: { name: string; arguments: string } }>;
       tool_call_id?: string;
     };
 
-    const convo: ChatMsg[] = [{ role: "system", content: system }, ...data.messages];
+    /** Turns an uploaded file into a model-readable part (images) or a note (other files). */
+    const toParts = (m: (typeof data.messages)[number]): string | ContentPart[] => {
+      const files = m.attachments ?? [];
+      if (!files.length) return m.content;
+      const parts: ContentPart[] = [];
+      const notes: string[] = [];
+      for (const f of files) {
+        const type = f.type ?? "";
+        if (type.startsWith("image/") && f.url) parts.push({ type: "image_url", image_url: { url: f.url } });
+        else if (type.startsWith("video/")) notes.push(`[customer attached a video: ${f.name ?? "clip"} — you cannot watch videos; ask for a screenshot of the moment they need help with]`);
+        else notes.push(`[customer attached a file: ${f.name ?? "file"}]`);
+      }
+      const text = [m.content, ...notes].filter(Boolean).join("\n");
+      parts.unshift({ type: "text", text: text || "Please look at this." });
+      return parts;
+    };
+
+    const convo: ChatMsg[] = [
+      { role: "system", content: system },
+      ...data.messages.map((m) => ({ role: m.role, content: toParts(m) }) as ChatMsg),
+    ];
+
     const sources: AssistantSource[] = [];
     let reply = "";
 
