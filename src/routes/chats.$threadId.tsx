@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Bot } from "lucide-react";
-import { useRequireAuth } from "@/hooks/use-require-auth";
 import { AiChatWindow } from "@/components/ai-chat-window";
+import { isSignedIn, storeGetThreadTitle } from "@/lib/chat-store";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/chats/$threadId")({
@@ -22,20 +22,28 @@ export const Route = createFileRoute("/chats/$threadId")({
 
 function ChatThreadPage() {
   const { threadId } = Route.useParams();
-  const { status, user } = useRequireAuth();
   const [title, setTitle] = useState("Fatui AI");
+  const [ready, setReady] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
     let alive = true;
-    void supabase
-      .from("assistant_threads")
-      .select("title")
-      .eq("id", threadId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (alive && data?.title) setTitle(data.title);
-      });
+    void isSignedIn().then((v) => {
+      if (!alive) return;
+      setSignedIn(v);
+      setReady(true);
+    });
+    void storeGetThreadTitle(threadId).then((t) => {
+      if (alive && t) setTitle(t);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [threadId]);
+
+  // Title changes made on another device (cloud history only).
+  useEffect(() => {
+    if (!signedIn) return;
     const channel = supabase
       .channel(`thread-meta-${threadId}`)
       .on(
@@ -45,12 +53,11 @@ function ChatThreadPage() {
       )
       .subscribe();
     return () => {
-      alive = false;
       void supabase.removeChannel(channel);
     };
-  }, [threadId, user]);
+  }, [threadId, signedIn]);
 
-  if (status !== "authed" || !user) return null;
+  if (!ready) return null;
 
   return (
     <main className="mx-auto flex h-[calc(100vh-8rem)] w-full max-w-3xl flex-col px-3 py-4">
@@ -69,3 +76,4 @@ function ChatThreadPage() {
     </main>
   );
 }
+

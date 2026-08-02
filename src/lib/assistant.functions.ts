@@ -24,16 +24,24 @@ const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3.6-flash";
 const MAX_TOOL_ROUNDS = 3;
 
+const Attachment = z.object({
+  url: z.string().max(8_000_000),
+  name: z.string().max(200).optional(),
+  type: z.string().max(100).optional(),
+});
+
 const Input = z.object({
   messages: z
     .array(
       z.object({
         role: z.enum(["user", "assistant"]),
         content: z.string().max(4000),
+        attachments: z.array(Attachment).max(4).optional(),
       }),
     )
     .max(30),
   orderContext: z.string().max(2000).optional(),
+
   sessionId: z.string().max(64).optional(),
 });
 
@@ -212,6 +220,17 @@ ${
 - NEVER invent events, codes, dates, prices or patch notes.
 - NEVER reveal or speculate about supplier names, supplier costs, profit margins, internal notes, database structure, API keys, staff contact details or any other customer's data. If asked, say that information is private.
 - Never ask for a game password, OTP or login credentials.
+
+IMAGES THE CUSTOMER UPLOADS
+- You can see uploaded images. Read any text in them (receipts, UTR numbers, error messages, order codes), explain game screens and items, diagnose login/payment/top-up errors, and answer follow-up questions about the same image later in the chat.
+- If a receipt or screenshot is unreadable, say exactly what is unclear and what to re-send.
+- You may describe people who appear in a photo (clothing, pose, setting) but never guess or state who an unknown real person is, and never help make a misleading edit of a real person.
+- Uploaded files belong to that customer alone. Never mention or compare another customer's uploads.
+
+CREATING IMAGES
+- The customer can generate art with the image button in the chat (wallpapers, anime art, banners, avatars, logos, posters) and edit an uploaded picture (background removal, upscaling, object removal, colour changes, adding text, thumbnails, Fatui Market promos). Point them to it when they ask for artwork.
+- Unsafe requests (sexual content, minors, gore, hate, illegal activity, impersonation, deepfakes, copyrighted characters or logos) are blocked automatically. If asked for one, explain kindly why and offer a safe original alternative.
+
 ${settings?.extra_instructions ? `\nSTORE OWNER INSTRUCTIONS\n${settings.extra_instructions}` : ""}
 
 ${STORE_POLICY}
@@ -249,14 +268,39 @@ ${data.orderContext ? `\nTHIS CUSTOMER'S RECENT ORDERS\n${data.orderContext}` : 
         ]
       : undefined;
 
+    type ContentPart =
+      | { type: "text"; text: string }
+      | { type: "image_url"; image_url: { url: string } };
+
     type ChatMsg = {
       role: "system" | "user" | "assistant" | "tool";
-      content: string | null;
+      content: string | ContentPart[] | null;
       tool_calls?: Array<{ id: string; type: string; function: { name: string; arguments: string } }>;
       tool_call_id?: string;
     };
 
-    const convo: ChatMsg[] = [{ role: "system", content: system }, ...data.messages];
+    /** Turns an uploaded file into a model-readable part (images) or a note (other files). */
+    const toParts = (m: (typeof data.messages)[number]): string | ContentPart[] => {
+      const files = m.attachments ?? [];
+      if (!files.length) return m.content;
+      const parts: ContentPart[] = [];
+      const notes: string[] = [];
+      for (const f of files) {
+        const type = f.type ?? "";
+        if (type.startsWith("image/") && f.url) parts.push({ type: "image_url", image_url: { url: f.url } });
+        else if (type.startsWith("video/")) notes.push(`[customer attached a video: ${f.name ?? "clip"} — you cannot watch videos; ask for a screenshot of the moment they need help with]`);
+        else notes.push(`[customer attached a file: ${f.name ?? "file"}]`);
+      }
+      const text = [m.content, ...notes].filter(Boolean).join("\n");
+      parts.unshift({ type: "text", text: text || "Please look at this." });
+      return parts;
+    };
+
+    const convo: ChatMsg[] = [
+      { role: "system", content: system },
+      ...data.messages.map((m) => ({ role: m.role, content: toParts(m) }) as ChatMsg),
+    ];
+
     const sources: AssistantSource[] = [];
     let reply = "";
 
