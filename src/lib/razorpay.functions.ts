@@ -90,6 +90,7 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
   });
 
 export const verifyRazorpayPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     z.object({
       razorpay_order_id: z.string().min(1),
@@ -98,7 +99,7 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
       order_code: z.string().min(1).max(64),
     }),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) throw new Error("Razorpay is not configured");
@@ -106,13 +107,15 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order, error } = await supabaseAdmin
       .from("orders")
-      .select("id, order_code, amount_inr, currency, region, status")
+      .select("id, order_code, amount_inr, currency, region, status, user_id")
       .eq("order_code", data.order_code)
       .maybeSingle();
     if (error) throw new Error("Failed to load order");
     if (!order) return { verified: false as const };
+    if (order.user_id !== context.userId) return { verified: false as const };
     if (order.currency !== "INR" || !order.amount_inr) {
       return { verified: false as const };
+
     }
 
     const { createHmac, timingSafeEqual } = await import("crypto");
