@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, X, Send, Instagram, RotateCcw, Bot, Minus, ThumbsUp, ThumbsDown } from "lucide-react";
+import { MessageCircle, X, Send, Instagram, RotateCcw, Bot, Minus, ThumbsUp, ThumbsDown, History as HistoryIcon } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { askFatuiAssistant, getAssistantConfig } from "@/lib/assistant.functions";
