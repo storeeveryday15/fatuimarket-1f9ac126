@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { notifyOrder } from "@/lib/notify-order";
 import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
+import { safeCopy } from "@/lib/safe-browser";
 
 type RazorpayCheckoutOptions = {
   key: string;
