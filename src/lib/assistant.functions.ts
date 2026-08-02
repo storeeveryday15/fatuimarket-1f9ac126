@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { PRODUCTS, getINR } from "@/lib/products";
 import { GAME_GUIDES, STORE_POLICY } from "@/lib/store-knowledge";
+import { SUPPORTED_GAMES_LINE } from "@/lib/game-knowledge";
 
 /**
  * Public customer-facing Fatui AI assistant.
@@ -12,12 +13,16 @@ import { GAME_GUIDES, STORE_POLICY } from "@/lib/store-knowledge";
  * and cached game news. Supplier costs, admin notes, secrets and other
  * customers' data are never queried on this path.
  *
+ * For general gaming questions the model can call a `web_search` tool, which is
+ * served by a cached live search provider (Tavily / Serper / Brave / Google).
+ *
  * Order context is supplied by the browser, which can only read the signed-in
  * customer's own orders under RLS.
  */
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3.6-flash";
+const MAX_TOOL_ROUNDS = 3;
 
 const Input = z.object({
   messages: z
@@ -31,6 +36,9 @@ const Input = z.object({
   orderContext: z.string().max(2000).optional(),
   sessionId: z.string().max(64).optional(),
 });
+
+export type AssistantSource = { title: string; url: string; trust: "official" | "community" | "other" };
+
 
 type PublicRow = {
   product_slug: string;
