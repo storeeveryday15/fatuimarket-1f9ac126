@@ -1,17 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 // Server-only Razorpay integration using the REST API (no SDK required).
 // Secrets (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET) are read inside handlers.
 // Amount is derived server-side from the database order — NEVER trusted from the client.
+// Both entry points require an authenticated caller who owns the order.
 
 export const createRazorpayOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator(
     z.object({
       order_code: z.string().min(1).max(64),
     }),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) {
@@ -22,18 +25,20 @@ export const createRazorpayOrder = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: order, error } = await supabaseAdmin
       .from("orders")
-      .select("id, order_code, amount_inr, currency, region, product_name, status")
+      .select("id, order_code, amount_inr, currency, region, product_name, status, user_id")
       .eq("order_code", data.order_code)
       .maybeSingle();
 
     if (error) throw new Error("Failed to load order");
     if (!order) throw new Error("Order not found");
+    if (order.user_id !== context.userId) throw new Error("Order not found");
     if (order.currency !== "INR" || order.region !== "IN") {
       throw new Error("Razorpay is only available for INR orders");
     }
     if (!["pending_payment"].includes(order.status)) {
       throw new Error("Order is not awaiting payment");
     }
+
     if (!order.amount_inr || Number(order.amount_inr) <= 0) {
       throw new Error("Order amount is invalid");
     }
