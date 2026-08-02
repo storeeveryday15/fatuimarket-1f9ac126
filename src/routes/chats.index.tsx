@@ -1,21 +1,20 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Bot, Plus, Search, Pin, PinOff, Archive, ArchiveRestore, Trash2, Pencil, Download, ShieldOff, ShieldCheck } from "lucide-react";
-import { useRequireAuth } from "@/hooks/use-require-auth";
+import { Bot, Plus, Search, Pin, PinOff, Archive, ArchiveRestore, Trash2, Pencil, Download, ShieldOff, ShieldCheck, UploadCloud } from "lucide-react";
 import {
-  clearAllThreads,
-  createThread,
-  deleteThread,
-  downloadText,
-  exportThread,
-  historyEnabled,
-  listMessages,
-  listThreads,
-  setHistoryEnabled,
-  updateThread,
+  importGuestChats,
+  isSignedIn,
+  storeClearAll,
+  storeCreateThread,
+  storeDeleteThread,
+  storeListMessages,
+  storeListThreads,
+  storeUpdateThread,
   type ChatThread,
-} from "@/lib/chat-threads";
+} from "@/lib/chat-store";
+import { downloadText, exportThread, historyEnabled, setHistoryEnabled } from "@/lib/chat-threads";
+import { GUEST_TTL_DAYS, guestHasChats } from "@/lib/guest-chat";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/chats/")({
@@ -34,26 +33,35 @@ export const Route = createFileRoute("/chats/")({
 });
 
 function ChatsPage() {
-  const { status, user } = useRequireAuth();
   const navigate = useNavigate();
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [query, setQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [saving, setSaving] = useState(true);
+  const [canImport, setCanImport] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const load = useCallback(async () => {
-    setThreads(await listThreads(showArchived));
+    setThreads(await storeListThreads(showArchived));
   }, [showArchived]);
 
   useEffect(() => {
-    if (status !== "authed" || !user) return;
+    void isSignedIn().then((v) => {
+      setSignedIn(v);
+      setCanImport(v && guestHasChats());
+      if (v) void historyEnabled().then(setSaving);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (signedIn === null) return;
     void load();
-    void historyEnabled().then(setSaving);
-  }, [status, user, load]);
+  }, [signedIn, load]);
 
   // Live sync: new chats started on another device appear immediately.
   useEffect(() => {
-    if (!user) return;
+    if (!signedIn) return;
     const channel = supabase
       .channel("my-threads")
       .on("postgres_changes", { event: "*", schema: "public", table: "assistant_threads" }, () => void load())
@@ -61,12 +69,12 @@ function ChatsPage() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [user, load]);
+  }, [signedIn, load]);
 
-  if (status !== "authed" || !user) return null;
+  if (signedIn === null) return null;
 
   const startNew = async () => {
-    const t = await createThread();
+    const t = await storeCreateThread();
     if (!t) return toast.error("Could not start a new chat.");
     void navigate({ to: "/chats/$threadId", params: { threadId: t.id } });
   };
@@ -78,19 +86,28 @@ function ChatsPage() {
   const rename = async (t: ChatThread) => {
     const title = window.prompt("Rename chat", t.title);
     if (!title?.trim()) return;
-    await updateThread(t.id, { title: title.trim().slice(0, 60) });
+    await storeUpdateThread(t.id, { title: title.trim().slice(0, 60) });
     void load();
   };
 
   const remove = async (t: ChatThread) => {
     if (!window.confirm("Delete this chat permanently?")) return;
-    await deleteThread(t.id);
+    await storeDeleteThread(t.id);
     void load();
   };
 
   const exportOne = async (t: ChatThread) => {
-    const msgs = await listMessages(t.id);
+    const msgs = await storeListMessages(t.id);
     downloadText(`fatui-ai-${t.id.slice(0, 8)}.txt`, exportThread(t, msgs));
+  };
+
+  const runImport = async () => {
+    setImporting(true);
+    const { threads: n } = await importGuestChats();
+    setImporting(false);
+    setCanImport(false);
+    void load();
+    toast.success(n ? `Imported ${n} chat${n === 1 ? "" : "s"} into your account.` : "No guest chats to import.");
   };
 
   return (
@@ -101,7 +118,9 @@ function ChatsPage() {
             <Bot className="h-6 w-6 text-primary" /> Recent Chats
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Every Fatui AI conversation, synced across your devices.
+            {signedIn
+              ? "Every Fatui AI conversation, synced across your devices."
+              : "Your Fatui AI conversations, saved on this device."}
           </p>
         </div>
         <button
@@ -111,6 +130,32 @@ function ChatsPage() {
           <Plus className="h-4 w-4" /> New chat
         </button>
       </div>
+
+      {!signedIn && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2.5 text-xs">
+          <span className="flex-1 text-muted-foreground">
+            You're chatting as a guest. These chats live only in this browser and are removed after {GUEST_TTL_DAYS} days
+            of inactivity — clearing browser data or switching devices loses them. Sign in to back them up permanently.
+          </span>
+          <Link to="/auth" className="rounded-lg bg-[image:var(--gradient-primary)] px-3 py-1.5 font-semibold text-primary-foreground">
+            Sign in
+          </Link>
+        </div>
+      )}
+
+      {canImport && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-success/40 bg-success/5 px-3 py-2.5 text-xs">
+          <UploadCloud className="h-4 w-4 text-success" />
+          <span className="flex-1 text-muted-foreground">We found chats you had as a guest on this device.</span>
+          <button
+            onClick={() => void runImport()}
+            disabled={importing}
+            className="rounded-lg border border-success/50 px-3 py-1.5 font-semibold text-success disabled:opacity-60"
+          >
+            {importing ? "Importing…" : "Import my guest chats"}
+          </button>
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px]">
@@ -133,24 +178,28 @@ function ChatsPage() {
       <div className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-secondary/30 px-3 py-2.5 text-xs text-muted-foreground">
         {saving ? <ShieldCheck className="h-4 w-4 text-success" /> : <ShieldOff className="h-4 w-4 text-destructive" />}
         <span className="flex-1">
-          {saving
-            ? "Chat history is on — your conversations are saved privately to your account."
-            : "Chat history is off — new conversations are not saved."}
+          {!signedIn
+            ? "Guest chats stay in this browser only — nothing is uploaded to our servers."
+            : saving
+              ? "Chat history is on — your conversations are saved privately to your account."
+              : "Chat history is off — new conversations are not saved."}
         </span>
-        <button
-          onClick={async () => {
-            await setHistoryEnabled(!saving);
-            setSaving(!saving);
-            toast.success(saving ? "Chat history disabled." : "Chat history enabled.");
-          }}
-          className="rounded-lg border border-input px-2.5 py-1 hover:text-foreground"
-        >
-          {saving ? "Turn off" : "Turn on"}
-        </button>
+        {signedIn && (
+          <button
+            onClick={async () => {
+              await setHistoryEnabled(!saving);
+              setSaving(!saving);
+              toast.success(saving ? "Chat history disabled." : "Chat history enabled.");
+            }}
+            className="rounded-lg border border-input px-2.5 py-1 hover:text-foreground"
+          >
+            {saving ? "Turn off" : "Turn on"}
+          </button>
+        )}
         <button
           onClick={async () => {
             if (!window.confirm("Delete every saved chat? This cannot be undone.")) return;
-            await clearAllThreads();
+            await storeClearAll();
             void load();
             toast.success("All chats deleted.");
           }}
@@ -187,13 +236,13 @@ function ChatsPage() {
                 {new Date(t.last_message_at).toLocaleDateString()}
               </span>
               <div className="flex shrink-0 items-center gap-1 text-muted-foreground">
-                <button onClick={() => void updateThread(t.id, { pinned: !t.pinned }).then(load)} aria-label={t.pinned ? "Unpin" : "Pin"} className="p-1 hover:text-foreground">
+                <button onClick={() => void storeUpdateThread(t.id, { pinned: !t.pinned }).then(load)} aria-label={t.pinned ? "Unpin" : "Pin"} className="p-1 hover:text-foreground">
                   {t.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                 </button>
                 <button onClick={() => void rename(t)} aria-label="Rename" className="p-1 hover:text-foreground">
                   <Pencil className="h-4 w-4" />
                 </button>
-                <button onClick={() => void updateThread(t.id, { archived: !t.archived }).then(load)} aria-label={t.archived ? "Unarchive" : "Archive"} className="p-1 hover:text-foreground">
+                <button onClick={() => void storeUpdateThread(t.id, { archived: !t.archived }).then(load)} aria-label={t.archived ? "Unarchive" : "Archive"} className="p-1 hover:text-foreground">
                   {t.archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                 </button>
                 <button onClick={() => void exportOne(t)} aria-label="Export" className="p-1 hover:text-foreground">
