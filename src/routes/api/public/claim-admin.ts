@@ -32,15 +32,19 @@ export const Route = createFileRoute("/api/public/claim-admin")({
         }
         const user = userRes.user;
         const email = (user.email || "").toLowerCase();
+        // Only a verified mailbox may claim the admin role — an unconfirmed
+        // signup must never be able to grab privileges.
+        const emailVerified = !!user.email_confirmed_at || !!user.confirmed_at;
 
         let isAdmin = false;
-        if (email === adminEmail) {
+        if (email === adminEmail && emailVerified) {
           await supabaseAdmin.from("user_roles").upsert(
             { user_id: user.id, role: "admin" },
             { onConflict: "user_id,role", ignoreDuplicates: true },
           );
           isAdmin = true;
         }
+
         return Response.json({ ok: true, isAdmin });
       },
     },
