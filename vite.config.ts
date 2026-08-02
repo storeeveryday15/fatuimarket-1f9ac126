@@ -25,8 +25,11 @@ export default defineConfig({
     // Older Android Chrome / WebView builds still in the wild choke on the
     // newest syntax (class fields, `??=`, top-level await), which surfaces as a
     // blank page or the generic error screen. Downlevel to a safe baseline.
-    build: { target: ["es2019", "chrome87", "safari14", "firefox78"] },
-    optimizeDeps: { esbuildOptions: { target: "es2019" } },
+    // (Browser targets only — an explicit `es2019` makes esbuild attempt an
+    // unsupported destructuring lowering and fails the build.)
+    build: { target: ["chrome87", "safari14", "firefox78"] },
+    optimizeDeps: { esbuildOptions: { target: "chrome87" } },
+
     resolve: {
       alias: {
         "entities/lib/decode.js": path.resolve(__dirname, "node_modules/entities/lib/decode.js"),
