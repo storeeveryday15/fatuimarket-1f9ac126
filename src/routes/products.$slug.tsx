@@ -24,6 +24,7 @@ import { useCatalogStatus } from "@/hooks/use-catalog-status";
 import { StockOverlay, stockImageClass } from "@/components/stock-overlay";
 import { RelatedProducts } from "@/components/product-rails";
 import { recordProductView } from "@/lib/recently-viewed";
+import { safeCopy, safeLocalStorage } from "@/lib/safe-browser";
 
 
 
@@ -93,14 +94,16 @@ type Region = "IN" | "INT";
 function useDetectedRegion(): [Region, (r: Region) => void] {
   const [region, setRegion] = useState<Region>("IN");
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem("fm_region") : null;
+    const stored = safeLocalStorage.getItem("fm_region");
     if (stored === "IN" || stored === "INT") { setRegion(stored); return; }
     fetch("https://ipwho.is/?fields=country_code")
-      .then((r) => r.json())
-      .then((d: { country_code?: string }) => setRegion(d?.country_code === "IN" ? "IN" : "INT"))
-      .catch(() => {});
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { country_code?: string } | null) => {
+        if (d?.country_code) setRegion(d.country_code === "IN" ? "IN" : "INT");
+      })
+      .catch(() => {}); // geo lookup is best-effort; default region stays
   }, []);
-  const update = (r: Region) => { setRegion(r); try { localStorage.setItem("fm_region", r); } catch {} };
+  const update = (r: Region) => { setRegion(r); safeLocalStorage.setItem("fm_region", r); };
   return [region, update];
 }
 
@@ -193,7 +196,8 @@ function ProductPage() {
 
   const copyUid = async () => {
     if (!playerId.trim()) return toast.error("Enter your UID first");
-    try { await navigator.clipboard.writeText(playerId.trim()); toast.success("UID copied"); } catch { toast.error("Copy failed"); }
+    const ok = await safeCopy(playerId.trim());
+    ok ? toast.success("UID copied") : toast.error("Copy failed");
   };
 
   const shareProduct = async () => {
