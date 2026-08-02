@@ -24,16 +24,24 @@ const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const MODEL = "google/gemini-3.6-flash";
 const MAX_TOOL_ROUNDS = 3;
 
+const Attachment = z.object({
+  url: z.string().max(200_000),
+  name: z.string().max(200).optional(),
+  type: z.string().max(100).optional(),
+});
+
 const Input = z.object({
   messages: z
     .array(
       z.object({
         role: z.enum(["user", "assistant"]),
         content: z.string().max(4000),
+        attachments: z.array(Attachment).max(4).optional(),
       }),
     )
     .max(30),
   orderContext: z.string().max(2000).optional(),
+
   sessionId: z.string().max(64).optional(),
 });
 
