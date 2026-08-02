@@ -22,13 +22,12 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    // Older Android Chrome / WebView builds still in the wild choke on the
-    // newest syntax (class fields, `??=`, top-level await), which surfaces as a
-    // blank page or the generic error screen. Downlevel to a safe baseline.
-    // (Browser targets only — an explicit `es2019` makes esbuild attempt an
-    // unsupported destructuring lowering and fails the build.)
-    build: { target: ["chrome87", "safari14", "firefox78"] },
-    optimizeDeps: { esbuildOptions: { target: "chrome87" } },
+    // NOTE: do not pin `build.target` here. esbuild cannot lower destructuring
+    // for the combined target list this template already applies, so any custom
+    // baseline fails the production build. Old-Android compatibility is handled
+    // at runtime in src/lib/safe-browser.ts / client-resilience.ts instead.
+
+
 
     resolve: {
       alias: {
