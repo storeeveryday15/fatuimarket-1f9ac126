@@ -1642,26 +1642,16 @@ export type Database = {
         }
         Returns: undefined
       }
-      visitor_heartbeat:
-        | {
-            Args: {
-              _country?: string
-              _device_type?: string
-              _referrer?: string
-              _session_id: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              _browser?: string
-              _country?: string
-              _device_type?: string
-              _referrer?: string
-              _session_id: string
-            }
-            Returns: undefined
-          }
+      visitor_heartbeat: {
+        Args: {
+          _browser?: string
+          _country?: string
+          _device_type?: string
+          _referrer?: string
+          _session_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "customer"
