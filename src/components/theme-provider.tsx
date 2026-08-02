@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { safeLocalStorage } from "@/lib/safe-browser";
 
 type Theme = "dark" | "light";
 type Ctx = { theme: Theme; toggle: () => void; setTheme: (t: Theme) => void };
@@ -9,15 +10,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
 
   useEffect(() => {
-    const stored = (typeof window !== "undefined" && localStorage.getItem("fatui-theme")) as Theme | null;
-    const initial: Theme = stored ?? "dark";
-    setThemeState(initial);
+    const stored = safeLocalStorage.getItem("fatui-theme") as Theme | null;
+    setThemeState(stored ?? "dark");
   }, []);
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
-    try { localStorage.setItem("fatui-theme", theme); } catch {}
+    safeLocalStorage.setItem("fatui-theme", theme);
   }, [theme]);
 
   const setTheme = (t: Theme) => setThemeState(t);

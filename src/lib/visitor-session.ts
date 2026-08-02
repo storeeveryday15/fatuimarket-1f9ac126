@@ -1,14 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
+import { safeLocalStorage, safeUUID } from "@/lib/safe-browser";
 
 const KEY = "fatui_visitor_session";
+
+let memoSessionId = "";
 
 /** Stable anonymous session id — survives refreshes, unique per browser/device. */
 export function getVisitorSessionId(): string {
   if (typeof window === "undefined") return "";
-  let id = localStorage.getItem(KEY);
+  let id = safeLocalStorage.getItem(KEY) || memoSessionId;
   if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(KEY, id);
+    id = safeUUID();
+    memoSessionId = id;
+    safeLocalStorage.setItem(KEY, id);
     try {
       document.cookie = `${KEY}=${id};path=/;max-age=31536000;SameSite=Lax`;
     } catch { /* ignore */ }
@@ -48,12 +52,16 @@ export async function sendVisitorHeartbeat() {
     }
   } catch { /* ignore */ }
 
-  await supabase.rpc("visitor_heartbeat", {
-    _session_id: sessionId,
-    _device_type: getDeviceType(),
-    _referrer: referrer,
-    _browser: getBrowser(),
-  });
+  try {
+    await supabase.rpc("visitor_heartbeat", {
+      _session_id: sessionId,
+      _device_type: getDeviceType(),
+      _referrer: referrer,
+      _browser: getBrowser(),
+    });
+  } catch {
+    /* offline or blocked network — analytics must never break the page */
+  }
 }
 
 export type VisitorStats = {
@@ -71,8 +79,13 @@ export const EMPTY_VISITOR_STATS: VisitorStats = {
 
 export async function fetchVisitorStats(): Promise<VisitorStats | null> {
   const offset = -new Date().getTimezoneOffset(); // minutes east of UTC
-  const { data } = await supabase.rpc("get_visitor_stats", { _tz_offset_minutes: offset });
-  const row = Array.isArray(data) ? data[0] : null;
+  let row: Record<string, number> | null = null;
+  try {
+    const { data } = await supabase.rpc("get_visitor_stats", { _tz_offset_minutes: offset });
+    row = Array.isArray(data) ? data[0] : null;
+  } catch {
+    return null; // network failure — keep the last known numbers on screen
+  }
   if (!row) return null;
   return {
     online: row.online ?? 0,

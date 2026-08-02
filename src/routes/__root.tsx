@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { installClientResilience, recoverFromStaleAssets } from "../lib/client-resilience";
 import { ThemeProvider } from "../components/theme-provider";
 import { SiteHeader } from "../components/site-header";
 import { SiteFooter } from "../components/site-footer";
@@ -18,6 +19,11 @@ import { SiteFooter } from "../components/site-footer";
 import { AdsterraBanner2 } from "../components/adsterra-banner-2";
 import { ChatWidget } from "../components/chat-widget";
 import { Toaster } from "sonner";
+
+// Must run before any component renders: privacy-restricted Android browsers
+// throw on `localStorage`, which otherwise crashes the header during hydration.
+installClientResilience();
+
 
 function NotFoundComponent() {
   return (
@@ -45,6 +51,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
+    // A deploy can invalidate hashed chunks a phone still has cached — reload once.
+    if (recoverFromStaleAssets(error)) return;
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
@@ -158,6 +166,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    installClientResilience();
+  }, []);
+
+
 
   return (
     <QueryClientProvider client={queryClient}>

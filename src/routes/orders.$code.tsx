@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 import { notifyOrder } from "@/lib/notify-order";
 import { createRazorpayOrder, verifyRazorpayPayment } from "@/lib/razorpay.functions";
+import { safeCopy } from "@/lib/safe-browser";
 
 type RazorpayCheckoutOptions = {
   key: string;
@@ -311,7 +312,7 @@ function OrderPage() {
                   <div className="font-semibold">{UPI_MERCHANT}</div>
                   <div className="mt-1 flex items-center justify-between">
                     <code className="text-xs">{UPI_ID}</code>
-                    <button onClick={() => { navigator.clipboard.writeText(UPI_ID); toast.success("UPI copied"); }} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px]"><Copy className="h-3 w-3" /> Copy</button>
+                    <button onClick={() => { void safeCopy(UPI_ID).then((ok) => (ok ? toast.success("UPI copied") : toast.error("Copy failed"))); }} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px]"><Copy className="h-3 w-3" /> Copy</button>
                   </div>
                 </div>
                 <a href={upiLink} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)]">
