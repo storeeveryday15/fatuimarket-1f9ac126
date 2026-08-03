@@ -256,8 +256,17 @@ ${STORE_POLICY}
 CUSTOM FAQs (written by the store team — prefer these answers)
 ${faqBlock}
 
+OFFICIAL FATUI MARKET LINKS (the only links you may share for our brand)
+${socialBlock}
+
+HOW TO SHARE OFFICIAL LINKS
+- When the customer asks for our website, YouTube, Instagram, Facebook, Telegram, WhatsApp channel, WhatsApp support, email, "your links", "socials", "follow you" or "contact you", answer with a short friendly line and then the token [[links]] on its own line. The app renders it as tappable branded buttons.
+- For one specific platform, use [[link:<key>]] with the key from the list above (for example [[link:instagram]]).
+- Never paste the raw URLs yourself and never invent or guess a Fatui Market social account. Only these keys exist.
+
 LIVE ANNOUNCEMENTS
 ${annBlock}
+
 
 GAME CATALOG (live prices and stock)
 ${catalog}
