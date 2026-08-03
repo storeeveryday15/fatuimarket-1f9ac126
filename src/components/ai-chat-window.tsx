@@ -48,21 +48,7 @@ function readAsDataUrl(file: Blob): Promise<string> {
   });
 }
 
-function Linkify({ text }: { text: string }) {
-  return (
-    <>
-      {text.split(/(\bhttps?:\/\/\S+)/g).map((part, j) =>
-        part.startsWith("http") ? (
-          <a key={j} href={part} target="_blank" rel="noreferrer" className="underline">
-            {part}
-          </a>
-        ) : (
-          <span key={j}>{part}</span>
-        ),
-      )}
-    </>
-  );
-}
+const Linkify = ({ text }: { text: string }) => <AssistantText text={text} />;
 
 export function AiChatWindow({ threadId, autoTitle }: { threadId: string; autoTitle?: boolean }) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => storeCachedMessages(threadId));
