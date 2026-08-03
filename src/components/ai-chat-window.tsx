@@ -14,6 +14,7 @@ import {
   type ChatMessage,
 } from "@/lib/chat-store";
 import { IMAGE_STYLES, streamImage, type ImageStyle } from "@/lib/stream-image";
+import { AssistantText } from "@/components/social-link-buttons";
 
 const time = (t: string) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
