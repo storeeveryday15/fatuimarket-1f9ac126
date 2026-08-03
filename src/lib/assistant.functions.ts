@@ -154,7 +154,22 @@ async function buildContext() {
     ? announcements.map((a) => `- ${a.title}: ${a.description}`).join("\n")
     : "(no live announcements)";
 
-  return { catalog, newsBlock, faqBlock, annBlock, settings };
+  const socialBlock = (socials.length
+    ? socials
+    : [
+        { key: "website", label: "Visit Website", url: "https://fatuimarket.shop", description: "Official store" },
+        { key: "youtube", label: "Watch on YouTube", url: "https://youtube.com/@fatuimarket", description: "Videos and guides" },
+        { key: "instagram", label: "Follow on Instagram", url: "https://www.instagram.com/fatuimarket", description: "Daily posts" },
+        { key: "facebook", label: "Follow on Facebook", url: "https://www.facebook.com/share/199YZVigUE/", description: "Facebook page" },
+        { key: "telegram", label: "Join Telegram", url: "https://t.me/fatuimarket", description: "Announcements" },
+        { key: "whatsapp_channel", label: "Join WhatsApp Channel", url: "https://whatsapp.com/channel/0029VbD2uz34Y9ljxvkbLS3A", description: "Offers" },
+        { key: "whatsapp", label: "Chat on WhatsApp", url: "https://wa.me/917679393645", description: "Support" },
+        { key: "email", label: "Email Support", url: "mailto:fatuimarket@gmail.com", description: "Support inbox" },
+      ])
+    .map((s) => `- key: ${s.key} — ${s.label} (${s.description}) → ${s.url}`)
+    .join("\n");
+
+  return { catalog, newsBlock, faqBlock, annBlock, socialBlock, settings };
 }
 
 /** Public assistant configuration for the storefront widget. */
