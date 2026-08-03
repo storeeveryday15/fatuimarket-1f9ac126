@@ -89,6 +89,88 @@ function SettingsPage() {
       <button onClick={() => void save()} disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-[var(--neon)]/15 px-4 py-2 text-sm font-semibold text-[var(--neon)] disabled:opacity-50">
         <Save className="h-4 w-4" /> {saving ? "Saving…" : "Save settings"}
       </button>
+
+      <SocialLinksEditor />
+    </div>
+  );
+}
+
+type SocialRow = {
+  id: string;
+  key: string;
+  label: string;
+  url: string;
+  emoji: string;
+  description: string;
+  sort_order: number;
+  active: boolean;
+};
+
+function SocialLinksEditor() {
+  const [rows, setRows] = useState<SocialRow[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    const { data } = await supabase.from("social_links").select("*").order("sort_order");
+    setRows((data ?? []) as SocialRow[]);
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  const patch = (id: string, p: Partial<SocialRow>) =>
+    setRows((r) => r.map((x) => (x.id === id ? { ...x, ...p } : x)));
+
+  const saveRow = async (row: SocialRow) => {
+    setBusy(true);
+    const { id, ...rest } = row;
+    const { error } = await supabase.from("social_links").update(rest).eq("id", id);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`${row.label} saved`);
+  };
+
+  const addRow = async () => {
+    const key = window.prompt("Short key (e.g. discord)")?.trim().toLowerCase();
+    if (!key) return;
+    const { error } = await supabase.from("social_links").insert({
+      key, label: key, url: "https://", emoji: "🔗", description: "", sort_order: rows.length + 1,
+    });
+    if (error) return toast.error(error.message);
+    void load();
+  };
+
+  const removeRow = async (id: string) => {
+    const { error } = await supabase.from("social_links").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    void load();
+  };
+
+  return (
+    <div className="space-y-3 border-t border-border pt-6">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <h3 className="text-lg font-bold">Official links</h3>
+          <p className="text-xs text-muted-foreground">Shown as buttons by Fatui AI when customers ask for your website or socials.</p>
+        </div>
+        <button onClick={() => void addRow()} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:bg-secondary">Add link</button>
+      </div>
+
+      <div className="grid gap-3">
+        {rows.map((r) => (
+          <div key={r.id} className="surface-card grid gap-2 p-3 sm:grid-cols-[5rem_1fr_1fr_5rem_auto] sm:items-center">
+            <input value={r.emoji} onChange={(e) => patch(r.id, { emoji: e.target.value })} placeholder="🔗" className="rounded-lg border border-input bg-background px-2 py-2 text-sm" />
+            <input value={r.label} onChange={(e) => patch(r.id, { label: e.target.value })} placeholder="Label" className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+            <input value={r.url} onChange={(e) => patch(r.id, { url: e.target.value })} placeholder="https://" className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+            <input type="number" value={r.sort_order} onChange={(e) => patch(r.id, { sort_order: Number(e.target.value) })} className="rounded-lg border border-input bg-background px-2 py-2 text-sm" />
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={r.active} onChange={(e) => patch(r.id, { active: e.target.checked })} /> Live</label>
+              <button onClick={() => void saveRow(r)} disabled={busy} className="rounded-lg bg-[var(--neon)]/15 px-3 py-2 text-xs font-semibold text-[var(--neon)] disabled:opacity-50">Save</button>
+              <button onClick={() => void removeRow(r.id)} className="rounded-lg border border-destructive/40 px-3 py-2 text-xs font-semibold text-destructive">Delete</button>
+            </div>
+            <input value={r.description} onChange={(e) => patch(r.id, { description: e.target.value })} placeholder="Short description" className="rounded-lg border border-input bg-background px-3 py-2 text-xs sm:col-span-5" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

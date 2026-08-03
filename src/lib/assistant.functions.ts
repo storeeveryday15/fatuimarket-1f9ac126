@@ -75,6 +75,7 @@ async function buildContext() {
   let servers: Array<{ product_slug: string; label: string }> = [];
   let faqs: Array<{ question: string; answer: string; category: string }> = [];
   let announcements: Array<{ title: string; description: string }> = [];
+  let socials: Array<{ key: string; label: string; url: string; description: string }> = [];
   let settings: Settings | null = null;
 
   if (url && key) {
@@ -90,12 +91,13 @@ async function buildContext() {
         return [];
       }
     };
-    const [rows, newsRows, serverRows, faqRows, annRows, settingRows] = await Promise.all([
+    const [rows, newsRows, serverRows, faqRows, annRows, socialRows, settingRows] = await Promise.all([
       get("catalog_products_public?select=product_slug,tier_label,name,status,display_status,stock,product_type"),
       get("game_news?select=game_slug,category,title,summary,published_at&order=published_at.desc&limit=60"),
       get("game_servers?select=product_slug,label&active=eq.true&order=sort_order"),
       get("assistant_faqs?select=question,answer,category&active=eq.true&order=sort_order&limit=100"),
       get("announcements?select=title,description&status=eq.active&order=priority.desc&limit=20"),
+      get("social_links?select=key,label,url,description&active=eq.true&order=sort_order"),
       get("assistant_settings?select=enabled,welcome_message,supported_games,extra_instructions&id=eq.1"),
     ]);
     liveRows = rows as PublicRow[];
@@ -103,6 +105,7 @@ async function buildContext() {
     servers = serverRows as typeof servers;
     faqs = faqRows as typeof faqs;
     announcements = annRows as typeof announcements;
+    socials = socialRows as typeof socials;
     settings = (settingRows as Settings[])[0] ?? null;
   }
 
@@ -151,7 +154,22 @@ async function buildContext() {
     ? announcements.map((a) => `- ${a.title}: ${a.description}`).join("\n")
     : "(no live announcements)";
 
-  return { catalog, newsBlock, faqBlock, annBlock, settings };
+  const socialBlock = (socials.length
+    ? socials
+    : [
+        { key: "website", label: "Visit Website", url: "https://fatuimarket.shop", description: "Official store" },
+        { key: "youtube", label: "Watch on YouTube", url: "https://youtube.com/@fatuimarket", description: "Videos and guides" },
+        { key: "instagram", label: "Follow on Instagram", url: "https://www.instagram.com/fatuimarket", description: "Daily posts" },
+        { key: "facebook", label: "Follow on Facebook", url: "https://www.facebook.com/share/199YZVigUE/", description: "Facebook page" },
+        { key: "telegram", label: "Join Telegram", url: "https://t.me/fatuimarket", description: "Announcements" },
+        { key: "whatsapp_channel", label: "Join WhatsApp Channel", url: "https://whatsapp.com/channel/0029VbD2uz34Y9ljxvkbLS3A", description: "Offers" },
+        { key: "whatsapp", label: "Chat on WhatsApp", url: "https://wa.me/917679393645", description: "Support" },
+        { key: "email", label: "Email Support", url: "mailto:fatuimarket@gmail.com", description: "Support inbox" },
+      ])
+    .map((s) => `- key: ${s.key} — ${s.label} (${s.description}) → ${s.url}`)
+    .join("\n");
+
+  return { catalog, newsBlock, faqBlock, annBlock, socialBlock, settings };
 }
 
 /** Public assistant configuration for the storefront widget. */
@@ -184,7 +202,7 @@ export const askFatuiAssistant = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("The assistant is not configured yet.");
 
-    const { catalog, newsBlock, faqBlock, annBlock, settings } = await buildContext();
+    const { catalog, newsBlock, faqBlock, annBlock, socialBlock, settings } = await buildContext();
     if (settings && settings.enabled === false) {
       throw new Error("The assistant is offline right now — please use WhatsApp or the contact form.");
     }
@@ -238,8 +256,17 @@ ${STORE_POLICY}
 CUSTOM FAQs (written by the store team — prefer these answers)
 ${faqBlock}
 
+OFFICIAL FATUI MARKET LINKS (the only links you may share for our brand)
+${socialBlock}
+
+HOW TO SHARE OFFICIAL LINKS
+- When the customer asks for our website, YouTube, Instagram, Facebook, Telegram, WhatsApp channel, WhatsApp support, email, "your links", "socials", "follow you" or "contact you", answer with a short friendly line and then the token [[links]] on its own line. The app renders it as tappable branded buttons.
+- For one specific platform, use [[link:<key>]] with the key from the list above (for example [[link:instagram]]).
+- Never paste the raw URLs yourself and never invent or guess a Fatui Market social account. Only these keys exist.
+
 LIVE ANNOUNCEMENTS
 ${annBlock}
+
 
 GAME CATALOG (live prices and stock)
 ${catalog}
