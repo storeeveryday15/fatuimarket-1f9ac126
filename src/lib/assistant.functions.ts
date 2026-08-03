@@ -75,6 +75,7 @@ async function buildContext() {
   let servers: Array<{ product_slug: string; label: string }> = [];
   let faqs: Array<{ question: string; answer: string; category: string }> = [];
   let announcements: Array<{ title: string; description: string }> = [];
+  let socials: Array<{ key: string; label: string; url: string; description: string }> = [];
   let settings: Settings | null = null;
 
   if (url && key) {
@@ -90,12 +91,13 @@ async function buildContext() {
         return [];
       }
     };
-    const [rows, newsRows, serverRows, faqRows, annRows, settingRows] = await Promise.all([
+    const [rows, newsRows, serverRows, faqRows, annRows, socialRows, settingRows] = await Promise.all([
       get("catalog_products_public?select=product_slug,tier_label,name,status,display_status,stock,product_type"),
       get("game_news?select=game_slug,category,title,summary,published_at&order=published_at.desc&limit=60"),
       get("game_servers?select=product_slug,label&active=eq.true&order=sort_order"),
       get("assistant_faqs?select=question,answer,category&active=eq.true&order=sort_order&limit=100"),
       get("announcements?select=title,description&status=eq.active&order=priority.desc&limit=20"),
+      get("social_links?select=key,label,url,description&active=eq.true&order=sort_order"),
       get("assistant_settings?select=enabled,welcome_message,supported_games,extra_instructions&id=eq.1"),
     ]);
     liveRows = rows as PublicRow[];
@@ -103,6 +105,7 @@ async function buildContext() {
     servers = serverRows as typeof servers;
     faqs = faqRows as typeof faqs;
     announcements = annRows as typeof announcements;
+    socials = socialRows as typeof socials;
     settings = (settingRows as Settings[])[0] ?? null;
   }
 
