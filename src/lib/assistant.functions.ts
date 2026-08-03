@@ -202,7 +202,7 @@ export const askFatuiAssistant = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("The assistant is not configured yet.");
 
-    const { catalog, newsBlock, faqBlock, annBlock, settings } = await buildContext();
+    const { catalog, newsBlock, faqBlock, annBlock, socialBlock, settings } = await buildContext();
     if (settings && settings.enabled === false) {
       throw new Error("The assistant is offline right now — please use WhatsApp or the contact form.");
     }
