@@ -40,7 +40,16 @@ type Announcement = {
   status: string;
   send_email: boolean;
   created_at: string;
+  email_status?: string;
+  email_sent_count?: number;
+  email_failed_count?: number;
+  email_error?: string | null;
+  inapp_count?: number;
 };
+
+const SELECT_COLS =
+  "id,type,title,description,image_url,target_games,starts_at,status,send_email,created_at,email_status,email_sent_count,email_failed_count,email_error,inapp_count";
+
 
 function NotificationsPage() {
   const [tab, setTab] = useState<"compose" | "alerts">("compose");
