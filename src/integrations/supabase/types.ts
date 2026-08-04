@@ -114,10 +114,15 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string
+          email_error: string | null
+          email_failed_count: number
+          email_sent_count: number
+          email_status: string
           emailed_at: string | null
           ends_at: string | null
           id: string
           image_url: string | null
+          inapp_count: number
           placements: string[]
           priority: number
           send_email: boolean
@@ -134,10 +139,15 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string
+          email_error?: string | null
+          email_failed_count?: number
+          email_sent_count?: number
+          email_status?: string
           emailed_at?: string | null
           ends_at?: string | null
           id?: string
           image_url?: string | null
+          inapp_count?: number
           placements?: string[]
           priority?: number
           send_email?: boolean
@@ -154,10 +164,15 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string
+          email_error?: string | null
+          email_failed_count?: number
+          email_sent_count?: number
+          email_status?: string
           emailed_at?: string | null
           ends_at?: string | null
           id?: string
           image_url?: string | null
+          inapp_count?: number
           placements?: string[]
           priority?: number
           send_email?: boolean

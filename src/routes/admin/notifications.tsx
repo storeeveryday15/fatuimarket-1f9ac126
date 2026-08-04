@@ -40,7 +40,16 @@ type Announcement = {
   status: string;
   send_email: boolean;
   created_at: string;
+  email_status?: string;
+  email_sent_count?: number;
+  email_failed_count?: number;
+  email_error?: string | null;
+  inapp_count?: number;
 };
+
+const SELECT_COLS =
+  "id,type,title,description,image_url,target_games,starts_at,status,send_email,created_at,email_status,email_sent_count,email_failed_count,email_error,inapp_count";
+
 
 function NotificationsPage() {
   const [tab, setTab] = useState<"compose" | "alerts">("compose");
@@ -75,10 +84,10 @@ function Composer() {
   const load = async () => {
     const { data } = await supabase
       .from("announcements")
-      .select("id,type,title,description,image_url,target_games,starts_at,status,send_email,created_at")
+      .select(SELECT_COLS)
       .order("created_at", { ascending: false })
       .limit(30);
-    setList((data ?? []) as Announcement[]);
+    setList((data ?? []) as unknown as Announcement[]);
   };
 
   useEffect(() => {
@@ -101,12 +110,9 @@ function Composer() {
   }, [list]);
 
   const deliver = async (a: Announcement) => {
-    const { data: profiles } = await supabase.from("profiles").select("id,email");
-    const targets = (profiles ?? []).map((p) => ({ user_id: p.id, email: p.email }));
     try {
       const res = await send({
         data: {
-          targets,
           title: a.title,
           body: a.description,
           image_url: a.image_url,
@@ -116,13 +122,49 @@ function Composer() {
           announcement_id: a.id,
         },
       });
-      await supabase.from("announcements").update({ status: "sent", emailed_at: a.send_email ? new Date().toISOString() : null }).eq("id", a.id);
-      toast.success(`Delivered to ${res.inApp} customers${res.emails ? ` · ${res.emails} emails` : ""}`);
+
+      const emailStatus = !a.send_email
+        ? "not_sent"
+        : res.failed > 0 && res.emails === 0
+          ? "failed"
+          : res.failed > 0
+            ? "partial"
+            : "queued";
+
+      await supabase
+        .from("announcements")
+        .update({
+          status: emailStatus === "failed" ? "failed" : "sent",
+          emailed_at: res.emails ? new Date().toISOString() : null,
+          email_status: emailStatus,
+          email_sent_count: res.emails,
+          email_failed_count: res.failed,
+          email_error: res.errors.length ? res.errors.slice(0, 3).join(" · ") : null,
+          inapp_count: res.inApp,
+        })
+        .eq("id", a.id);
+
+      if (a.send_email && res.emails === 0 && res.failed > 0) {
+        toast.error(`Emails failed: ${res.errors[0] ?? "unknown error"}`);
+      } else {
+        toast.success(
+          `In-app: ${res.inApp}${a.send_email ? ` · emails queued: ${res.emails}` : ""}` +
+            (res.failed ? ` · failed: ${res.failed}` : "") +
+            (res.skipped ? ` · skipped: ${res.skipped}` : ""),
+        );
+      }
       void load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delivery failed");
+      const msg = err instanceof Error ? err.message : "Delivery failed";
+      await supabase
+        .from("announcements")
+        .update({ status: "failed", email_status: "failed", email_error: msg })
+        .eq("id", a.id);
+      toast.error(msg);
+      void load();
     }
   };
+
 
   const submit = async () => {
     if (!title.trim() || !description.trim()) return toast.error("Add a title and message");
@@ -143,7 +185,7 @@ function Composer() {
         status: scheduled ? "scheduled" : "active",
         send_email: email,
       })
-      .select("id,type,title,description,image_url,target_games,starts_at,status,send_email,created_at")
+      .select(SELECT_COLS)
       .single();
     setBusy(false);
     if (error || !data) return toast.error(error?.message ?? "Could not save announcement");
@@ -187,18 +229,43 @@ function Composer() {
             <li key={a.id} className="py-2.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="truncate text-sm font-semibold">{a.title}</span>
-                <span className="shrink-0 rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase">{a.status}</span>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                    a.status === "failed" || a.email_status === "failed"
+                      ? "bg-destructive/15 text-destructive"
+                      : a.email_status === "partial"
+                        ? "bg-yellow-500/15 text-yellow-500"
+                        : "bg-secondary"
+                  }`}
+                >
+                  {a.status === "failed" || a.email_status === "failed"
+                    ? "failed"
+                    : a.email_status === "partial"
+                      ? "partial"
+                      : a.status}
+                </span>
               </div>
               <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{a.description}</p>
+              {a.send_email && (
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  Email: {a.email_status ?? "not sent"} · queued {a.email_sent_count ?? 0}
+                  {a.email_failed_count ? ` · failed ${a.email_failed_count}` : ""}
+                  {a.inapp_count ? ` · in-app ${a.inapp_count}` : ""}
+                </p>
+              )}
+              {a.email_error && (
+                <p className="mt-0.5 line-clamp-2 text-[11px] text-destructive">{a.email_error}</p>
+              )}
               <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
                 <span>{new Date(a.starts_at).toLocaleString()}</span>
-                {a.status !== "sent" && (
-                  <button onClick={() => void deliver(a)} className="rounded-md border border-border px-2 py-0.5">Send now</button>
-                )}
+                <button onClick={() => void deliver(a)} className="rounded-md border border-border px-2 py-0.5">
+                  {a.status === "sent" ? "Resend" : "Send now"}
+                </button>
                 <button onClick={async () => { await supabase.from("announcements").delete().eq("id", a.id); void load(); }} className="rounded-md border border-border px-2 py-0.5">Delete</button>
               </div>
             </li>
           ))}
+
           {list.length === 0 && <li className="py-3 text-xs text-muted-foreground">No announcements yet.</li>}
         </ul>
       </div>
