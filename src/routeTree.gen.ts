@@ -27,6 +27,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as OrdersCodeRouteImport } from './routes/orders.$code'
 import { Route as GuidesGenshinImpactTopUpRouteImport } from './routes/guides.genshin-impact-top-up'
+import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as ChatsThreadIdRouteImport } from './routes/chats.$threadId'
 import { Route as BuySlugRouteImport } from './routes/buy.$slug'
 import { Route as ApiAiImageRouteImport } from './routes/api/ai-image'
@@ -39,8 +40,11 @@ import { Route as AdminNotificationsRouteImport } from './routes/admin/notificat
 import { Route as AdminCustomersRouteImport } from './routes/admin/customers'
 import { Route as AdminAssistantRouteImport } from './routes/admin/assistant'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
+import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicNotifyOrderRouteImport } from './routes/api/public/notify-order'
 import { Route as ApiPublicClaimAdminRouteImport } from './routes/api/public/claim-admin'
+import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -136,6 +140,11 @@ const GuidesGenshinImpactTopUpRoute =
     path: '/guides/genshin-impact-top-up',
     getParentRoute: () => rootRouteImport,
   } as any)
+const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
+  id: '/email/unsubscribe',
+  path: '/email/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatsThreadIdRoute = ChatsThreadIdRouteImport.update({
   id: '/chats/$threadId',
   path: '/chats/$threadId',
@@ -196,6 +205,11 @@ const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
+  id: '/lovable/email/suppression',
+  path: '/lovable/email/suppression',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicNotifyOrderRoute = ApiPublicNotifyOrderRouteImport.update({
   id: '/api/public/notify-order',
   path: '/api/public/notify-order',
@@ -206,6 +220,18 @@ const ApiPublicClaimAdminRoute = ApiPublicClaimAdminRouteImport.update({
   path: '/api/public/claim-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailTransactionalSendRoute =
+  LovableEmailTransactionalSendRouteImport.update({
+    id: '/lovable/email/transactional/send',
+    path: '/lovable/email/transactional/send',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -248,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/api/ai-image': typeof ApiAiImageRoute
   '/buy/$slug': typeof BuySlugRoute
   '/chats/$threadId': typeof ChatsThreadIdRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -256,9 +283,12 @@ export interface FileRoutesByFullPath {
   '/chats/': typeof ChatsIndexRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -284,6 +314,7 @@ export interface FileRoutesByTo {
   '/api/ai-image': typeof ApiAiImageRoute
   '/buy/$slug': typeof BuySlugRoute
   '/chats/$threadId': typeof ChatsThreadIdRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -292,9 +323,12 @@ export interface FileRoutesByTo {
   '/chats': typeof ChatsIndexRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -322,6 +356,7 @@ export interface FileRoutesById {
   '/api/ai-image': typeof ApiAiImageRoute
   '/buy/$slug': typeof BuySlugRoute
   '/chats/$threadId': typeof ChatsThreadIdRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -330,9 +365,12 @@ export interface FileRoutesById {
   '/chats/': typeof ChatsIndexRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -361,6 +399,7 @@ export interface FileRouteTypes {
     | '/api/ai-image'
     | '/buy/$slug'
     | '/chats/$threadId'
+    | '/email/unsubscribe'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
@@ -369,9 +408,12 @@ export interface FileRouteTypes {
     | '/chats/'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
+    | '/lovable/email/suppression'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -397,6 +439,7 @@ export interface FileRouteTypes {
     | '/api/ai-image'
     | '/buy/$slug'
     | '/chats/$threadId'
+    | '/email/unsubscribe'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
@@ -405,9 +448,12 @@ export interface FileRouteTypes {
     | '/chats'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
+    | '/lovable/email/suppression'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
   id:
     | '__root__'
     | '/'
@@ -434,6 +480,7 @@ export interface FileRouteTypes {
     | '/api/ai-image'
     | '/buy/$slug'
     | '/chats/$threadId'
+    | '/email/unsubscribe'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
@@ -442,9 +489,12 @@ export interface FileRouteTypes {
     | '/chats/'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
+    | '/lovable/email/suppression'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -463,6 +513,7 @@ export interface RootRouteChildren {
   ApiAiImageRoute: typeof ApiAiImageRoute
   BuySlugRoute: typeof BuySlugRoute
   ChatsThreadIdRoute: typeof ChatsThreadIdRoute
+  EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   GuidesGenshinImpactTopUpRoute: typeof GuidesGenshinImpactTopUpRoute
   OrdersCodeRoute: typeof OrdersCodeRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
@@ -470,9 +521,12 @@ export interface RootRouteChildren {
   ChatsIndexRoute: typeof ChatsIndexRoute
   ApiPublicClaimAdminRoute: typeof ApiPublicClaimAdminRoute
   ApiPublicNotifyOrderRoute: typeof ApiPublicNotifyOrderRoute
+  LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
+  LovableEmailTransactionalSendRoute: typeof LovableEmailTransactionalSendRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -603,6 +657,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuidesGenshinImpactTopUpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/email/unsubscribe': {
+      id: '/email/unsubscribe'
+      path: '/email/unsubscribe'
+      fullPath: '/email/unsubscribe'
+      preLoaderRoute: typeof EmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chats/$threadId': {
       id: '/chats/$threadId'
       path: '/chats/$threadId'
@@ -687,6 +748,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/lovable/email/suppression': {
+      id: '/lovable/email/suppression'
+      path: '/lovable/email/suppression'
+      fullPath: '/lovable/email/suppression'
+      preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/notify-order': {
       id: '/api/public/notify-order'
       path: '/api/public/notify-order'
@@ -699,6 +767,20 @@ declare module '@tanstack/react-router' {
       path: '/api/public/claim-admin'
       fullPath: '/api/public/claim-admin'
       preLoaderRoute: typeof ApiPublicClaimAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/transactional/send': {
+      id: '/lovable/email/transactional/send'
+      path: '/lovable/email/transactional/send'
+      fullPath: '/lovable/email/transactional/send'
+      preLoaderRoute: typeof LovableEmailTransactionalSendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lovable/email/queue/process': {
@@ -771,6 +853,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAiImageRoute: ApiAiImageRoute,
   BuySlugRoute: BuySlugRoute,
   ChatsThreadIdRoute: ChatsThreadIdRoute,
+  EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   GuidesGenshinImpactTopUpRoute: GuidesGenshinImpactTopUpRoute,
   OrdersCodeRoute: OrdersCodeRoute,
   ProductsSlugRoute: ProductsSlugRoute,
@@ -778,9 +861,12 @@ const rootRouteChildren: RootRouteChildren = {
   ChatsIndexRoute: ChatsIndexRoute,
   ApiPublicClaimAdminRoute: ApiPublicClaimAdminRoute,
   ApiPublicNotifyOrderRoute: ApiPublicNotifyOrderRoute,
+  LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
+  LovableEmailTransactionalSendRoute: LovableEmailTransactionalSendRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
