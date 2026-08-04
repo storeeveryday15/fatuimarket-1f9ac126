@@ -84,10 +84,10 @@ function Composer() {
   const load = async () => {
     const { data } = await supabase
       .from("announcements")
-      .select("id,type,title,description,image_url,target_games,starts_at,status,send_email,created_at")
+      .select(SELECT_COLS)
       .order("created_at", { ascending: false })
       .limit(30);
-    setList((data ?? []) as Announcement[]);
+    setList((data ?? []) as unknown as Announcement[]);
   };
 
   useEffect(() => {
@@ -110,12 +110,9 @@ function Composer() {
   }, [list]);
 
   const deliver = async (a: Announcement) => {
-    const { data: profiles } = await supabase.from("profiles").select("id,email");
-    const targets = (profiles ?? []).map((p) => ({ user_id: p.id, email: p.email }));
     try {
       const res = await send({
         data: {
-          targets,
           title: a.title,
           body: a.description,
           image_url: a.image_url,
@@ -125,13 +122,49 @@ function Composer() {
           announcement_id: a.id,
         },
       });
-      await supabase.from("announcements").update({ status: "sent", emailed_at: a.send_email ? new Date().toISOString() : null }).eq("id", a.id);
-      toast.success(`Delivered to ${res.inApp} customers${res.emails ? ` · ${res.emails} emails` : ""}`);
+
+      const emailStatus = !a.send_email
+        ? "not_sent"
+        : res.failed > 0 && res.emails === 0
+          ? "failed"
+          : res.failed > 0
+            ? "partial"
+            : "queued";
+
+      await supabase
+        .from("announcements")
+        .update({
+          status: emailStatus === "failed" ? "failed" : "sent",
+          emailed_at: res.emails ? new Date().toISOString() : null,
+          email_status: emailStatus,
+          email_sent_count: res.emails,
+          email_failed_count: res.failed,
+          email_error: res.errors.length ? res.errors.slice(0, 3).join(" · ") : null,
+          inapp_count: res.inApp,
+        })
+        .eq("id", a.id);
+
+      if (a.send_email && res.emails === 0 && res.failed > 0) {
+        toast.error(`Emails failed: ${res.errors[0] ?? "unknown error"}`);
+      } else {
+        toast.success(
+          `In-app: ${res.inApp}${a.send_email ? ` · emails queued: ${res.emails}` : ""}` +
+            (res.failed ? ` · failed: ${res.failed}` : "") +
+            (res.skipped ? ` · skipped: ${res.skipped}` : ""),
+        );
+      }
       void load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Delivery failed");
+      const msg = err instanceof Error ? err.message : "Delivery failed";
+      await supabase
+        .from("announcements")
+        .update({ status: "failed", email_status: "failed", email_error: msg })
+        .eq("id", a.id);
+      toast.error(msg);
+      void load();
     }
   };
+
 
   const submit = async () => {
     if (!title.trim() || !description.trim()) return toast.error("Add a title and message");
