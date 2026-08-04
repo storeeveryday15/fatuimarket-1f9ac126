@@ -1,4 +1,7 @@
 import type { ComponentType } from 'react'
+import { template as announcementTemplate } from './announcement'
+
+
 
 
 export interface TemplateEntry {
