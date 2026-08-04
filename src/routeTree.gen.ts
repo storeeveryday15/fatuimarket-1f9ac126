@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as TrackRouteImport } from './routes/track'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -52,6 +53,11 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TrackRoute = TrackRouteImport.update({
@@ -261,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/wallet': typeof WalletRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assistant': typeof AdminAssistantRoute
@@ -301,6 +308,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/wallet': typeof WalletRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assistant': typeof AdminAssistantRoute
@@ -343,6 +351,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/wallet': typeof WalletRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assistant': typeof AdminAssistantRoute
@@ -386,6 +395,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/unsubscribe'
     | '/wallet'
     | '/admin/analytics'
     | '/admin/assistant'
@@ -426,6 +436,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/unsubscribe'
     | '/wallet'
     | '/admin/analytics'
     | '/admin/assistant'
@@ -467,6 +478,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/track'
+    | '/unsubscribe'
     | '/wallet'
     | '/admin/analytics'
     | '/admin/assistant'
@@ -509,6 +521,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   WalletRoute: typeof WalletRoute
   ApiAiImageRoute: typeof ApiAiImageRoute
   BuySlugRoute: typeof BuySlugRoute
@@ -536,6 +549,13 @@ declare module '@tanstack/react-router' {
       path: '/wallet'
       fullPath: '/wallet'
       preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/track': {
@@ -849,6 +869,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   WalletRoute: WalletRoute,
   ApiAiImageRoute: ApiAiImageRoute,
   BuySlugRoute: BuySlugRoute,
