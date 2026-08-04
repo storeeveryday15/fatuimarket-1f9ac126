@@ -3,17 +3,23 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Target = { user_id: string; email?: string | null };
 
-const escapeHtml = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+export type SendResult = {
+  inApp: number;
+  emails: number;
+  failed: number;
+  skipped: number;
+  errors: string[];
+};
 
 /**
  * Sends an admin message to one or more customers: an in-app notification row
- * and (optionally) an email through Resend. Admin-only.
+ * and (optionally) a branded email through the project's email infrastructure.
+ * Admin-only. Every email attempt is logged and failures are reported back.
  */
 export const sendCustomerMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: {
-    targets: Target[];
+    targets?: Target[];
     title: string;
     body: string;
     link?: string | null;
@@ -23,7 +29,7 @@ export const sendCustomerMessage = createServerFn({ method: "POST" })
     email: boolean;
     announcement_id?: string | null;
   }) => input)
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<SendResult> => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
@@ -31,13 +37,25 @@ export const sendCustomerMessage = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Forbidden");
 
     const title = data.title.slice(0, 160).trim();
-    const body = data.body.slice(0, 2000).trim();
+    const body = data.body.slice(0, 4000).trim();
     if (!title || !body) throw new Error("Title and message are required");
 
-    const targets = data.targets.filter((t) => !!t.user_id).slice(0, 5000);
-    if (targets.length === 0) return { inApp: 0, emails: 0 };
-
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Resolve recipients server-side so nothing depends on what the browser sent.
+    let targets: Target[] = (data.targets ?? []).filter((t) => !!t.user_id);
+    if (targets.length === 0) {
+      const { data: profiles, error } = await supabaseAdmin
+        .from("profiles")
+        .select("id,email")
+        .limit(5000);
+      if (error) throw new Error(error.message);
+      targets = (profiles ?? []).map((p) => ({ user_id: p.id, email: p.email }));
+    }
+    targets = targets.slice(0, 5000);
+
+    const result: SendResult = { inApp: 0, emails: 0, failed: 0, skipped: 0, errors: [] };
+    if (targets.length === 0) return result;
 
     // Respect per-customer notification preferences.
     const { data: prefs } = await supabaseAdmin
@@ -62,32 +80,64 @@ export const sendCustomerMessage = createServerFn({ method: "POST" })
     if (rows.length) {
       const { error } = await supabaseAdmin.from("notifications").insert(rows);
       if (error) throw new Error(error.message);
+      result.inApp = rows.length;
     }
 
-    let emails = 0;
-    const resendKey = process.env['RESEND_API_KEY'];
-    if (data.email && resendKey) {
-      const recipients = targets
-        .filter((t) => !!t.email && prefMap.get(t.user_id)?.email_enabled !== false)
-        .map((t) => t.email as string);
-      for (const to of recipients.slice(0, 200)) {
-        try {
-          const res = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: { "content-type": "application/json", authorization: `Bearer ${resendKey}` },
-            body: JSON.stringify({
-              from: "Fatui Market <onboarding@resend.dev>",
-              to,
-              subject: title,
-              html: `<div style="font-family:system-ui,sans-serif"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(body).replace(/\n/g, "<br/>")}</p></div>`,
-            }),
-          });
-          if (res.ok) emails += 1;
-        } catch {
-          /* best effort */
+    if (!data.email) return result;
+
+    // Send through the project's email pipeline (queue + delivery logging).
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const request = getRequest();
+    const origin = new URL(request.url).origin;
+    const authHeader = request.headers.get("authorization") ?? "";
+    if (!authHeader) {
+      result.errors.push("Missing authorization header for email send");
+      return result;
+    }
+
+    const recipients = targets.filter(
+      (t) => !!t.email && prefMap.get(t.user_id)?.email_enabled !== false,
+    );
+    result.skipped = targets.length - recipients.length;
+
+    for (const t of recipients.slice(0, 1000)) {
+      try {
+        const res = await fetch(`${origin}/lovable/email/transactional/send`, {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization: authHeader },
+          body: JSON.stringify({
+            templateName: "announcement",
+            recipientEmail: t.email,
+            idempotencyKey: `announcement-${data.announcement_id ?? title.slice(0, 32)}-${t.user_id}`,
+            templateData: {
+              title,
+              body,
+              imageUrl: data.image_url ?? null,
+              buttonText: data.link ? "Open Fatui Market" : null,
+              buttonLink: data.link ?? null,
+            },
+          }),
+        });
+        const payload = (await res.json().catch(() => ({}))) as {
+          success?: boolean;
+          reason?: string;
+          error?: string;
+        };
+        if (res.ok && payload.success) {
+          result.emails += 1;
+        } else if (res.ok && payload.reason === "email_suppressed") {
+          result.skipped += 1;
+        } else {
+          result.failed += 1;
+          const msg = payload.error ?? payload.reason ?? `HTTP ${res.status}`;
+          if (!result.errors.includes(msg)) result.errors.push(msg);
         }
+      } catch (err) {
+        result.failed += 1;
+        const msg = err instanceof Error ? err.message : "Network error";
+        if (!result.errors.includes(msg)) result.errors.push(msg);
       }
     }
 
-    return { inApp: rows.length, emails };
+    return result;
   });
