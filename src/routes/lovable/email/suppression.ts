@@ -143,6 +143,33 @@ export const Route = createFileRoute("/lovable/email/suppression")({
           })
         }
 
+        // 3. Mirror the event into campaign analytics, linked to the most
+        //    recent announcement send for this address (if any).
+        try {
+          const { data: recipient } = await supabase
+            .from('email_recipients')
+            .select('token,announcement_id')
+            .ilike('email', normalizedEmail)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+          await supabase.from('email_events').insert({
+            recipient_token: recipient?.token ?? null,
+            announcement_id: recipient?.announcement_id ?? null,
+            email: normalizedEmail,
+            event:
+              payload.reason === 'bounce'
+                ? 'bounce'
+                : payload.reason === 'complaint'
+                  ? 'complaint'
+                  : 'unsubscribe',
+          })
+        } catch (error) {
+          console.warn('Failed to insert email_events', { error })
+        }
+
+
         console.log('Suppression processed', {
           email_redacted: normalizedEmail[0] + '***@' + normalizedEmail.split('@')[1],
           reason: payload.reason,
