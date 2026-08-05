@@ -99,7 +99,8 @@ export function CampaignAnalytics() {
       .on("postgres_changes", { event: "*", schema: "public", table: "email_events" }, () => void load())
       .on("postgres_changes", { event: "*", schema: "public", table: "email_recipients" }, () => void load())
       .subscribe();
-    return () => { void supabase.removeChannel(ch); };
+    const poll = setInterval(() => void load(), 30000);
+    return () => { clearInterval(poll); void supabase.removeChannel(ch); };
   }, []);
 
   const scopedRecipients = useMemo(
