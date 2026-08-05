@@ -49,6 +49,7 @@ import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/l
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicEORouteImport } from './routes/api/public/e/o'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -254,6 +255,11 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicEORoute = ApiPublicEORouteImport.update({
+  id: '/api/public/e/o',
+  path: '/api/public/e/o',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -291,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/e/o': typeof ApiPublicEORoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -332,6 +339,7 @@ export interface FileRoutesByTo {
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/e/o': typeof ApiPublicEORoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -375,6 +383,7 @@ export interface FileRoutesById {
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/e/o': typeof ApiPublicEORoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
     | '/lovable/email/suppression'
+    | '/api/public/e/o'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -460,6 +470,7 @@ export interface FileRouteTypes {
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
     | '/lovable/email/suppression'
+    | '/api/public/e/o'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -502,6 +513,7 @@ export interface FileRouteTypes {
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
     | '/lovable/email/suppression'
+    | '/api/public/e/o'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -535,6 +547,7 @@ export interface RootRouteChildren {
   ApiPublicClaimAdminRoute: typeof ApiPublicClaimAdminRoute
   ApiPublicNotifyOrderRoute: typeof ApiPublicNotifyOrderRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  ApiPublicEORoute: typeof ApiPublicEORoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -824,6 +837,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/e/o': {
+      id: '/api/public/e/o'
+      path: '/api/public/e/o'
+      fullPath: '/api/public/e/o'
+      preLoaderRoute: typeof ApiPublicEORouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -883,6 +903,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicClaimAdminRoute: ApiPublicClaimAdminRoute,
   ApiPublicNotifyOrderRoute: ApiPublicNotifyOrderRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  ApiPublicEORoute: ApiPublicEORoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
