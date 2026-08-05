@@ -44,12 +44,14 @@ import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicNotifyOrderRouteImport } from './routes/api/public/notify-order'
 import { Route as ApiPublicClaimAdminRouteImport } from './routes/api/public/claim-admin'
+import { Route as ApiPublicAnnouncementImageRouteImport } from './routes/api/public/announcement-image'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiPublicEORouteImport } from './routes/api/public/e/o'
+import { Route as ApiPublicECRouteImport } from './routes/api/public/e/c'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -227,6 +229,12 @@ const ApiPublicClaimAdminRoute = ApiPublicClaimAdminRouteImport.update({
   path: '/api/public/claim-admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAnnouncementImageRoute =
+  ApiPublicAnnouncementImageRouteImport.update({
+    id: '/api/public/announcement-image',
+    path: '/api/public/announcement-image',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -258,6 +266,11 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
 const ApiPublicEORoute = ApiPublicEORouteImport.update({
   id: '/api/public/e/o',
   path: '/api/public/e/o',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicECRoute = ApiPublicECRouteImport.update({
+  id: '/api/public/e/c',
+  path: '/api/public/e/c',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -294,9 +307,11 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/buy/': typeof BuyIndexRoute
   '/chats/': typeof ChatsIndexRoute
+  '/api/public/announcement-image': typeof ApiPublicAnnouncementImageRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/e/c': typeof ApiPublicECRoute
   '/api/public/e/o': typeof ApiPublicEORoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -336,9 +351,11 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/buy': typeof BuyIndexRoute
   '/chats': typeof ChatsIndexRoute
+  '/api/public/announcement-image': typeof ApiPublicAnnouncementImageRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/e/c': typeof ApiPublicECRoute
   '/api/public/e/o': typeof ApiPublicEORoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -380,9 +397,11 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/buy/': typeof BuyIndexRoute
   '/chats/': typeof ChatsIndexRoute
+  '/api/public/announcement-image': typeof ApiPublicAnnouncementImageRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/api/public/e/c': typeof ApiPublicECRoute
   '/api/public/e/o': typeof ApiPublicEORoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -425,9 +444,11 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/buy/'
     | '/chats/'
+    | '/api/public/announcement-image'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
     | '/lovable/email/suppression'
+    | '/api/public/e/c'
     | '/api/public/e/o'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -467,9 +488,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/buy'
     | '/chats'
+    | '/api/public/announcement-image'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
     | '/lovable/email/suppression'
+    | '/api/public/e/c'
     | '/api/public/e/o'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -510,9 +533,11 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/buy/'
     | '/chats/'
+    | '/api/public/announcement-image'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
     | '/lovable/email/suppression'
+    | '/api/public/e/c'
     | '/api/public/e/o'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -544,9 +569,11 @@ export interface RootRouteChildren {
   ProductsSlugRoute: typeof ProductsSlugRoute
   BuyIndexRoute: typeof BuyIndexRoute
   ChatsIndexRoute: typeof ChatsIndexRoute
+  ApiPublicAnnouncementImageRoute: typeof ApiPublicAnnouncementImageRoute
   ApiPublicClaimAdminRoute: typeof ApiPublicClaimAdminRoute
   ApiPublicNotifyOrderRoute: typeof ApiPublicNotifyOrderRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  ApiPublicECRoute: typeof ApiPublicECRoute
   ApiPublicEORoute: typeof ApiPublicEORoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -802,6 +829,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicClaimAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/announcement-image': {
+      id: '/api/public/announcement-image'
+      path: '/api/public/announcement-image'
+      fullPath: '/api/public/announcement-image'
+      preLoaderRoute: typeof ApiPublicAnnouncementImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -842,6 +876,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/e/o'
       fullPath: '/api/public/e/o'
       preLoaderRoute: typeof ApiPublicEORouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/e/c': {
+      id: '/api/public/e/c'
+      path: '/api/public/e/c'
+      fullPath: '/api/public/e/c'
+      preLoaderRoute: typeof ApiPublicECRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -900,9 +941,11 @@ const rootRouteChildren: RootRouteChildren = {
   ProductsSlugRoute: ProductsSlugRoute,
   BuyIndexRoute: BuyIndexRoute,
   ChatsIndexRoute: ChatsIndexRoute,
+  ApiPublicAnnouncementImageRoute: ApiPublicAnnouncementImageRoute,
   ApiPublicClaimAdminRoute: ApiPublicClaimAdminRoute,
   ApiPublicNotifyOrderRoute: ApiPublicNotifyOrderRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  ApiPublicECRoute: ApiPublicECRoute,
   ApiPublicEORoute: ApiPublicEORoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,

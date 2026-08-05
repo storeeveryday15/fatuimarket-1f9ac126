@@ -118,12 +118,77 @@ export const muted = {
 
 export const link = { color: BRAND.purple, textDecoration: 'underline' }
 
+export type FooterLink = { key: string; label: string; url: string; emoji: string }
+
+const socialPill = {
+  display: 'inline-block',
+  border: '1px solid #ece7f5',
+  borderRadius: '999px',
+  padding: '7px 12px',
+  margin: '0 6px 6px 0',
+  fontSize: '12px',
+  fontWeight: 600 as const,
+  color: BRAND.ink,
+  textDecoration: 'none',
+}
+
+/**
+ * Permanent branded footer for customer announcements: contact details,
+ * official channels and the preferences/unsubscribe notice.
+ */
+export const BrandFooter = ({
+  links = [],
+  preferencesUrl = `${BRAND.url}/dashboard`,
+}: {
+  links?: FooterLink[]
+  preferencesUrl?: string
+}) => (
+  <>
+    <Hr style={{ borderColor: '#ece7f5', margin: '26px 0 14px' }} />
+    <Text style={{ ...muted, margin: '0 0 4px' }}>
+      You&apos;re receiving this email because you&apos;re a Fatui Market customer.
+    </Text>
+    <Text style={{ ...muted, margin: '0 0 14px' }}>
+      <Link href={preferencesUrl} style={link}>
+        Manage notification preferences
+      </Link>
+      {' or unsubscribe anytime.'}
+    </Text>
+    <Text style={{ ...muted, margin: '0 0 12px' }}>
+      🌐{' '}
+      <Link href={BRAND.url} style={link}>
+        fatuimarket.shop
+      </Link>
+      {'   '}📧{' '}
+      <Link href="mailto:fatuimarket@gmail.com" style={link}>
+        fatuimarket@gmail.com
+      </Link>
+    </Text>
+    {links.length > 0 ? (
+      <Text style={{ margin: '0 0 12px' }}>
+        {links.map((l) => (
+          <Link key={l.key} href={l.url} style={socialPill}>
+            {l.emoji} {l.label}
+          </Link>
+        ))}
+      </Text>
+    ) : null}
+    <Text style={{ ...muted, margin: '0' }}>
+      © {new Date().getFullYear()} Fatui Market. All rights reserved.
+    </Text>
+  </>
+)
+
 export const EmailShell = ({
   preview,
   children,
+  footer,
+  trackingPixelUrl,
 }: {
   preview: string
   children: React.ReactNode
+  footer?: React.ReactNode
+  trackingPixelUrl?: string | null
 }) => (
   <Html lang="en" dir="ltr">
     <Head />
@@ -136,21 +201,29 @@ export const EmailShell = ({
         </Section>
         <Section style={card}>
           {children}
-          <Hr style={{ borderColor: '#ece7f5', margin: '24px 0 14px' }} />
-          <Text style={muted}>
-            <Link href={BRAND.url} style={link}>
-              fatuimarket.shop
-            </Link>
-            {' · '}
-            <Link href={BRAND.support} style={link}>
-              Support
-            </Link>
-          </Text>
-          <Text style={{ ...muted, margin: '6px 0 0' }}>
-            © {new Date().getFullYear()} Fatui Market. All rights reserved.
-          </Text>
+          {footer ?? (
+            <>
+              <Hr style={{ borderColor: '#ece7f5', margin: '24px 0 14px' }} />
+              <Text style={muted}>
+                <Link href={BRAND.url} style={link}>
+                  fatuimarket.shop
+                </Link>
+                {' · '}
+                <Link href={BRAND.support} style={link}>
+                  Support
+                </Link>
+              </Text>
+              <Text style={{ ...muted, margin: '6px 0 0' }}>
+                © {new Date().getFullYear()} Fatui Market. All rights reserved.
+              </Text>
+            </>
+          )}
+          {trackingPixelUrl ? (
+            <Img src={trackingPixelUrl} alt="" width="1" height="1" style={{ display: 'block' }} />
+          ) : null}
         </Section>
       </Container>
     </Body>
   </Html>
 )
+
