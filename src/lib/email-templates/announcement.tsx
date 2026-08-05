@@ -1,7 +1,8 @@
 import * as React from 'react'
 
 import { Button, Img, Text } from '@react-email/components'
-import { EmailShell, button, h1, muted, text } from './brand'
+import { BrandFooter, EmailShell, button, h1, text } from './brand'
+import type { FooterLink } from './brand'
 import type { TemplateEntry } from './registry'
 
 interface AnnouncementEmailProps {
@@ -10,6 +11,9 @@ interface AnnouncementEmailProps {
   imageUrl?: string | null
   buttonText?: string | null
   buttonLink?: string | null
+  footerLinks?: FooterLink[]
+  preferencesUrl?: string
+  trackingPixelUrl?: string | null
 }
 
 export const AnnouncementEmail = ({
@@ -18,8 +22,15 @@ export const AnnouncementEmail = ({
   imageUrl,
   buttonText,
   buttonLink,
+  footerLinks = [],
+  preferencesUrl,
+  trackingPixelUrl,
 }: AnnouncementEmailProps) => (
-  <EmailShell preview={title}>
+  <EmailShell
+    preview={title}
+    trackingPixelUrl={trackingPixelUrl}
+    footer={<BrandFooter links={footerLinks} preferencesUrl={preferencesUrl} />}
+  >
     <Text style={h1}>{title}</Text>
     {imageUrl ? (
       <Img
@@ -42,9 +53,6 @@ export const AnnouncementEmail = ({
         {buttonText || 'Open Fatui Market'}
       </Button>
     ) : null}
-    <Text style={{ ...muted, margin: '18px 0 0' }}>
-      You're receiving this because you have a Fatui Market account.
-    </Text>
   </EmailShell>
 )
 
@@ -58,6 +66,13 @@ export const template = {
     body: 'For the next 24 hours every Genesis Crystal pack is discounted.\nOrders are delivered instantly as always.',
     buttonText: 'Shop now',
     buttonLink: 'https://fatuimarket.shop',
+    footerLinks: [
+      { key: 'whatsapp', label: 'WhatsApp', url: 'https://wa.me/917679393645', emoji: '💬' },
+      { key: 'instagram', label: 'Instagram', url: 'https://instagram.com/fatuimarket', emoji: '📸' },
+      { key: 'telegram', label: 'Telegram', url: 'https://t.me/fatuimarket', emoji: '✈️' },
+      { key: 'facebook', label: 'Facebook', url: 'https://facebook.com', emoji: '📘' },
+      { key: 'youtube', label: 'YouTube', url: 'https://youtube.com/@fatuimarket', emoji: '▶️' },
+    ],
   },
 } satisfies TemplateEntry
 

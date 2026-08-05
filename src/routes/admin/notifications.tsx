@@ -1,12 +1,15 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, Megaphone, Send } from "lucide-react";
+import { BarChart3, Bell, ImagePlus, Megaphone, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationCenter } from "@/components/admin/notification-center";
+import { CampaignAnalytics } from "@/components/admin/campaign-analytics";
 import { sendCustomerMessage } from "@/lib/admin-messaging.functions";
+import { PLACEHOLDERS } from "@/lib/email/personalize";
 import { PRODUCTS } from "@/lib/products";
+
 
 export const Route = createFileRoute("/admin/notifications")({
   head: () => ({
@@ -52,21 +55,27 @@ const SELECT_COLS =
 
 
 function NotificationsPage() {
-  const [tab, setTab] = useState<"compose" | "alerts">("compose");
+  const [tab, setTab] = useState<"compose" | "analytics" | "alerts">("compose");
+  const tabCls = (active: boolean) =>
+    `px-3 py-2 text-sm font-semibold ${active ? "border-b-2 border-[var(--neon)] text-foreground" : "text-muted-foreground"}`;
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap gap-2 border-b border-border">
-        <button onClick={() => setTab("compose")} className={`px-3 py-2 text-sm font-semibold ${tab === "compose" ? "border-b-2 border-[var(--neon)] text-foreground" : "text-muted-foreground"}`}>
+        <button onClick={() => setTab("compose")} className={tabCls(tab === "compose")}>
           <Megaphone className="mr-1.5 inline h-4 w-4" /> Announcements
         </button>
-        <button onClick={() => setTab("alerts")} className={`px-3 py-2 text-sm font-semibold ${tab === "alerts" ? "border-b-2 border-[var(--neon)] text-foreground" : "text-muted-foreground"}`}>
+        <button onClick={() => setTab("analytics")} className={tabCls(tab === "analytics")}>
+          <BarChart3 className="mr-1.5 inline h-4 w-4" /> Email analytics
+        </button>
+        <button onClick={() => setTab("alerts")} className={tabCls(tab === "alerts")}>
           <Bell className="mr-1.5 inline h-4 w-4" /> System alerts
         </button>
       </div>
-      {tab === "compose" ? <Composer /> : <NotificationCenter />}
+      {tab === "compose" ? <Composer /> : tab === "analytics" ? <CampaignAnalytics /> : <NotificationCenter />}
     </div>
   );
 }
+
 
 function Composer() {
   const [title, setTitle] = useState("");
@@ -78,7 +87,51 @@ function Composer() {
   const [email, setEmail] = useState(false);
   const [inApp, setInApp] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
   const [list, setList] = useState<Announcement[]>([]);
+
+  /** Downscales to max 1200px wide and uploads to the announcements bucket. */
+  const uploadBanner = async (file: File) => {
+    if (!file.type.startsWith("image/")) return toast.error("Please choose an image file");
+    if (file.size > 8 * 1024 * 1024) return toast.error("Image must be under 8 MB");
+    setUploading(true);
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1200 / bitmap.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.88));
+      if (!blob) throw new Error("Could not process image");
+      const path = `banners/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      const { error } = await supabase.storage
+        .from("announcements")
+        .upload(path, blob, { contentType: "image/jpeg", upsert: false });
+      if (error) throw new Error(error.message);
+      setImageUrl(`https://fatuimarket.shop/api/public/announcement-image?p=${encodeURIComponent(path)}`);
+      toast.success("Banner uploaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const insertPlaceholder = (token: string) => {
+    const el = bodyRef.current;
+    if (!el) return setDescription((d) => d + token);
+    const start = el.selectionStart ?? description.length;
+    const end = el.selectionEnd ?? description.length;
+    setDescription(description.slice(0, start) + token + description.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + token.length, start + token.length);
+    });
+  };
+
   const send = useServerFn(sendCustomerMessage);
 
   const load = async () => {
@@ -200,9 +253,59 @@ function Composer() {
       <div className="surface-card space-y-3 p-4">
         <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">New announcement</h3>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Message to customers" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+        <textarea ref={bodyRef} value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Message to customers" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Personalize:</span>
+          {PLACEHOLDERS.map((p) => (
+            <button
+              key={p.token}
+              type="button"
+              onClick={() => insertPlaceholder(p.token)}
+              title={`Inserts ${p.label}`}
+              className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary"
+            >
+              {p.token}
+            </button>
+          ))}
+        </div>
+
+        <div className="rounded-lg border border-dashed border-border p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
+            >
+              <ImagePlus className="h-3.5 w-3.5" /> {uploading ? "Uploading…" : "Upload banner"}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture={undefined}
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadBanner(f); e.target.value = ""; }}
+            />
+            <input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="…or paste an image URL"
+              className="min-w-[180px] flex-1 rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+            />
+            {imageUrl && (
+              <button type="button" onClick={() => setImageUrl("")} className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          {imageUrl && (
+            <img src={imageUrl} alt="Banner preview" className="mt-3 max-h-40 w-full rounded-lg object-cover" loading="lazy" />
+          )}
+          <p className="mt-2 text-[11px] text-muted-foreground">JPG/PNG up to 8 MB — resized automatically. On mobile you can pick from camera or gallery.</p>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
-          <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Banner / event image URL" className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
           <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Link (optional)" className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
           <select value={game} onChange={(e) => setGame(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm">
             <option value="all">All customers</option>
@@ -210,6 +313,7 @@ function Composer() {
           </select>
           <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
         </div>
+
         <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
           <label className="flex items-center gap-2"><input type="checkbox" checked={inApp} onChange={(e) => setInApp(e.target.checked)} /> In-app notification</label>
           <label className="flex items-center gap-2"><input type="checkbox" checked={email} onChange={(e) => setEmail(e.target.checked)} /> Email</label>
