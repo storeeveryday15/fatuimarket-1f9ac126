@@ -87,7 +87,51 @@ function Composer() {
   const [email, setEmail] = useState(false);
   const [inApp, setInApp] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const bodyRef = useRef<HTMLTextAreaElement | null>(null);
   const [list, setList] = useState<Announcement[]>([]);
+
+  /** Downscales to max 1200px wide and uploads to the announcements bucket. */
+  const uploadBanner = async (file: File) => {
+    if (!file.type.startsWith("image/")) return toast.error("Please choose an image file");
+    if (file.size > 8 * 1024 * 1024) return toast.error("Image must be under 8 MB");
+    setUploading(true);
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1200 / bitmap.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.88));
+      if (!blob) throw new Error("Could not process image");
+      const path = `banners/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      const { error } = await supabase.storage
+        .from("announcements")
+        .upload(path, blob, { contentType: "image/jpeg", upsert: false });
+      if (error) throw new Error(error.message);
+      setImageUrl(`https://fatuimarket.shop/api/public/announcement-image?p=${encodeURIComponent(path)}`);
+      toast.success("Banner uploaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const insertPlaceholder = (token: string) => {
+    const el = bodyRef.current;
+    if (!el) return setDescription((d) => d + token);
+    const start = el.selectionStart ?? description.length;
+    const end = el.selectionEnd ?? description.length;
+    setDescription(description.slice(0, start) + token + description.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + token.length, start + token.length);
+    });
+  };
+
   const send = useServerFn(sendCustomerMessage);
 
   const load = async () => {
