@@ -1,12 +1,15 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, Megaphone, Send } from "lucide-react";
+import { BarChart3, Bell, ImagePlus, Megaphone, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationCenter } from "@/components/admin/notification-center";
+import { CampaignAnalytics } from "@/components/admin/campaign-analytics";
 import { sendCustomerMessage } from "@/lib/admin-messaging.functions";
+import { PLACEHOLDERS } from "@/lib/email/personalize";
 import { PRODUCTS } from "@/lib/products";
+
 
 export const Route = createFileRoute("/admin/notifications")({
   head: () => ({
@@ -52,21 +55,27 @@ const SELECT_COLS =
 
 
 function NotificationsPage() {
-  const [tab, setTab] = useState<"compose" | "alerts">("compose");
+  const [tab, setTab] = useState<"compose" | "analytics" | "alerts">("compose");
+  const tabCls = (active: boolean) =>
+    `px-3 py-2 text-sm font-semibold ${active ? "border-b-2 border-[var(--neon)] text-foreground" : "text-muted-foreground"}`;
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap gap-2 border-b border-border">
-        <button onClick={() => setTab("compose")} className={`px-3 py-2 text-sm font-semibold ${tab === "compose" ? "border-b-2 border-[var(--neon)] text-foreground" : "text-muted-foreground"}`}>
+        <button onClick={() => setTab("compose")} className={tabCls(tab === "compose")}>
           <Megaphone className="mr-1.5 inline h-4 w-4" /> Announcements
         </button>
-        <button onClick={() => setTab("alerts")} className={`px-3 py-2 text-sm font-semibold ${tab === "alerts" ? "border-b-2 border-[var(--neon)] text-foreground" : "text-muted-foreground"}`}>
+        <button onClick={() => setTab("analytics")} className={tabCls(tab === "analytics")}>
+          <BarChart3 className="mr-1.5 inline h-4 w-4" /> Email analytics
+        </button>
+        <button onClick={() => setTab("alerts")} className={tabCls(tab === "alerts")}>
           <Bell className="mr-1.5 inline h-4 w-4" /> System alerts
         </button>
       </div>
-      {tab === "compose" ? <Composer /> : <NotificationCenter />}
+      {tab === "compose" ? <Composer /> : tab === "analytics" ? <CampaignAnalytics /> : <NotificationCenter />}
     </div>
   );
 }
+
 
 function Composer() {
   const [title, setTitle] = useState("");
