@@ -253,9 +253,59 @@ function Composer() {
       <div className="surface-card space-y-3 p-4">
         <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">New announcement</h3>
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Message to customers" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+        <textarea ref={bodyRef} value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Message to customers" className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Personalize:</span>
+          {PLACEHOLDERS.map((p) => (
+            <button
+              key={p.token}
+              type="button"
+              onClick={() => insertPlaceholder(p.token)}
+              title={`Inserts ${p.label}`}
+              className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-secondary"
+            >
+              {p.token}
+            </button>
+          ))}
+        </div>
+
+        <div className="rounded-lg border border-dashed border-border p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
+            >
+              <ImagePlus className="h-3.5 w-3.5" /> {uploading ? "Uploading…" : "Upload banner"}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture={undefined}
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadBanner(f); e.target.value = ""; }}
+            />
+            <input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="…or paste an image URL"
+              className="min-w-[180px] flex-1 rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+            />
+            {imageUrl && (
+              <button type="button" onClick={() => setImageUrl("")} className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          {imageUrl && (
+            <img src={imageUrl} alt="Banner preview" className="mt-3 max-h-40 w-full rounded-lg object-cover" loading="lazy" />
+          )}
+          <p className="mt-2 text-[11px] text-muted-foreground">JPG/PNG up to 8 MB — resized automatically. On mobile you can pick from camera or gallery.</p>
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
-          <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Banner / event image URL" className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
           <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Link (optional)" className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
           <select value={game} onChange={(e) => setGame(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm">
             <option value="all">All customers</option>
@@ -263,6 +313,7 @@ function Composer() {
           </select>
           <input type="datetime-local" value={scheduleAt} onChange={(e) => setScheduleAt(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm" />
         </div>
+
         <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
           <label className="flex items-center gap-2"><input type="checkbox" checked={inApp} onChange={(e) => setInApp(e.target.checked)} /> In-app notification</label>
           <label className="flex items-center gap-2"><input type="checkbox" checked={email} onChange={(e) => setEmail(e.target.checked)} /> Email</label>
