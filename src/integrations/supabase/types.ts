@@ -556,6 +556,106 @@ export type Database = {
         }
         Relationships: []
       }
+      email_events: {
+        Row: {
+          announcement_id: string | null
+          client: string | null
+          country: string | null
+          created_at: string
+          device: string | null
+          email: string | null
+          event: string
+          id: string
+          recipient_token: string | null
+          url: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          announcement_id?: string | null
+          client?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          email?: string | null
+          event: string
+          id?: string
+          recipient_token?: string | null
+          url?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          announcement_id?: string | null
+          client?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          email?: string | null
+          event?: string
+          id?: string
+          recipient_token?: string | null
+          url?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_events_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_recipients: {
+        Row: {
+          announcement_id: string | null
+          created_at: string
+          email: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          status: string
+          template_name: string
+          token: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          announcement_id?: string | null
+          created_at?: string
+          email: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          status?: string
+          template_name?: string
+          token: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          announcement_id?: string | null
+          created_at?: string
+          email?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          status?: string
+          template_name?: string
+          token?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_recipients_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
