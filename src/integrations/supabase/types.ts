@@ -1508,6 +1508,66 @@ export type Database = {
           },
         ]
       }
+      supplier_products: {
+        Row: {
+          active: boolean
+          catalog_product_id: string | null
+          created_at: string
+          icon_url: string | null
+          id: string
+          name: string
+          product_code: string
+          product_type: string | null
+          raw: Json
+          supplier_key: string
+          updated_at: string
+          validation_code: string | null
+        }
+        Insert: {
+          active?: boolean
+          catalog_product_id?: string | null
+          created_at?: string
+          icon_url?: string | null
+          id?: string
+          name?: string
+          product_code: string
+          product_type?: string | null
+          raw?: Json
+          supplier_key?: string
+          updated_at?: string
+          validation_code?: string | null
+        }
+        Update: {
+          active?: boolean
+          catalog_product_id?: string | null
+          created_at?: string
+          icon_url?: string | null
+          id?: string
+          name?: string
+          product_code?: string
+          product_type?: string | null
+          raw?: Json
+          supplier_key?: string
+          updated_at?: string
+          validation_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_products_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_products_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           api_endpoint: string | null
