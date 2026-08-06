@@ -10,6 +10,7 @@ import {
   Bell,
   TrendingUp,
   Globe,
+  PackageSearch,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
