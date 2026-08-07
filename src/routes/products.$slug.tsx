@@ -181,6 +181,7 @@ function ProductPage() {
     if (needsId && !playerId.trim()) return false;
     if (needsZone && !zone.trim()) return false;
     if (needsServer && !serverRegion) return false;
+    if (needsVerify && !verified) return false;
     if (showEmailInput && !email.trim()) return false;
     return true;
   })();
