@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
 import { notifyOrder } from "@/lib/notify-order";
+import { useServerFn } from "@tanstack/react-start";
+import { pollSupplierOrders, fulfilOrderWithSupplier } from "@/lib/flashtopup.functions";
 import { VisitorAnalytics } from "@/components/admin/visitor-analytics";
 import { StatCard } from "@/components/admin/stat-card";
 import { RecentPurchases } from "@/components/admin/recent-purchases";
@@ -72,6 +74,9 @@ const STATUS_STYLES: Record<string, string> = {
 function AdminPage() {
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<"dashboard" | "orders" | "users" | "support" | "reviews">("dashboard");
+  const poll = useServerFn(pollSupplierOrders);
+  const fulfil = useServerFn(fulfilOrderWithSupplier);
+  const [polling, setPolling] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
   const [support, setSupport] = useState<Support[]>([]);
@@ -113,6 +118,7 @@ function AdminPage() {
   };
 
   const updateOrder = async (id: string, patch: Partial<Order>, event?: "processing" | "completed" | "rejected") => {
+    const target = orders.find((x) => x.id === id);
     if (event === "completed") patch.completed_at = new Date().toISOString();
     const { error } = await supabase.from("orders").update(patch).eq("id", id);
     if (error) return toast.error(error.message);
@@ -121,6 +127,17 @@ function AdminPage() {
       const order = orders.find((x) => x.id === id);
       if (order) {
         void notifyOrder(order.order_code, event);
+      }
+    }
+
+    // Payment approved by admin — hand the order to the supplier automatically.
+    if (event === "processing" && target) {
+      try {
+        const res = await fulfil({ data: { orderCode: target.order_code } });
+        if (res.ok && !res.skipped) toast.success(`Sent to supplier · ${res.status}`);
+        else if (!res.ok && !res.skipped) toast.error(res.message ?? "Supplier order failed");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Supplier order failed");
       }
     }
 
@@ -179,6 +196,30 @@ function AdminPage() {
           {tab === "reviews" && (["all","pending","approved","rejected"] as const).map((s) => (
             <button key={s} onClick={() => setReviewFilter(s)} className={`rounded-full border px-3 py-1 text-xs capitalize ${reviewFilter === s ? "border-[var(--neon)] text-foreground" : "border-border text-muted-foreground hover:border-foreground/30"}`}>{s} {s !== "all" && `(${reviews.filter(r => r.status === s).length})`}</button>
           ))}
+        </div>
+      )}
+
+      {tab === "orders" && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              setPolling(true);
+              try {
+                const res = await poll({ data: undefined as never });
+                toast.success(`Checked ${res.polled} supplier orders — ${res.completed} completed, ${res.failed} failed`);
+                await load();
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Could not refresh supplier orders");
+              } finally {
+                setPolling(false);
+              }
+            }}
+            disabled={polling}
+            className="inline-flex items-center gap-2 rounded-xl border border-border px-3.5 py-2 text-sm font-semibold hover:border-foreground/30 disabled:opacity-60"
+          >
+            {polling ? "Checking supplier…" : "Refresh supplier statuses"}
+          </button>
         </div>
       )}
 

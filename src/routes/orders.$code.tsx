@@ -81,6 +81,9 @@ type Order = {
   admin_notes: string | null;
   completed_at: string | null;
   rejected_at: string | null;
+  supplier_status: string | null;
+  supplier_order_id: string | null;
+  delivery_details: string | null;
   created_at: string;
 };
 
@@ -97,6 +100,15 @@ function statusInfo(s: string) {
     case "rejected":
     case "cancelled": return { icon: AlertCircle, color: "text-destructive", label: "Order rejected" };
     default: return { icon: Clock, color: "text-muted-foreground", label: s };
+  }
+}
+
+function supplierLabel(s: string) {
+  switch (s) {
+    case "completed": return "Delivered by supplier";
+    case "failed": return "Supplier issue — our team is on it";
+    case "processing": return "Being delivered";
+    default: return "Queued with supplier";
   }
 }
 
@@ -235,22 +247,16 @@ function OrderPage() {
               toast.error("Payment verification failed");
               return;
             }
-            const { error } = await supabase
-              .from("orders")
-              .update({
-                utr: response.razorpay_payment_id,
-                payment_method: "razorpay",
-                status: "pending_verification",
-              })
-              .eq("id", order.id);
-            if (error) throw error;
             void notifyOrder(order.order_code, "screenshot_uploaded");
-            toast.success("Payment received — verifying");
+            toast.success(
+              result.auto_fulfilled ? "Payment received — delivering your order" : "Payment received — verifying",
+            );
             await fetchOrder();
           } catch (err: unknown) {
             toast.error(err instanceof Error ? err.message : "Verification failed");
           }
         },
+
         modal: {
           ondismiss: () => {
             toast.message("Payment cancelled");
@@ -290,8 +296,16 @@ function OrderPage() {
           <Row k="Payment" v={(order.payment_method ?? (order.region === "IN" ? "UPI" : "Card")).toUpperCase()} />
           {order.utr && <Row k="UTR" v={order.utr} />}
           {order.completed_at && <Row k="Completed" v={new Date(order.completed_at).toLocaleString()} />}
+          {order.supplier_status && <Row k="Delivery" v={supplierLabel(order.supplier_status)} />}
           {order.admin_notes && <Row k="Notes" v={order.admin_notes} />}
         </div>
+
+        {order.delivery_details && (
+          <div className="mt-4 rounded-xl border border-success/30 bg-success/10 p-4">
+            <h2 className="text-sm font-semibold text-success">Delivery details</h2>
+            <pre className="mt-2 whitespace-pre-wrap break-all text-xs text-foreground">{order.delivery_details}</pre>
+          </div>
+        )}
 
         {awaitingPayment && order.region === "IN" && (
           <div className="mt-6 rounded-xl border border-border bg-background/40 p-5">

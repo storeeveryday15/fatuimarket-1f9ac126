@@ -25,6 +25,9 @@ import { StockOverlay, stockImageClass } from "@/components/stock-overlay";
 import { RelatedProducts } from "@/components/product-rails";
 import { recordProductView } from "@/lib/recently-viewed";
 import { safeCopy, safeLocalStorage } from "@/lib/safe-browser";
+import { useServerFn } from "@tanstack/react-start";
+import { verifyPlayerId, getServiceRequirement } from "@/lib/flashtopup.functions";
+import { ShieldCheck } from "lucide-react";
 
 
 
@@ -173,20 +176,64 @@ function ProductPage() {
   const needsZone = product.slug === "mobile-legends";
   const needsServer = gameServers.length > 0;
 
-  const filled = (() => {
-    if (!playerName.trim()) return false;
-    if (needsId && !playerId.trim()) return false;
-    if (needsZone && !zone.trim()) return false;
-    if (needsServer && !serverRegion) return false;
-    if (showEmailInput && !email.trim()) return false;
-    return true;
-  })();
-
   useEffect(() => {
     recordProductView(product.slug, selected.label);
   }, [product.slug, selected.label]);
 
   const stockInfo = useProductStock(product.slug, selected.label);
+
+  // Supplier-backed player verification (skipped when the supplier does not require it).
+  const checkPlayer = useServerFn(verifyPlayerId);
+  const readRequirement = useServerFn(getServiceRequirement);
+  const [needsVerify, setNeedsVerify] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [verified, setVerified] = useState<{ nickname: string | null } | null>(null);
+
+  useEffect(() => {
+    setVerified(null);
+    if (!stockInfo.productId) { setNeedsVerify(false); return; }
+    let cancelled = false;
+    readRequirement({ data: { catalogProductId: stockInfo.productId } })
+      .then((r) => { if (!cancelled) setNeedsVerify(r.requiresValidation); })
+      .catch(() => { if (!cancelled) setNeedsVerify(false); });
+    return () => { cancelled = true; };
+  }, [stockInfo.productId, readRequirement]);
+
+  useEffect(() => { setVerified(null); }, [playerId, zone]);
+
+  const runVerification = async () => {
+    if (!stockInfo.productId || !playerId.trim()) return toast.error("Enter your player ID first");
+    setVerifying(true);
+    try {
+      const res = await checkPlayer({
+        data: {
+          catalogProductId: stockInfo.productId,
+          userId: playerId.trim(),
+          serverId: needsZone ? zone.trim() : null,
+        },
+      });
+      if (!res.required) { setNeedsVerify(false); setVerified({ nickname: null }); return; }
+      if (!res.verified) { setVerified(null); toast.error(res.message ?? "Verification failed"); return; }
+      setVerified({ nickname: res.nickname });
+      toast.success(res.nickname ? `Verified — ${res.nickname}` : "Player verified");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Verification failed");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const filled = (() => {
+    if (!playerName.trim()) return false;
+    if (needsId && !playerId.trim()) return false;
+    if (needsZone && !zone.trim()) return false;
+    if (needsServer && !serverRegion) return false;
+    if (needsVerify && !verified) return false;
+    if (showEmailInput && !email.trim()) return false;
+    return true;
+  })();
+
+
   const catalog = useCatalogStatus();
   const gameState = catalog.gameState(product.slug);
   const tierState = catalog.tierState(product.slug, selected.label);
@@ -230,6 +277,7 @@ function ProductPage() {
       email: email || user.email || "",
     });
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    if (needsVerify && !verified) return toast.error("Please verify your player ID before continuing");
 
     setPlacing(true);
     try {
@@ -330,6 +378,24 @@ function ProductPage() {
                         <Copy className="h-3.5 w-3.5" /> Copy
                       </button>
                     </div>
+                  </div>
+                )}
+                {needsVerify && needsId && (
+                  <div className="md:col-span-2 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border bg-background/40 p-3">
+                    <button
+                      type="button"
+                      onClick={runVerification}
+                      disabled={verifying}
+                      className="inline-flex items-center gap-2 rounded-lg border border-[var(--neon)]/40 bg-[var(--neon)]/10 px-3 py-2 text-xs font-semibold text-[var(--neon)] disabled:opacity-60"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      {verifying ? "Verifying…" : verified ? "Re-verify player" : "Verify player ID"}
+                    </button>
+                    <span className="text-xs text-muted-foreground">
+                      {verified
+                        ? `✓ ${verified.nickname ?? "Player verified"}`
+                        : "Verification is required before checkout."}
+                    </span>
                   </div>
                 )}
                 {needsZone && (

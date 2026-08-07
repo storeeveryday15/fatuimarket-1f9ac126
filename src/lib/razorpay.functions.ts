@@ -161,9 +161,34 @@ export const verifyRazorpayPayment = createServerFn({ method: "POST" })
       return { verified: false as const };
     }
 
+    // Payment is real — record it and hand the order to the supplier.
+    await supabaseAdmin
+      .from("orders")
+      .update({
+        utr: data.razorpay_payment_id,
+        payment_method: "razorpay",
+        status: "pending_verification",
+      })
+      .eq("id", order.id);
+
+    let fulfilment: { ok: boolean; status: string; skipped?: boolean } = {
+      ok: false,
+      status: "skipped",
+      skipped: true,
+    };
+    try {
+      const { fulfilOrder } = await import("./flashtopup-fulfil.server");
+      fulfilment = await fulfilOrder(order.order_code);
+    } catch (err) {
+      console.error("[fulfilment] auto order failed", err instanceof Error ? err.message : err);
+    }
+
     return {
       verified: true as const,
       payment_id: data.razorpay_payment_id,
       order_id: data.razorpay_order_id,
+      fulfilment_status: fulfilment.status,
+      auto_fulfilled: fulfilment.ok && !fulfilment.skipped,
     };
   });
+
