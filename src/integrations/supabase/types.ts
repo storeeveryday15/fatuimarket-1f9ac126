@@ -964,6 +964,7 @@ export type Database = {
           currency: string
           customer_contact: string | null
           customer_email: string | null
+          delivery_details: string | null
           discount_inr: number
           expired_at: string | null
           expires_at: string | null
@@ -986,6 +987,8 @@ export type Database = {
           server_region: string | null
           status: string
           stock_deducted: boolean
+          supplier_order_id: string | null
+          supplier_status: string | null
           tier_label: string
           updated_at: string
           user_id: string | null
@@ -1005,6 +1008,7 @@ export type Database = {
           currency?: string
           customer_contact?: string | null
           customer_email?: string | null
+          delivery_details?: string | null
           discount_inr?: number
           expired_at?: string | null
           expires_at?: string | null
@@ -1027,6 +1031,8 @@ export type Database = {
           server_region?: string | null
           status?: string
           stock_deducted?: boolean
+          supplier_order_id?: string | null
+          supplier_status?: string | null
           tier_label: string
           updated_at?: string
           user_id?: string | null
@@ -1046,6 +1052,7 @@ export type Database = {
           currency?: string
           customer_contact?: string | null
           customer_email?: string | null
+          delivery_details?: string | null
           discount_inr?: number
           expired_at?: string | null
           expires_at?: string | null
@@ -1068,6 +1075,8 @@ export type Database = {
           server_region?: string | null
           status?: string
           stock_deducted?: boolean
+          supplier_order_id?: string | null
+          supplier_status?: string | null
           tier_label?: string
           updated_at?: string
           user_id?: string | null
@@ -1508,6 +1517,56 @@ export type Database = {
           },
         ]
       }
+      supplier_orders: {
+        Row: {
+          created_at: string
+          delivered_payload: Json | null
+          error_message: string | null
+          id: string
+          last_response: Json
+          order_id: string
+          reference_id: string
+          service_code: string
+          status: string
+          supplier_order_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_payload?: Json | null
+          error_message?: string | null
+          id?: string
+          last_response?: Json
+          order_id: string
+          reference_id: string
+          service_code: string
+          status?: string
+          supplier_order_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          delivered_payload?: Json | null
+          error_message?: string | null
+          id?: string
+          last_response?: Json
+          order_id?: string
+          reference_id?: string
+          service_code?: string
+          status?: string
+          supplier_order_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_products: {
         Row: {
           active: boolean
@@ -1567,6 +1626,106 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_services: {
+        Row: {
+          active: boolean
+          catalog_product_id: string | null
+          created_at: string
+          currency: string | null
+          id: string
+          input_fields: Json
+          max_quantity: number
+          min_quantity: number
+          raw: Json
+          requires_validation: boolean
+          service_code: string
+          service_name: string
+          supplier_price: number | null
+          supplier_product_id: string
+          updated_at: string
+          validation_code: string | null
+        }
+        Insert: {
+          active?: boolean
+          catalog_product_id?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          input_fields?: Json
+          max_quantity?: number
+          min_quantity?: number
+          raw?: Json
+          requires_validation?: boolean
+          service_code: string
+          service_name: string
+          supplier_price?: number | null
+          supplier_product_id: string
+          updated_at?: string
+          validation_code?: string | null
+        }
+        Update: {
+          active?: boolean
+          catalog_product_id?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          input_fields?: Json
+          max_quantity?: number
+          min_quantity?: number
+          raw?: Json
+          requires_validation?: boolean
+          service_code?: string
+          service_name?: string
+          supplier_price?: number | null
+          supplier_product_id?: string
+          updated_at?: string
+          validation_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_services_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_services_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_services_supplier_product_id_fkey"
+            columns: ["supplier_product_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_webhook_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          payload: Json
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          payload?: Json
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          payload?: Json
+        }
+        Relationships: []
       }
       suppliers: {
         Row: {
