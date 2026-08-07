@@ -235,22 +235,16 @@ function OrderPage() {
               toast.error("Payment verification failed");
               return;
             }
-            const { error } = await supabase
-              .from("orders")
-              .update({
-                utr: response.razorpay_payment_id,
-                payment_method: "razorpay",
-                status: "pending_verification",
-              })
-              .eq("id", order.id);
-            if (error) throw error;
             void notifyOrder(order.order_code, "screenshot_uploaded");
-            toast.success("Payment received — verifying");
+            toast.success(
+              result.auto_fulfilled ? "Payment received — delivering your order" : "Payment received — verifying",
+            );
             await fetchOrder();
           } catch (err: unknown) {
             toast.error(err instanceof Error ? err.message : "Verification failed");
           }
         },
+
         modal: {
           ondismiss: () => {
             toast.message("Payment cancelled");
