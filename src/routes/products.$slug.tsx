@@ -176,16 +176,6 @@ function ProductPage() {
   const needsZone = product.slug === "mobile-legends";
   const needsServer = gameServers.length > 0;
 
-  const filled = (() => {
-    if (!playerName.trim()) return false;
-    if (needsId && !playerId.trim()) return false;
-    if (needsZone && !zone.trim()) return false;
-    if (needsServer && !serverRegion) return false;
-    if (needsVerify && !verified) return false;
-    if (showEmailInput && !email.trim()) return false;
-    return true;
-  })();
-
   useEffect(() => {
     recordProductView(product.slug, selected.label);
   }, [product.slug, selected.label]);
@@ -232,6 +222,17 @@ function ProductPage() {
       setVerifying(false);
     }
   };
+
+  const filled = (() => {
+    if (!playerName.trim()) return false;
+    if (needsId && !playerId.trim()) return false;
+    if (needsZone && !zone.trim()) return false;
+    if (needsServer && !serverRegion) return false;
+    if (needsVerify && !verified) return false;
+    if (showEmailInput && !email.trim()) return false;
+    return true;
+  })();
+
 
   const catalog = useCatalogStatus();
   const gameState = catalog.gameState(product.slug);
