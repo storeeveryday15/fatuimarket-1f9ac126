@@ -1,10 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { RefreshCw, Search, PackageSearch } from "lucide-react";
-import { listSupplierProducts, syncFlashtopupProducts, mapSupplierProduct } from "@/lib/flashtopup.functions";
+import { RefreshCw, Search, PackageSearch, ChevronDown, ChevronRight, Layers } from "lucide-react";
+import {
+  listSupplierProducts,
+  syncFlashtopupProducts,
+  mapSupplierProduct,
+  listSupplierServices,
+  syncFlashtopupServices,
+  mapSupplierService,
+} from "@/lib/flashtopup.functions";
 import { useAdminProducts } from "@/hooks/use-admin-products";
 
 export const Route = createFileRoute("/admin/supplier-catalog")({
@@ -30,6 +37,10 @@ function SupplierCatalogPage() {
   const list = useServerFn(listSupplierProducts);
   const sync = useServerFn(syncFlashtopupProducts);
   const mapFn = useServerFn(mapSupplierProduct);
+  const listServices = useServerFn(listSupplierServices);
+  const syncServices = useServerFn(syncFlashtopupServices);
+  const mapServiceFn = useServerFn(mapSupplierService);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const { rows: catalog } = useAdminProducts();
 
   const [q, setQ] = useState("");
@@ -40,11 +51,57 @@ function SupplierCatalogPage() {
     queryFn: () => list(),
   });
 
+  const { data: services } = useQuery({
+    queryKey: ["supplier-services"],
+    queryFn: () => listServices(),
+  });
+
+  const servicesByProduct = useMemo(() => {
+    const map = new Map<string, NonNullable<typeof services>>();
+    for (const svc of services ?? []) {
+      const list = map.get(svc.supplier_product_id) ?? [];
+      list.push(svc);
+      map.set(svc.supplier_product_id, list as NonNullable<typeof services>);
+    }
+    return map;
+  }, [services]);
+
+  const servicesSync = useMutation({
+    mutationFn: () => syncServices({ data: undefined as never }),
+    onSuccess: (res) => {
+      toast.success(
+        `Synced ${res.services} services across ${res.products} products` +
+          (res.failed ? ` · ${res.failed} failed` : ""),
+      );
+      void qc.invalidateQueries({ queryKey: ["supplier-services"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Service sync failed"),
+  });
+
+  const serviceMap = useMutation({
+    mutationFn: (vars: { id: string; catalogProductId: string | null }) => mapServiceFn({ data: vars }),
+    onSuccess: () => {
+      toast.success("Service mapping saved");
+      void qc.invalidateQueries({ queryKey: ["supplier-services"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "Could not save mapping"),
+  });
+
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
   const syncMutation = useMutation({
     mutationFn: () => sync({ data: undefined as never }),
     onSuccess: (res) => {
-      toast.success(`Synced ${res.total} products — ${res.added} new, ${res.updated} updated, ${res.removed} removed`);
+      toast.success(
+        `Synced ${res.total} products — ${res.added} new, ${res.updated} updated, ${res.removed} removed · ${res.services} services`,
+      );
       void qc.invalidateQueries({ queryKey: ["supplier-products"] });
+      void qc.invalidateQueries({ queryKey: ["supplier-services"] });
     },
     onError: (e: Error) => toast.error(e.message || "Sync failed"),
   });
@@ -88,6 +145,16 @@ function SupplierCatalogPage() {
             {lastSync ? ` · last synced ${new Date(lastSync).toLocaleString()}` : ""}
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => servicesSync.mutate()}
+          disabled={servicesSync.isPending}
+          className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:border-foreground/30 disabled:opacity-60"
+        >
+          <Layers className={`h-4 w-4 ${servicesSync.isPending ? "animate-pulse" : ""}`} />
+          {servicesSync.isPending ? "Syncing services…" : "Sync Services"}
+        </button>
         <button
           type="button"
           onClick={() => syncMutation.mutate()}
@@ -97,6 +164,7 @@ function SupplierCatalogPage() {
           <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? "animate-spin" : ""}`} />
           {syncMutation.isPending ? "Syncing…" : "Sync Products"}
         </button>
+        </div>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -134,6 +202,7 @@ function SupplierCatalogPage() {
           <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <th className="p-3 w-8" />
                 <th className="p-3">Icon</th>
                 <th className="p-3">Product</th>
                 <th className="p-3">Code</th>
@@ -144,7 +213,18 @@ function SupplierCatalogPage() {
             </thead>
             <tbody>
               {filtered.map((r) => (
-                <tr key={r.id} className={`border-b border-border/60 ${r.active ? "" : "opacity-50"}`}>
+                <Fragment key={r.id}>
+                <tr className={`border-b border-border/60 ${r.active ? "" : "opacity-50"}`}>
+                  <td className="p-3">
+                    <button
+                      type="button"
+                      onClick={() => toggle(r.id)}
+                      aria-label={`Show services for ${r.name}`}
+                      className="rounded-md p-1 text-muted-foreground hover:text-foreground"
+                    >
+                      {expanded.has(r.id) ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </button>
+                  </td>
                   <td className="p-3">
                     {r.icon_url ? (
                       <img
@@ -184,6 +264,70 @@ function SupplierCatalogPage() {
                     </select>
                   </td>
                 </tr>
+                {expanded.has(r.id) && (
+                  <tr className="border-b border-border/60 bg-background/40">
+                    <td colSpan={7} className="p-3">
+                      {(servicesByProduct.get(r.id) ?? []).length === 0 ? (
+                        <p className="px-2 py-3 text-xs text-muted-foreground">
+                          No services synced for this product yet.
+                        </p>
+                      ) : (
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-left uppercase tracking-wider text-muted-foreground">
+                              <th className="p-2">Service</th>
+                              <th className="p-2">Code</th>
+                              <th className="p-2">Price</th>
+                              <th className="p-2">Qty</th>
+                              <th className="p-2">Inputs</th>
+                              <th className="p-2">Mapped to</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(servicesByProduct.get(r.id) ?? []).map((svc) => (
+                              <tr key={svc.id} className={svc.active ? "" : "opacity-50"}>
+                                <td className="p-2 font-semibold">{svc.service_name}</td>
+                                <td className="p-2 font-mono">{svc.service_code}</td>
+                                <td className="p-2">
+                                  {svc.supplier_price != null ? `${svc.currency ?? ""} ${svc.supplier_price}` : "—"}
+                                </td>
+                                <td className="p-2">
+                                  {svc.min_quantity}–{svc.max_quantity}
+                                </td>
+                                <td className="p-2 text-muted-foreground">
+                                  {svc.input_fields.length ? svc.input_fields.join(", ") : "—"}
+                                  {svc.requires_validation && (
+                                    <span className="ml-2 rounded bg-[var(--neon)]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--neon)]">
+                                      verify
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-2">
+                                  <select
+                                    value={svc.catalog_product_id ?? ""}
+                                    onChange={(e) =>
+                                      serviceMap.mutate({ id: svc.id, catalogProductId: e.target.value || null })
+                                    }
+                                    aria-label={`Map service ${svc.service_name} to a store product`}
+                                    className="rounded-lg border border-input bg-background px-2 py-1.5 text-xs"
+                                  >
+                                    <option value="">Not mapped</option>
+                                    {(catalog ?? []).map((p) => (
+                                      <option key={p.id} value={p.id}>
+                                        {p.product_slug} — {p.tier_label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
