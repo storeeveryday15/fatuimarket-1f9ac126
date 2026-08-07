@@ -2,6 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+const toStringArray = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+
 /**
  * FlashTopup supplier catalog — admin-only server functions.
  * Every handler re-verifies the admin role before touching data, and all
@@ -94,7 +97,7 @@ export const listSupplierServices = createServerFn({ method: "GET" })
       )
       .order("service_name", { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []) as Array<{
+    return (data ?? []).map((r) => ({ ...r, input_fields: toStringArray(r.input_fields) })) as Array<{
       id: string;
       supplier_product_id: string;
       service_code: string;
@@ -104,7 +107,7 @@ export const listSupplierServices = createServerFn({ method: "GET" })
       min_quantity: number;
       max_quantity: number;
       validation_code: string | null;
-      input_fields: unknown;
+      input_fields: string[];
       requires_validation: boolean;
       active: boolean;
       catalog_product_id: string | null;
@@ -180,7 +183,7 @@ export const getServiceRequirement = createServerFn({ method: "POST" })
       .maybeSingle();
     return {
       requiresValidation: Boolean(service?.requires_validation && service?.validation_code),
-      inputFields: (service?.input_fields ?? []) as unknown,
+      inputFields: toStringArray(service?.input_fields),
     };
   });
 
