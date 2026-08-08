@@ -157,10 +157,9 @@ export function CheckIdTester({ services }: { services: Service[] }) {
                   Response · {result.trace.durationMs}ms
                 </p>
                 <pre className="max-h-64 overflow-auto rounded-lg bg-background/60 p-3 font-mono text-[11px]">
-                  {result.trace.responseBody
-                    ? JSON.stringify(result.trace.responseBody, null, 2)
-                    : result.trace.rawResponse || result.trace.error || "(empty)"}
+                  {prettyJson(result.trace.rawResponse) || result.trace.error || "(empty)"}
                 </pre>
+
               </div>
             </div>
           )}
