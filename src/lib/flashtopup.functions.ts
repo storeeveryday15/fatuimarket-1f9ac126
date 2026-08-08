@@ -145,7 +145,7 @@ export const verifyPlayerId = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: service } = await context.supabase
       .from("supplier_services")
-      .select("validation_code, requires_validation, active")
+      .select("validation_code, requires_validation, active, input_fields, service_code")
       .eq("catalog_product_id", data.catalogProductId)
       .eq("active", true)
       .limit(1)
@@ -155,19 +155,42 @@ export const verifyPlayerId = createServerFn({ method: "POST" })
       return { required: false as const, verified: true as const, nickname: null, message: null };
     }
 
+    // Required-input guard: don't waste a supplier call when a field is missing.
+    const required = toStringArray(service.input_fields);
+    if (required.some((f) => /server|zone/i.test(f)) && !data.serverId) {
+      return {
+        required: true as const,
+        verified: false as const,
+        nickname: null,
+        message: "Please select your server/zone before verifying.",
+      };
+    }
+
     const { checkPlayerId } = await import("./flashtopup.server");
     const res = await checkPlayerId({
       validation_code: service.validation_code,
       user_id: data.userId,
       server_id: data.serverId ?? null,
     });
+    console.log("[check-id] verify", {
+      catalogProductId: data.catalogProductId,
+      service_code: service.service_code,
+      validation_code: service.validation_code,
+      required_fields: required,
+      sent: { user_id: data.userId, server_id: data.serverId ?? null },
+      status: res.status,
+      ok: res.ok,
+      supplier_message: res.message,
+    });
     return {
       required: true as const,
       verified: res.ok,
       nickname: res.nickname,
-      message: res.ok ? null : "We could not find that player ID. Please check and try again.",
+      // Surface the exact supplier message rather than failing silently.
+      message: res.ok ? null : res.message || "Verification failed. Please check the details and try again.",
     };
   });
+
 
 /** Does this store product need player verification before checkout? */
 export const getServiceRequirement = createServerFn({ method: "POST" })
