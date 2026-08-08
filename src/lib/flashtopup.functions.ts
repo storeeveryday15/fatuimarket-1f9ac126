@@ -291,3 +291,93 @@ export const mapSupplierProduct = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Admin debugging: run a raw Check-ID call and return the full redacted trace
+ * (request, HTTP status, supplier response). The API key is never included.
+ */
+export const testCheckId = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      serviceId: z.string().uuid().optional().nullable(),
+      validationCode: z.string().trim().max(60).optional().nullable(),
+      userId: z.string().trim().min(1).max(40),
+      serverId: z.string().trim().max(20).optional().nullable(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const { assertAdmin } = await import("./flashtopup-admin.server");
+    await assertAdmin(context.supabase, context.userId);
+
+    let validationCode = data.validationCode?.trim() || null;
+    let service: {
+      service_code: string;
+      service_name: string;
+      validation_code: string | null;
+      requires_validation: boolean;
+      input_fields: string[];
+    } | null = null;
+
+    if (data.serviceId) {
+      const { data: row, error } = await context.supabase
+        .from("supplier_services")
+        .select("service_code,service_name,validation_code,requires_validation,input_fields")
+        .eq("id", data.serviceId)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!row) throw new Error("Service not found");
+      service = { ...row, input_fields: toStringArray(row.input_fields) };
+      // The service's own validation code always wins over a manual override.
+      validationCode = row.validation_code ?? validationCode;
+    }
+
+    if (!validationCode) {
+      return {
+        ok: false as const,
+        matchesService: false,
+        service,
+        missingFields: [] as string[],
+        status: null,
+        nickname: null,
+        message: "No validation code — this service does not support Check-ID.",
+        trace: null,
+      };
+    }
+
+    const required = service?.input_fields ?? [];
+    const missingFields = required.filter((f) => {
+      if (/server|zone/i.test(f)) return !data.serverId;
+      if (/user|player|uid/i.test(f)) return !data.userId;
+      return false;
+    });
+
+    const { checkPlayerId } = await import("./flashtopup.server");
+    const res = await checkPlayerId({
+      validation_code: validationCode,
+      user_id: data.userId,
+      server_id: data.serverId ?? null,
+    });
+
+    return {
+      ok: res.ok,
+      matchesService: service ? service.validation_code === validationCode : false,
+      service,
+      missingFields,
+      status: res.status,
+      nickname: res.nickname,
+      message: res.message,
+      trace: {
+        method: res.trace.method,
+        url: res.trace.url,
+        signedPath: res.trace.signedPath,
+        headers: res.trace.headers,
+        requestBody: res.trace.requestBody,
+        status: res.trace.status,
+        responseBody: res.trace.responseBody,
+        rawResponse: res.trace.rawResponse,
+        error: res.trace.error,
+        durationMs: res.trace.durationMs,
+      },
+    };
+  });
