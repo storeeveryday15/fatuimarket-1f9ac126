@@ -287,31 +287,37 @@ export async function fetchServices(productCode: string) {
  * Check-ID / orders
  * ------------------------------------------------------------------ */
 
-export type CheckIdResult = { ok: boolean; nickname: string | null; message: string | null };
+export type CheckIdResult = {
+  ok: boolean;
+  nickname: string | null;
+  message: string | null;
+  status: number | null;
+  trace: FlashtopupTrace;
+};
 
 export async function checkPlayerId(input: {
   validation_code: string;
   user_id: string;
   server_id?: string | null;
 }): Promise<CheckIdResult> {
-  try {
-    const payload = await flashtopupRequest<any>("/check-id", {
-      method: "POST",
-      body: {
-        validation_code: input.validation_code,
-        user_id: input.user_id,
-        ...(input.server_id ? { server_id: input.server_id } : {}),
-      },
-    });
-    const body = payload?.data ?? payload ?? {};
-    const nickname =
-      pick(body, ["nickname", "username", "name", "player_name", "playerName", "user_name"]) ?? null;
-    const ok = nickname !== null || body?.status === true || body?.success === true;
-    return { ok, nickname, message: pick(body, ["message", "msg"]) };
-  } catch (err) {
-    return { ok: false, nickname: null, message: err instanceof Error ? err.message : "Verification failed" };
+  const requestBody = {
+    validation_code: input.validation_code,
+    user_id: input.user_id,
+    ...(input.server_id ? { server_id: input.server_id } : {}),
+  };
+  const trace = await flashtopupRequestTraced("/check-id", { method: "POST", body: requestBody });
+
+  if (!trace.ok) {
+    return { ok: false, nickname: null, message: trace.error ?? "Verification failed", status: trace.status, trace };
   }
+
+  const payload = trace.responseBody as any;
+  const body = payload?.data ?? payload ?? {};
+  const nickname = pick(body, ["nickname", "username", "name", "player_name", "playerName", "user_name"]) ?? null;
+  const ok = nickname !== null || body?.status === true || body?.success === true;
+  return { ok, nickname, message: pick(body, ["message", "msg"]), status: trace.status, trace };
 }
+
 
 export type SupplierOrderResult = {
   supplier_order_id: string | null;
