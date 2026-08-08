@@ -14,6 +14,16 @@ type Service = {
 };
 
 const field = "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm";
+/** Pretty-prints a JSON payload, falling back to the raw text. */
+function prettyJson(raw: string): string {
+  if (!raw) return "";
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    return raw;
+  }
+}
+
 
 /** Admin-only debugging panel for the FlashTopup Check-ID endpoint. */
 export function CheckIdTester({ services }: { services: Service[] }) {
