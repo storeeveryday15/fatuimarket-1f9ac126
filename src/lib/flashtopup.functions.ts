@@ -292,10 +292,38 @@ export const mapSupplierProduct = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export type CheckIdTestResult = {
+  ok: boolean;
+  matchesService: boolean;
+  service: {
+    service_code: string;
+    service_name: string;
+    validation_code: string | null;
+    requires_validation: boolean;
+    input_fields: string[];
+  } | null;
+  missingFields: string[];
+  status: number | null;
+  nickname: string | null;
+  message: string | null;
+  trace: {
+    method: string;
+    url: string;
+    signedPath: string;
+    headers: Record<string, string>;
+    requestBody: string;
+    status: number | null;
+    rawResponse: string;
+    error: string | null;
+    durationMs: number;
+  } | null;
+};
+
 /**
  * Admin debugging: run a raw Check-ID call and return the full redacted trace
  * (request, HTTP status, supplier response). The API key is never included.
  */
+
 export const testCheckId = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
