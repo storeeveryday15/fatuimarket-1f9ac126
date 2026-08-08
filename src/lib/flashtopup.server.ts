@@ -30,16 +30,49 @@ async function hmacHex(key: string, message: string) {
   return hex(await crypto.subtle.sign("HMAC", cryptoKey, new TextEncoder().encode(message)));
 }
 
-export async function flashtopupRequest<T = unknown>(
+export type FlashtopupTrace = {
+  method: string;
+  url: string;
+  signedPath: string;
+  headers: Record<string, string>;
+  requestBody: unknown;
+  status: number | null;
+  ok: boolean;
+  responseBody: unknown;
+  rawResponse: string;
+  error: string | null;
+  durationMs: number;
+};
+
+/** Performs the signed call and always returns a redacted trace (never throws). */
+export async function flashtopupRequestTraced(
   path: string,
   options: { method?: "GET" | "POST"; body?: unknown; query?: Record<string, string> } = {},
-): Promise<T> {
-  const apiId = process.env["FLASHTOPUP_API_ID"];
-  const apiKey = process.env["FLASHTOPUP_API_KEY"];
-  if (!apiId || !apiKey) throw new Error("FlashTopup is not configured");
-
+): Promise<FlashtopupTrace> {
+  const started = Date.now();
   const method = options.method ?? "GET";
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const qs = options.query ? `?${new URLSearchParams(options.query).toString()}` : "";
+  const base: FlashtopupTrace = {
+    method,
+    url: `${BASE_URL}${cleanPath}${qs}`,
+    signedPath: `${BASE_PATH}${cleanPath}`,
+    headers: {},
+    requestBody: options.body ?? null,
+    status: null,
+    ok: false,
+    responseBody: null,
+    rawResponse: "",
+    error: null,
+    durationMs: 0,
+  };
+
+  const apiId = process.env["FLASHTOPUP_API_ID"];
+  const apiKey = process.env["FLASHTOPUP_API_KEY"];
+  if (!apiId || !apiKey) {
+    return { ...base, error: "FlashTopup is not configured", durationMs: Date.now() - started };
+  }
+
   const rawBody = options.body === undefined ? "" : JSON.stringify(options.body);
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const nonce = crypto.randomUUID();
@@ -47,33 +80,76 @@ export async function flashtopupRequest<T = unknown>(
   const canonical = [method, `${BASE_PATH}${cleanPath}`, timestamp, nonce, await sha256Hex(rawBody)].join("\n");
   const signature = await hmacHex(apiKey, canonical);
 
-  const qs = options.query ? `?${new URLSearchParams(options.query).toString()}` : "";
-  const res = await fetch(`${BASE_URL}${cleanPath}${qs}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "X-FT-API-ID": apiId,
-      "X-FT-Timestamp": timestamp,
-      "X-FT-Nonce": nonce,
-      "X-FT-Signature": signature,
-    },
-    ...(rawBody ? { body: rawBody } : {}),
-  });
+  // Redacted header snapshot — the API key itself is never included anywhere.
+  const headers = {
+    "Content-Type": "application/json",
+    "X-FT-API-ID": apiId,
+    "X-FT-Timestamp": timestamp,
+    "X-FT-Nonce": nonce,
+    "X-FT-Signature": `${signature.slice(0, 8)}…(${signature.length} hex chars)`,
+  };
 
-  const text = await res.text();
-  let json: any = null;
   try {
-    json = text ? JSON.parse(text) : null;
-  } catch {
-    /* non-JSON response */
+    const res = await fetch(`${BASE_URL}${cleanPath}${qs}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-FT-API-ID": apiId,
+        "X-FT-Timestamp": timestamp,
+        "X-FT-Nonce": nonce,
+        "X-FT-Signature": signature,
+      },
+      ...(rawBody ? { body: rawBody } : {}),
+    });
+    const text = await res.text();
+    let json: any = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      /* non-JSON response */
+    }
+    const trace: FlashtopupTrace = {
+      ...base,
+      headers,
+      status: res.status,
+      ok: res.ok,
+      responseBody: json,
+      rawResponse: text.slice(0, 4000),
+      error: res.ok ? null : json?.message || json?.error || `FlashTopup API error (${res.status})`,
+      durationMs: Date.now() - started,
+    };
+    console[res.ok ? "log" : "error"]("[flashtopup] request", {
+      method: trace.method,
+      url: trace.url,
+      signedPath: trace.signedPath,
+      headers: trace.headers,
+      requestBody: trace.requestBody,
+      status: trace.status,
+      response: trace.rawResponse.slice(0, 1500),
+      durationMs: trace.durationMs,
+    });
+    return trace;
+  } catch (err) {
+    const trace: FlashtopupTrace = {
+      ...base,
+      headers,
+      error: err instanceof Error ? err.message : "Network error",
+      durationMs: Date.now() - started,
+    };
+    console.error("[flashtopup] request threw", trace);
+    return trace;
   }
-
-  if (!res.ok) {
-    console.error("[flashtopup] request failed", { path: cleanPath, status: res.status, body: text.slice(0, 500) });
-    throw new Error(json?.message || `FlashTopup API error (${res.status})`);
-  }
-  return json as T;
 }
+
+export async function flashtopupRequest<T = unknown>(
+  path: string,
+  options: { method?: "GET" | "POST"; body?: unknown; query?: Record<string, string> } = {},
+): Promise<T> {
+  const trace = await flashtopupRequestTraced(path, options);
+  if (!trace.ok) throw new Error(trace.error || "FlashTopup API error");
+  return trace.responseBody as T;
+}
+
 
 export type NormalizedSupplierProduct = {
   product_code: string;
