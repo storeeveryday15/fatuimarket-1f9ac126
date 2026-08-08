@@ -333,16 +333,17 @@ export const testCheckId = createServerFn({ method: "POST" })
     }
 
     if (!validationCode) {
-      return {
-        ok: false as const,
+      const empty: CheckIdTestResult = {
+        ok: false,
         matchesService: false,
         service,
-        missingFields: [] as string[],
+        missingFields: [],
         status: null,
         nickname: null,
         message: "No validation code — this service does not support Check-ID.",
         trace: null,
       };
+      return empty;
     }
 
     const required = service?.input_fields ?? [];
@@ -359,7 +360,7 @@ export const testCheckId = createServerFn({ method: "POST" })
       server_id: data.serverId ?? null,
     });
 
-    return {
+    const out: CheckIdTestResult = {
       ok: res.ok,
       matchesService: service ? service.validation_code === validationCode : false,
       service,
@@ -372,12 +373,13 @@ export const testCheckId = createServerFn({ method: "POST" })
         url: res.trace.url,
         signedPath: res.trace.signedPath,
         headers: res.trace.headers,
-        requestBody: res.trace.requestBody,
+        requestBody: JSON.stringify(res.trace.requestBody, null, 2),
         status: res.trace.status,
-        responseBody: res.trace.responseBody,
         rawResponse: res.trace.rawResponse,
         error: res.trace.error,
         durationMs: res.trace.durationMs,
       },
     };
+    return out;
   });
+
