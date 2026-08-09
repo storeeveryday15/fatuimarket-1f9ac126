@@ -130,14 +130,19 @@ function GameDetailPage() {
               <span className="font-semibold">{active.service_name}</span> ·{" "}
               {active.price !== null ? `₹${active.price.toFixed(2)}` : "—"}
             </span>
-            <Link
-              to="/products/$slug"
-              params={{ slug }}
-              search={{ pkg: active.service_code } as never}
-              className="btn-shine rounded-xl bg-[var(--neon)]/15 px-5 py-2.5 text-sm font-bold"
-            >
-              Buy now
-            </Link>
+            {active.checkout_slug ? (
+              <Link
+                to="/products/$slug"
+                params={{ slug: active.checkout_slug }}
+                className="btn-shine rounded-xl bg-[var(--neon)]/15 px-5 py-2.5 text-sm font-bold"
+              >
+                Buy now
+              </Link>
+            ) : (
+              <Link to="/contact" className="rounded-xl border border-border px-5 py-2.5 text-sm font-bold">
+                Request this package
+              </Link>
+            )}
           </div>
         </section>
       )}

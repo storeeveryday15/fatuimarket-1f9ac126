@@ -34,6 +34,8 @@ export type PublicPackage = {
   available: boolean;
   requires_validation: boolean;
   input_fields: string[];
+  /** Storefront product slug when this package is mapped to a store product. */
+  checkout_slug: string | null;
 };
 
 const toStringArray = (v: unknown): string[] =>
@@ -127,6 +129,18 @@ export const getPublicGame = createServerFn({ method: "GET" })
       .eq("supplier_product_id", game.id)
       .order("sort_order", { ascending: true });
 
+    const mappedIds = [
+      ...new Set((services ?? []).map((s: any) => s.catalog_product_id).filter(Boolean) as string[]),
+    ];
+    const slugById = new Map<string, string>();
+    if (mappedIds.length) {
+      const { data: mapped } = await supabase
+        .from("catalog_products")
+        .select("id, product_slug")
+        .in("id", mappedIds);
+      for (const m of mapped ?? []) slugById.set(m.id, m.product_slug);
+    }
+
     const packages: PublicPackage[] = (services ?? []).map((s: any) => ({
       id: s.id,
       service_code: s.service_code,
@@ -139,6 +153,7 @@ export const getPublicGame = createServerFn({ method: "GET" })
       available: Boolean(s.available),
       requires_validation: Boolean(s.requires_validation),
       input_fields: toStringArray(s.input_fields),
+      checkout_slug: s.catalog_product_id ? (slugById.get(s.catalog_product_id) ?? null) : null,
     }));
 
     return {
