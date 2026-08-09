@@ -29,6 +29,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as OrdersCodeRouteImport } from './routes/orders.$code'
 import { Route as GuidesGenshinImpactTopUpRouteImport } from './routes/guides.genshin-impact-top-up'
+import { Route as GamesSlugRouteImport } from './routes/games.$slug'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as ChatsThreadIdRouteImport } from './routes/chats.$threadId'
 import { Route as BuySlugRouteImport } from './routes/buy.$slug'
@@ -159,6 +160,11 @@ const GuidesGenshinImpactTopUpRoute =
     path: '/guides/genshin-impact-top-up',
     getParentRoute: () => rootRouteImport,
   } as any)
+const GamesSlugRoute = GamesSlugRouteImport.update({
+  id: '/games/$slug',
+  path: '/games/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/buy/$slug': typeof BuySlugRoute
   '/chats/$threadId': typeof ChatsThreadIdRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/games/$slug': typeof GamesSlugRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -384,6 +391,7 @@ export interface FileRoutesByTo {
   '/buy/$slug': typeof BuySlugRoute
   '/chats/$threadId': typeof ChatsThreadIdRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/games/$slug': typeof GamesSlugRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -435,6 +443,7 @@ export interface FileRoutesById {
   '/buy/$slug': typeof BuySlugRoute
   '/chats/$threadId': typeof ChatsThreadIdRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/games/$slug': typeof GamesSlugRoute
   '/guides/genshin-impact-top-up': typeof GuidesGenshinImpactTopUpRoute
   '/orders/$code': typeof OrdersCodeRoute
   '/products/$slug': typeof ProductsSlugRoute
@@ -487,6 +496,7 @@ export interface FileRouteTypes {
     | '/buy/$slug'
     | '/chats/$threadId'
     | '/email/unsubscribe'
+    | '/games/$slug'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
@@ -536,6 +546,7 @@ export interface FileRouteTypes {
     | '/buy/$slug'
     | '/chats/$threadId'
     | '/email/unsubscribe'
+    | '/games/$slug'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
@@ -586,6 +597,7 @@ export interface FileRouteTypes {
     | '/buy/$slug'
     | '/chats/$threadId'
     | '/email/unsubscribe'
+    | '/games/$slug'
     | '/guides/genshin-impact-top-up'
     | '/orders/$code'
     | '/products/$slug'
@@ -626,6 +638,7 @@ export interface RootRouteChildren {
   BuySlugRoute: typeof BuySlugRoute
   ChatsThreadIdRoute: typeof ChatsThreadIdRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  GamesSlugRoute: typeof GamesSlugRoute
   GuidesGenshinImpactTopUpRoute: typeof GuidesGenshinImpactTopUpRoute
   OrdersCodeRoute: typeof OrdersCodeRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
@@ -787,6 +800,13 @@ declare module '@tanstack/react-router' {
       path: '/guides/genshin-impact-top-up'
       fullPath: '/guides/genshin-impact-top-up'
       preLoaderRoute: typeof GuidesGenshinImpactTopUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/$slug': {
+      id: '/games/$slug'
+      path: '/games/$slug'
+      fullPath: '/games/$slug'
+      preLoaderRoute: typeof GamesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
@@ -1040,6 +1060,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuySlugRoute: BuySlugRoute,
   ChatsThreadIdRoute: ChatsThreadIdRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  GamesSlugRoute: GamesSlugRoute,
   GuidesGenshinImpactTopUpRoute: GuidesGenshinImpactTopUpRoute,
   OrdersCodeRoute: OrdersCodeRoute,
   ProductsSlugRoute: ProductsSlugRoute,
