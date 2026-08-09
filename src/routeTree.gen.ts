@@ -51,6 +51,7 @@ import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/l
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicHooksSupplierSyncRouteImport } from './routes/api/public/hooks/supplier-sync'
 import { Route as ApiPublicFlashtopupWebhookRouteImport } from './routes/api/public/flashtopup/webhook'
 import { Route as ApiPublicEORouteImport } from './routes/api/public/e/o'
 import { Route as ApiPublicECRouteImport } from './routes/api/public/e/c'
@@ -270,6 +271,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksSupplierSyncRoute =
+  ApiPublicHooksSupplierSyncRouteImport.update({
+    id: '/api/public/hooks/supplier-sync',
+    path: '/api/public/hooks/supplier-sync',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicFlashtopupWebhookRoute =
   ApiPublicFlashtopupWebhookRouteImport.update({
     id: '/api/public/flashtopup/webhook',
@@ -328,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/api/public/e/c': typeof ApiPublicECRoute
   '/api/public/e/o': typeof ApiPublicEORoute
   '/api/public/flashtopup/webhook': typeof ApiPublicFlashtopupWebhookRoute
+  '/api/public/hooks/supplier-sync': typeof ApiPublicHooksSupplierSyncRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -374,6 +382,7 @@ export interface FileRoutesByTo {
   '/api/public/e/c': typeof ApiPublicECRoute
   '/api/public/e/o': typeof ApiPublicEORoute
   '/api/public/flashtopup/webhook': typeof ApiPublicFlashtopupWebhookRoute
+  '/api/public/hooks/supplier-sync': typeof ApiPublicHooksSupplierSyncRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -422,6 +431,7 @@ export interface FileRoutesById {
   '/api/public/e/c': typeof ApiPublicECRoute
   '/api/public/e/o': typeof ApiPublicEORoute
   '/api/public/flashtopup/webhook': typeof ApiPublicFlashtopupWebhookRoute
+  '/api/public/hooks/supplier-sync': typeof ApiPublicHooksSupplierSyncRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -471,6 +481,7 @@ export interface FileRouteTypes {
     | '/api/public/e/c'
     | '/api/public/e/o'
     | '/api/public/flashtopup/webhook'
+    | '/api/public/hooks/supplier-sync'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -517,6 +528,7 @@ export interface FileRouteTypes {
     | '/api/public/e/c'
     | '/api/public/e/o'
     | '/api/public/flashtopup/webhook'
+    | '/api/public/hooks/supplier-sync'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -564,6 +576,7 @@ export interface FileRouteTypes {
     | '/api/public/e/c'
     | '/api/public/e/o'
     | '/api/public/flashtopup/webhook'
+    | '/api/public/hooks/supplier-sync'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -601,6 +614,7 @@ export interface RootRouteChildren {
   ApiPublicECRoute: typeof ApiPublicECRoute
   ApiPublicEORoute: typeof ApiPublicEORoute
   ApiPublicFlashtopupWebhookRoute: typeof ApiPublicFlashtopupWebhookRoute
+  ApiPublicHooksSupplierSyncRoute: typeof ApiPublicHooksSupplierSyncRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -904,6 +918,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/supplier-sync': {
+      id: '/api/public/hooks/supplier-sync'
+      path: '/api/public/hooks/supplier-sync'
+      fullPath: '/api/public/hooks/supplier-sync'
+      preLoaderRoute: typeof ApiPublicHooksSupplierSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/flashtopup/webhook': {
       id: '/api/public/flashtopup/webhook'
       path: '/api/public/flashtopup/webhook'
@@ -990,6 +1011,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicECRoute: ApiPublicECRoute,
   ApiPublicEORoute: ApiPublicEORoute,
   ApiPublicFlashtopupWebhookRoute: ApiPublicFlashtopupWebhookRoute,
+  ApiPublicHooksSupplierSyncRoute: ApiPublicHooksSupplierSyncRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
@@ -999,13 +1021,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
