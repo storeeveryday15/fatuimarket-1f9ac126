@@ -22,6 +22,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GamesIndexRouteImport } from './routes/games.index'
 import { Route as ChatsIndexRouteImport } from './routes/chats.index'
 import { Route as BuyIndexRouteImport } from './routes/buy.index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -120,6 +121,11 @@ const AdminRouteRoute = AdminRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesIndexRoute = GamesIndexRouteImport.update({
+  id: '/games/',
+  path: '/games/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatsIndexRoute = ChatsIndexRouteImport.update({
@@ -335,6 +341,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/buy/': typeof BuyIndexRoute
   '/chats/': typeof ChatsIndexRoute
+  '/games/': typeof GamesIndexRoute
   '/api/public/announcement-image': typeof ApiPublicAnnouncementImageRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
@@ -383,6 +390,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/buy': typeof BuyIndexRoute
   '/chats': typeof ChatsIndexRoute
+  '/games': typeof GamesIndexRoute
   '/api/public/announcement-image': typeof ApiPublicAnnouncementImageRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
@@ -433,6 +441,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/buy/': typeof BuyIndexRoute
   '/chats/': typeof ChatsIndexRoute
+  '/games/': typeof GamesIndexRoute
   '/api/public/announcement-image': typeof ApiPublicAnnouncementImageRoute
   '/api/public/claim-admin': typeof ApiPublicClaimAdminRoute
   '/api/public/notify-order': typeof ApiPublicNotifyOrderRoute
@@ -484,6 +493,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/buy/'
     | '/chats/'
+    | '/games/'
     | '/api/public/announcement-image'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
@@ -532,6 +542,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/buy'
     | '/chats'
+    | '/games'
     | '/api/public/announcement-image'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
@@ -581,6 +592,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/buy/'
     | '/chats/'
+    | '/games/'
     | '/api/public/announcement-image'
     | '/api/public/claim-admin'
     | '/api/public/notify-order'
@@ -619,6 +631,7 @@ export interface RootRouteChildren {
   ProductsSlugRoute: typeof ProductsSlugRoute
   BuyIndexRoute: typeof BuyIndexRoute
   ChatsIndexRoute: typeof ChatsIndexRoute
+  GamesIndexRoute: typeof GamesIndexRoute
   ApiPublicAnnouncementImageRoute: typeof ApiPublicAnnouncementImageRoute
   ApiPublicClaimAdminRoute: typeof ApiPublicClaimAdminRoute
   ApiPublicNotifyOrderRoute: typeof ApiPublicNotifyOrderRoute
@@ -725,6 +738,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/': {
+      id: '/games/'
+      path: '/games'
+      fullPath: '/games/'
+      preLoaderRoute: typeof GamesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chats/': {
@@ -1025,6 +1045,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProductsSlugRoute: ProductsSlugRoute,
   BuyIndexRoute: BuyIndexRoute,
   ChatsIndexRoute: ChatsIndexRoute,
+  GamesIndexRoute: GamesIndexRoute,
   ApiPublicAnnouncementImageRoute: ApiPublicAnnouncementImageRoute,
   ApiPublicClaimAdminRoute: ApiPublicClaimAdminRoute,
   ApiPublicNotifyOrderRoute: ApiPublicNotifyOrderRoute,
