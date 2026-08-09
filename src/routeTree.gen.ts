@@ -40,6 +40,7 @@ import { Route as AdminProductsRouteImport } from './routes/admin/products'
 import { Route as AdminPricingRouteImport } from './routes/admin/pricing'
 import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
 import { Route as AdminCustomersRouteImport } from './routes/admin/customers'
+import { Route as AdminCatalogRouteImport } from './routes/admin/catalog'
 import { Route as AdminAssistantRouteImport } from './routes/admin/assistant'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
@@ -212,6 +213,11 @@ const AdminCustomersRoute = AdminCustomersRouteImport.update({
   path: '/customers',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminCatalogRoute = AdminCatalogRouteImport.update({
+  id: '/catalog',
+  path: '/catalog',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminAssistantRoute = AdminAssistantRouteImport.update({
   id: '/assistant',
   path: '/assistant',
@@ -310,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/wallet': typeof WalletRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assistant': typeof AdminAssistantRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/pricing': typeof AdminPricingRoute
@@ -357,6 +364,7 @@ export interface FileRoutesByTo {
   '/wallet': typeof WalletRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assistant': typeof AdminAssistantRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/pricing': typeof AdminPricingRoute
@@ -406,6 +414,7 @@ export interface FileRoutesById {
   '/wallet': typeof WalletRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/assistant': typeof AdminAssistantRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/pricing': typeof AdminPricingRoute
@@ -456,6 +465,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/admin/analytics'
     | '/admin/assistant'
+    | '/admin/catalog'
     | '/admin/customers'
     | '/admin/notifications'
     | '/admin/pricing'
@@ -503,6 +513,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/admin/analytics'
     | '/admin/assistant'
+    | '/admin/catalog'
     | '/admin/customers'
     | '/admin/notifications'
     | '/admin/pricing'
@@ -551,6 +562,7 @@ export interface FileRouteTypes {
     | '/wallet'
     | '/admin/analytics'
     | '/admin/assistant'
+    | '/admin/catalog'
     | '/admin/customers'
     | '/admin/notifications'
     | '/admin/pricing'
@@ -841,6 +853,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCustomersRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/catalog': {
+      id: '/admin/catalog'
+      path: '/catalog'
+      fullPath: '/admin/catalog'
+      preLoaderRoute: typeof AdminCatalogRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/assistant': {
       id: '/admin/assistant'
       path: '/assistant'
@@ -952,6 +971,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminAssistantRoute: typeof AdminAssistantRoute
+  AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminPricingRoute: typeof AdminPricingRoute
@@ -966,6 +986,7 @@ interface AdminRouteRouteChildren {
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminAssistantRoute: AdminAssistantRoute,
+  AdminCatalogRoute: AdminCatalogRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminPricingRoute: AdminPricingRoute,
