@@ -405,3 +405,107 @@ export async function verifyWebhookSignature(rawBody: string, signature: string 
   for (let i = 0; i < a.length; i++) diff |= a[i]! ^ b[i]!;
   return diff === 0;
 }
+
+/* ------------------------------------------------------------------ *
+ * Catalog helpers: pagination, slugs, regions
+ * ------------------------------------------------------------------ */
+
+/** URL-safe slug from a supplier product name (+ region when present). */
+export function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\w\s-]/g, " ")
+    .trim()
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+const REGION_HINTS =
+  /\b(global|india|indonesia|philippines|malaysia|singapore|thailand|vietnam|brazil|russia|turkey|japan|korea|taiwan|china|usa|europe|asia|sea|na|eu|ph|id|my|sg|th|vn|br|tw|jp|kr|in)\b/i;
+
+/** Best-effort region for a supplier product row. */
+export function extractRegion(row: Record<string, any>, name: string): string | null {
+  const direct = pick(row, ["region", "country", "server_region", "serverRegion", "area", "zone"]);
+  if (direct) return direct;
+  const bracket = name.match(/[([]([^)\]]+)[)\]]\s*$/);
+  if (bracket?.[1] && REGION_HINTS.test(bracket[1])) return bracket[1].trim();
+  const tail = name.match(REGION_HINTS);
+  return tail?.[0] ? tail[0] : null;
+}
+
+/** Best-effort category for grouping games in the storefront. */
+export function extractCategory(row: Record<string, any>): string | null {
+  return pick(row, ["category", "category_name", "categoryName", "group", "product_type", "productType", "type"]);
+}
+
+/** True when the supplier reports the item as in stock / purchasable. */
+export function extractAvailability(row: Record<string, any>): boolean {
+  for (const k of ["available", "is_available", "isAvailable", "in_stock", "inStock", "stock", "status", "active"]) {
+    const v = row?.[k];
+    if (v === undefined || v === null) continue;
+    if (typeof v === "boolean") return v;
+    if (typeof v === "number") return v > 0;
+    if (typeof v === "string") {
+      const s = v.trim().toLowerCase();
+      if (["0", "false", "no", "off", "empty", "out_of_stock", "out of stock", "unavailable", "inactive", "disabled"].includes(s))
+        return false;
+      if (["1", "true", "yes", "on", "available", "in_stock", "in stock", "active", "enabled"].includes(s)) return true;
+    }
+  }
+  return true;
+}
+
+export function extractDescription(row: Record<string, any>): string | null {
+  return pick(row, ["description", "desc", "note", "notes", "detail", "details"]);
+}
+
+/** Reads paging metadata from whatever envelope the API returns. */
+function readPaging(payload: any): { page: number | null; lastPage: number | null; hasNext: boolean } {
+  const meta = payload?.meta ?? payload?.pagination ?? payload?.data?.meta ?? payload ?? {};
+  const n = (v: unknown) => (typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null);
+  const page = n(meta.current_page ?? meta.currentPage ?? meta.page);
+  const lastPage = n(meta.last_page ?? meta.lastPage ?? meta.total_pages ?? meta.totalPages ?? meta.pages);
+  const hasNext =
+    Boolean(meta.next_page_url ?? meta.nextPageUrl ?? meta.next ?? meta.has_more ?? meta.hasMore) ||
+    (page !== null && lastPage !== null && page < lastPage);
+  return { page, lastPage, hasNext };
+}
+
+/**
+ * Fetches the full product catalog, following pagination when the API exposes
+ * it. Degrades to a single request for non-paginated responses.
+ */
+export async function fetchAllProducts(
+  maxPages = 40,
+): Promise<{ rows: Record<string, any>[]; pages: number }> {
+  const seen = new Set<string>();
+  const rows: Record<string, any>[] = [];
+  let pages = 0;
+
+  for (let page = 1; page <= maxPages; page++) {
+    const payload = await flashtopupRequest<any>("/products", {
+      query: page === 1 ? {} : { page: String(page), per_page: "200" },
+    });
+    pages = page;
+    const list = extractProductList(payload);
+    if (!list.length) break;
+
+    let fresh = 0;
+    for (const row of list) {
+      const code = pick(row, ["product_code", "productCode", "code", "sku", "id"]);
+      const key = code ?? JSON.stringify(row);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push(row);
+      fresh += 1;
+    }
+
+    // No new rows means the API ignored our page parameter — stop.
+    if (!fresh) break;
+    if (!readPaging(payload).hasNext) break;
+  }
+
+  return { rows, pages };
+}
