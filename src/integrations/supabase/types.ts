@@ -1272,6 +1272,42 @@ export type Database = {
           },
         ]
       }
+      pricing_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          markup_type: string
+          markup_value: number
+          priority: number
+          scope: string
+          scope_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          markup_type: string
+          markup_value?: number
+          priority?: number
+          scope: string
+          scope_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          markup_type?: string
+          markup_value?: number
+          priority?: number
+          scope?: string
+          scope_value?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_categories: {
         Row: {
           created_at: string
@@ -1571,13 +1607,20 @@ export type Database = {
         Row: {
           active: boolean
           catalog_product_id: string | null
+          category: string | null
           created_at: string
+          display_name: string | null
+          enabled: boolean
+          featured: boolean
+          hidden: boolean
           icon_url: string | null
           id: string
           name: string
           product_code: string
           product_type: string | null
           raw: Json
+          region: string | null
+          slug: string | null
           supplier_key: string
           updated_at: string
           validation_code: string | null
@@ -1585,13 +1628,20 @@ export type Database = {
         Insert: {
           active?: boolean
           catalog_product_id?: string | null
+          category?: string | null
           created_at?: string
+          display_name?: string | null
+          enabled?: boolean
+          featured?: boolean
+          hidden?: boolean
           icon_url?: string | null
           id?: string
           name?: string
           product_code: string
           product_type?: string | null
           raw?: Json
+          region?: string | null
+          slug?: string | null
           supplier_key?: string
           updated_at?: string
           validation_code?: string | null
@@ -1599,13 +1649,20 @@ export type Database = {
         Update: {
           active?: boolean
           catalog_product_id?: string | null
+          category?: string | null
           created_at?: string
+          display_name?: string | null
+          enabled?: boolean
+          featured?: boolean
+          hidden?: boolean
           icon_url?: string | null
           id?: string
           name?: string
           product_code?: string
           product_type?: string | null
           raw?: Json
+          region?: string | null
+          slug?: string | null
           supplier_key?: string
           updated_at?: string
           validation_code?: string | null
@@ -1630,17 +1687,21 @@ export type Database = {
       supplier_services: {
         Row: {
           active: boolean
+          available: boolean
           catalog_product_id: string | null
           created_at: string
           currency: string | null
+          description: string | null
           id: string
           input_fields: Json
           max_quantity: number
           min_quantity: number
           raw: Json
           requires_validation: boolean
+          sell_price_inr: number | null
           service_code: string
           service_name: string
+          sort_order: number
           supplier_price: number | null
           supplier_product_id: string
           updated_at: string
@@ -1648,17 +1709,21 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          available?: boolean
           catalog_product_id?: string | null
           created_at?: string
           currency?: string | null
+          description?: string | null
           id?: string
           input_fields?: Json
           max_quantity?: number
           min_quantity?: number
           raw?: Json
           requires_validation?: boolean
+          sell_price_inr?: number | null
           service_code: string
           service_name: string
+          sort_order?: number
           supplier_price?: number | null
           supplier_product_id: string
           updated_at?: string
@@ -1666,17 +1731,21 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          available?: boolean
           catalog_product_id?: string | null
           created_at?: string
           currency?: string | null
+          description?: string | null
           id?: string
           input_fields?: Json
           max_quantity?: number
           min_quantity?: number
           raw?: Json
           requires_validation?: boolean
+          sell_price_inr?: number | null
           service_code?: string
           service_name?: string
+          sort_order?: number
           supplier_price?: number | null
           supplier_product_id?: string
           updated_at?: string
@@ -1705,6 +1774,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_sync_runs: {
+        Row: {
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          pages_fetched: number
+          products_added: number
+          products_disabled: number
+          products_total: number
+          products_updated: number
+          services_total: number
+          started_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          pages_fetched?: number
+          products_added?: number
+          products_disabled?: number
+          products_total?: number
+          products_updated?: number
+          services_total?: number
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          pages_fetched?: number
+          products_added?: number
+          products_disabled?: number
+          products_total?: number
+          products_updated?: number
+          services_total?: number
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
       }
       supplier_webhook_events: {
         Row: {
@@ -2160,6 +2277,10 @@ export type Database = {
           visitors: number
         }[]
       }
+      apply_markup: {
+        Args: { _category: string; _cost: number; _product_id: string }
+        Returns: number
+      }
       compute_cashback_inr: { Args: { amount: number }; Returns: number }
       credit_wallet_topup: {
         Args: { _amount: number; _ref: string; _user_id: string }
@@ -2257,6 +2378,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recompute_sell_prices: { Args: never; Returns: number }
       record_product_view: {
         Args: {
           _device_type?: string
