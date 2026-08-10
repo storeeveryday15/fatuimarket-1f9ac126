@@ -242,7 +242,7 @@ export async function runCatalogSync(admin: AdminClient): Promise<CatalogSyncRes
 export async function refreshCatalogPrices(admin: AdminClient) {
   const { data: products } = await admin
     .from("supplier_products")
-    .select("id, product_code")
+    .select("id, product_code, product_type")
     .eq("supplier_key", "flashtopup")
     .eq("active", true);
 
@@ -252,8 +252,13 @@ export async function refreshCatalogPrices(admin: AdminClient) {
 
   for (const product of products ?? []) {
     try {
-      const raw = await fetchServices(product.product_code);
-      for (const row of extractServiceList(raw)) {
+      const fetched = await fetchAllServices(product.product_code, product.product_type);
+      if (!fetched.ok) {
+        failed += 1;
+        continue;
+      }
+      for (const row of fetched.rows) {
+
         const norm = normalizeService(row);
         if (!norm) continue;
         const { error } = await admin
