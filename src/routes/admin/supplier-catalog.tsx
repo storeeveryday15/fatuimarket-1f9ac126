@@ -14,6 +14,8 @@ import {
 } from "@/lib/flashtopup.functions";
 import { useAdminProducts } from "@/hooks/use-admin-products";
 import { CheckIdTester } from "@/components/admin/check-id-tester";
+import { ServiceSyncTester } from "@/components/admin/service-sync-tester";
+
 
 export const Route = createFileRoute("/admin/supplier-catalog")({
   component: SupplierCatalogPage,
