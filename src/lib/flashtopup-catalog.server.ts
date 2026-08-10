@@ -127,7 +127,7 @@ export async function runCatalogSync(admin: AdminClient): Promise<CatalogSyncRes
     // --- services / prices ------------------------------------------------
     const { data: liveProducts } = await admin
       .from("supplier_products")
-      .select("id, product_code")
+      .select("id, product_code, product_type")
       .eq("supplier_key", "flashtopup")
       .eq("active", true);
 
@@ -137,8 +137,12 @@ export async function runCatalogSync(admin: AdminClient): Promise<CatalogSyncRes
 
     for (const product of liveProducts ?? []) {
       try {
-        const raw = await fetchServices(product.product_code);
-        const list = extractServiceList(raw);
+        const fetched = await fetchAllServices(product.product_code, product.product_type);
+        if (!fetched.ok) {
+          failedProducts += 1;
+          continue; // the 191 synced games stay intact
+        }
+        const list = fetched.rows;
         const rows = list
           .map((r) => {
             const norm = normalizeService(r);
@@ -148,6 +152,7 @@ export async function runCatalogSync(admin: AdminClient): Promise<CatalogSyncRes
           .filter(Boolean) as Array<
           NonNullable<ReturnType<typeof normalizeService>> & { available: boolean; description: string | null }
         >;
+
 
         const { data: existingSvc } = await admin
           .from("supplier_services")
