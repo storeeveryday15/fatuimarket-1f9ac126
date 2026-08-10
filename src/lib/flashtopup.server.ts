@@ -279,9 +279,107 @@ export function extractServiceList(payload: any): Record<string, any>[] {
   return [];
 }
 
-export async function fetchServices(productCode: string) {
-  return flashtopupRequest<any>("/services", { query: { product_code: productCode } });
+/** Reads a cursor token from any of the envelopes the v2 API uses. */
+function readNextCursor(payload: any): string | null {
+  const meta = payload?.meta ?? payload?.pagination ?? payload?.data?.meta ?? payload ?? {};
+  for (const key of ["next_cursor", "nextCursor", "cursor_next", "next"]) {
+    const v = meta?.[key] ?? payload?.[key];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
 }
+
+/** Single page of `/services` for one product (v2 contract). */
+export async function fetchServicesPage(
+  productCode: string,
+  productType?: string | null,
+  opts: { page?: number; perPage?: number; cursor?: string | null } = {},
+): Promise<FlashtopupTrace> {
+  const query: Record<string, string> = {
+    product_code: productCode,
+    page: String(opts.page ?? 1),
+    per_page: String(opts.perPage ?? 500),
+  };
+  if (productType) query["product_type"] = productType;
+  if (opts.cursor) query["cursor"] = opts.cursor;
+  return flashtopupRequestTraced("/services", { query });
+}
+
+export type ServicesFetch = {
+  rows: Record<string, any>[];
+  pages: number;
+  ok: boolean;
+  status: number | null;
+  error: string | null;
+  errorCode: string | null;
+};
+
+/**
+ * Full service list for one product, following `next_cursor`/page pagination.
+ * Never throws — callers keep syncing the rest of the catalog on failure.
+ */
+export async function fetchAllServices(
+  productCode: string,
+  productType?: string | null,
+  maxPages = 20,
+): Promise<ServicesFetch> {
+  const rows: Record<string, any>[] = [];
+  const seen = new Set<string>();
+  let cursor: string | null = null;
+  let pages = 0;
+
+  for (let page = 1; page <= maxPages; page++) {
+    const trace = await fetchServicesPage(productCode, productType, { page, cursor });
+    pages = page;
+    if (!trace.ok) {
+      const body = trace.responseBody as any;
+      const errorCode =
+        (typeof body?.code === "string" && body.code) ||
+        (typeof body?.error === "string" && body.error) ||
+        (typeof body?.error_code === "string" && body.error_code) ||
+        null;
+      // Sanitized diagnostics only — no credentials, signatures or customer data.
+      console.error("[flashtopup] /services failed", {
+        product_code: productCode,
+        product_type: productType ?? null,
+        page,
+        status: trace.status,
+        errorCode,
+        message: trace.error,
+      });
+      if (rows.length) break; // keep whatever pages already succeeded
+      return { rows: [], pages, ok: false, status: trace.status, error: trace.error, errorCode };
+    }
+
+    const list = extractServiceList(trace.responseBody);
+    let fresh = 0;
+    for (const row of list) {
+      const key = pick(row, ["service_code", "serviceCode", "code", "sku", "id"]) ?? JSON.stringify(row);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push(row);
+      fresh += 1;
+    }
+
+    cursor = readNextCursor(trace.responseBody);
+    if (!cursor) {
+      const paging = readPaging(trace.responseBody);
+      if (!paging.hasNext || !fresh) break;
+    } else if (!fresh) {
+      break;
+    }
+  }
+
+  return { rows, pages, ok: true, status: 200, error: null, errorCode: null };
+}
+
+/** Back-compat single-call helper (throws on supplier error). */
+export async function fetchServices(productCode: string, productType?: string | null) {
+  const trace = await fetchServicesPage(productCode, productType);
+  if (!trace.ok) throw new Error(trace.error || "FlashTopup API error");
+  return trace.responseBody as any;
+}
+
 
 /* ------------------------------------------------------------------ *
  * Check-ID / orders
