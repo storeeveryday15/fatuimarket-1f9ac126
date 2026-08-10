@@ -1,6 +1,6 @@
 /** Service catalogue sync for FlashTopup (server-only). */
 
-import { fetchServices, extractServiceList, normalizeService } from "./flashtopup.server";
+import { fetchAllServices, normalizeService, extractAvailability, extractDescription } from "./flashtopup.server";
 
 type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
@@ -11,11 +11,85 @@ export type ServiceSyncResult = {
   failed: number;
 };
 
+/** Syncs services for one supplier product. Never throws. */
+export async function syncServicesForProduct(
+  admin: AdminClient,
+  product: { id: string; product_code: string; product_type: string | null },
+): Promise<{ ok: boolean; inserted: number; deactivated: number; status: number | null; error: string | null; errorCode: string | null }> {
+  const fetched = await fetchAllServices(product.product_code, product.product_type);
+  if (!fetched.ok) {
+    return {
+      ok: false,
+      inserted: 0,
+      deactivated: 0,
+      status: fetched.status,
+      error: fetched.error,
+      errorCode: fetched.errorCode,
+    };
+  }
+
+  const rows = fetched.rows
+    .map((r) => {
+      const norm = normalizeService(r);
+      if (!norm) return null;
+      return { ...norm, available: extractAvailability(r), description: extractDescription(r) };
+    })
+    .filter(Boolean) as Array<
+    NonNullable<ReturnType<typeof normalizeService>> & { available: boolean; description: string | null }
+  >;
+
+  const { data: existing } = await admin
+    .from("supplier_services")
+    .select("service_code")
+    .eq("supplier_product_id", product.id);
+  const existingCodes = new Set((existing ?? []).map((r: { service_code: string }) => r.service_code));
+
+  const now = new Date().toISOString();
+  if (rows.length) {
+    const { error } = await admin.from("supplier_services").upsert(
+      rows.map((r, index) => ({
+        supplier_product_id: product.id,
+        service_code: r.service_code,
+        service_name: r.service_name,
+        supplier_price: r.supplier_price,
+        currency: r.currency,
+        min_quantity: r.min_quantity,
+        max_quantity: r.max_quantity,
+        validation_code: r.validation_code,
+        input_fields: r.input_fields as never,
+        requires_validation: r.requires_validation,
+        available: r.available,
+        description: r.description,
+        sort_order: index,
+        raw: r.raw as never,
+        active: true,
+        updated_at: now,
+      })),
+      { onConflict: "supplier_product_id,service_code" },
+    );
+    if (error) {
+      return { ok: false, inserted: 0, deactivated: 0, status: null, error: error.message, errorCode: null };
+    }
+  }
+
+  const incoming = new Set(rows.map((r) => r.service_code));
+  const gone = [...existingCodes].filter((c) => !incoming.has(c));
+  if (gone.length) {
+    await admin
+      .from("supplier_services")
+      .update({ active: false, available: false })
+      .eq("supplier_product_id", product.id)
+      .in("service_code", gone);
+  }
+
+  return { ok: true, inserted: rows.length, deactivated: gone.length, status: 200, error: null, errorCode: null };
+}
+
 /** Pulls services for every active supplier product and upserts them. */
 export async function syncServicesForAllProducts(admin: AdminClient): Promise<ServiceSyncResult> {
   const { data: products } = await admin
     .from("supplier_products")
-    .select("id, product_code")
+    .select("id, product_code, product_type")
     .eq("supplier_key", "flashtopup")
     .eq("active", true);
 
@@ -25,58 +99,21 @@ export async function syncServicesForAllProducts(admin: AdminClient): Promise<Se
   let failed = 0;
 
   for (const product of list) {
-    try {
-      const payload = await fetchServices(product.product_code);
-      const rows = extractServiceList(payload)
-        .map(normalizeService)
-        .filter(Boolean) as NonNullable<ReturnType<typeof normalizeService>>[];
-
-      const { data: existing } = await admin
-        .from("supplier_services")
-        .select("service_code")
-        .eq("supplier_product_id", product.id);
-      const existingCodes = new Set((existing ?? []).map((r: { service_code: string }) => r.service_code));
-
-      if (rows.length) {
-        const { error } = await admin.from("supplier_services").upsert(
-          rows.map((r) => ({
-            supplier_product_id: product.id,
-            service_code: r.service_code,
-            service_name: r.service_name,
-            supplier_price: r.supplier_price,
-            currency: r.currency,
-            min_quantity: r.min_quantity,
-            max_quantity: r.max_quantity,
-            validation_code: r.validation_code,
-            input_fields: r.input_fields as never,
-            requires_validation: r.requires_validation,
-            raw: r.raw as never,
-            active: true,
-            updated_at: new Date().toISOString(),
-          })),
-          { onConflict: "supplier_product_id,service_code" },
-        );
-        if (error) throw new Error(error.message);
-        services += rows.length;
-      }
-
-      const incoming = new Set(rows.map((r) => r.service_code));
-      const gone = [...existingCodes].filter((c) => !incoming.has(c));
-      if (gone.length) {
-        await admin
-          .from("supplier_services")
-          .update({ active: false })
-          .eq("supplier_product_id", product.id)
-          .in("service_code", gone);
-        deactivated += gone.length;
-      }
-    } catch (err) {
-      failed += 1;
+    const result = await syncServicesForProduct(admin, product);
+    if (!result.ok) {
+      // Sanitized failure log — the rest of the catalog keeps syncing.
       console.error("[flashtopup] service sync failed", {
         product_code: product.product_code,
-        message: err instanceof Error ? err.message : "unknown",
+        product_type: product.product_type,
+        status: result.status,
+        errorCode: result.errorCode,
+        message: result.error,
       });
+      failed += 1;
+      continue;
     }
+    services += result.inserted;
+    deactivated += result.deactivated;
   }
 
   return { products: list.length, services, deactivated, failed };
