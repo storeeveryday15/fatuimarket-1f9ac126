@@ -14,6 +14,8 @@ import {
 } from "@/lib/flashtopup.functions";
 import { useAdminProducts } from "@/hooks/use-admin-products";
 import { CheckIdTester } from "@/components/admin/check-id-tester";
+import { ServiceSyncTester } from "@/components/admin/service-sync-tester";
+
 
 export const Route = createFileRoute("/admin/supplier-catalog")({
   component: SupplierCatalogPage,
@@ -168,7 +170,10 @@ function SupplierCatalogPage() {
         </div>
       </div>
 
+      <ServiceSyncTester />
+
       <CheckIdTester services={services ?? []} />
+
 
       <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
         <div className="relative">

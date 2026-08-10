@@ -411,3 +411,88 @@ export const testCheckId = createServerFn({ method: "POST" })
     return out;
   });
 
+
+export type ServiceSyncTestResult = {
+  ok: boolean;
+  productCode: string;
+  productType: string | null;
+  fetched: number;
+  inserted: number;
+  deactivated: number;
+  rowsInDb: number;
+  status: number | null;
+  errorCode: string | null;
+  message: string | null;
+  sample: Array<{ service_code: string; service_name: string; sell_price_inr: number | null; available: boolean }>;
+};
+
+/**
+ * Admin diagnostic: sync services for a single supplier product (defaults to
+ * TOPUP_MOBILE_LEGENDS / topup) and report what actually landed in the DB.
+ */
+export const testProductServices = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      productCode: z.string().trim().min(1).max(80).default("TOPUP_MOBILE_LEGENDS"),
+      productType: z.string().trim().max(40).nullable().default("topup"),
+    }),
+  )
+  .handler(async ({ data, context }): Promise<ServiceSyncTestResult> => {
+    const { assertAdmin } = await import("./flashtopup-admin.server");
+    await assertAdmin(context.supabase, context.userId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { syncServicesForProduct } = await import("./flashtopup-services.server");
+
+    const { data: product } = await supabaseAdmin
+      .from("supplier_products")
+      .select("id, product_code, product_type")
+      .eq("supplier_key", "flashtopup")
+      .eq("product_code", data.productCode)
+      .maybeSingle();
+
+    if (!product) {
+      return {
+        ok: false,
+        productCode: data.productCode,
+        productType: data.productType,
+        fetched: 0,
+        inserted: 0,
+        deactivated: 0,
+        rowsInDb: 0,
+        status: null,
+        errorCode: "PRODUCT_NOT_SYNCED",
+        message: "Run a catalog sync first — this product code is not in the database.",
+        sample: [],
+      };
+    }
+
+    const result = await syncServicesForProduct(supabaseAdmin, {
+      id: product.id,
+      product_code: product.product_code,
+      product_type: data.productType ?? product.product_type,
+    });
+
+    const { data: rows, count } = await supabaseAdmin
+      .from("supplier_services")
+      .select("service_code, service_name, sell_price_inr, available", { count: "exact" })
+      .eq("supplier_product_id", product.id)
+      .eq("active", true)
+      .order("sort_order", { ascending: true })
+      .limit(5);
+
+    return {
+      ok: result.ok,
+      productCode: product.product_code,
+      productType: data.productType ?? product.product_type,
+      fetched: result.inserted,
+      inserted: result.inserted,
+      deactivated: result.deactivated,
+      rowsInDb: count ?? rows?.length ?? 0,
+      status: result.status,
+      errorCode: result.errorCode,
+      message: result.error,
+      sample: (rows ?? []) as ServiceSyncTestResult["sample"],
+    };
+  });
