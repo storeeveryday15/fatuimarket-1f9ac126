@@ -9,9 +9,9 @@
 
 import {
   fetchAllProducts,
-  fetchServices,
-  extractServiceList,
+  fetchAllServices,
   normalizeProduct,
+
   normalizeService,
   extractRegion,
   extractCategory,
