@@ -10,7 +10,7 @@ import { testProductServices, type ServiceSyncTestResult } from "@/lib/flashtopu
  * what landed in the database. Defaults to TOPUP_MOBILE_LEGENDS / topup.
  */
 export function ServiceSyncTester() {
-  const [productCode, setProductCode] = useState("TOPUP_MOBILE_LEGENDS");
+  const [productCode, setProductCode] = useState("TOPUP_MOBILE_LEGENDS_GLOBAL_1");
   const [productType, setProductType] = useState("topup");
   const [result, setResult] = useState<ServiceSyncTestResult | null>(null);
   const run = useServerFn(testProductServices);
