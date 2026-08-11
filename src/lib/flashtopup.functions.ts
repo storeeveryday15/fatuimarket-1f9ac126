@@ -445,12 +445,28 @@ export const testProductServices = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { syncServicesForProduct } = await import("./flashtopup-services.server");
 
-    const { data: product } = await supabaseAdmin
+    // Resolve the supplier product by its stable product_code. FlashTopup
+    // returns regional variants (…_GLOBAL_1, …_BRAZIL_2), so an exact miss
+    // falls back to a prefix match on the same product_type.
+    let query = supabaseAdmin
       .from("supplier_products")
       .select("id, product_code, product_type")
-      .eq("supplier_key", "flashtopup")
-      .eq("product_code", data.productCode)
-      .maybeSingle();
+      .eq("supplier_key", "flashtopup");
+    const { data: exact } = await query.eq("product_code", data.productCode).maybeSingle();
+
+    let product = exact ?? null;
+    if (!product) {
+      let fuzzy = supabaseAdmin
+        .from("supplier_products")
+        .select("id, product_code, product_type")
+        .eq("supplier_key", "flashtopup")
+        .ilike("product_code", `${data.productCode}%`)
+        .order("product_code", { ascending: true })
+        .limit(1);
+      if (data.productType) fuzzy = fuzzy.eq("product_type", data.productType);
+      const { data: near } = await fuzzy;
+      product = near?.[0] ?? null;
+    }
 
     if (!product) {
       return {
@@ -467,6 +483,7 @@ export const testProductServices = createServerFn({ method: "POST" })
         sample: [],
       };
     }
+
 
     const result = await syncServicesForProduct(supabaseAdmin, {
       id: product.id,
