@@ -349,6 +349,7 @@ export type ServicesFetch = {
   status: number | null;
   error: string | null;
   errorCode: string | null;
+  requestId: string | null;
 };
 
 /**
