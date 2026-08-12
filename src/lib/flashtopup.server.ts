@@ -41,8 +41,38 @@ export type FlashtopupTrace = {
   responseBody: unknown;
   rawResponse: string;
   error: string | null;
+  errorCode: string | null;
+  requestId: string | null;
   durationMs: number;
 };
+
+/**
+ * Reads the v2 error envelope:
+ * `{ success:false, error:{ code, message }, meta:{ request_id } }`
+ * and always returns plain strings — never objects that stringify to
+ * "[object Object]".
+ */
+export function parseSupplierError(
+  payload: any,
+  status: number | null,
+): { code: string | null; message: string; requestId: string | null } {
+  const err = payload?.error;
+  const code =
+    (typeof err?.code === "string" && err.code) ||
+    (typeof payload?.code === "string" && payload.code) ||
+    (typeof payload?.error_code === "string" && payload.error_code) ||
+    null;
+  const message =
+    (typeof err?.message === "string" && err.message) ||
+    (typeof err === "string" && err) ||
+    (typeof payload?.message === "string" && payload.message) ||
+    `FlashTopup API error${status ? ` (${status})` : ""}`;
+  const requestId =
+    (typeof payload?.meta?.request_id === "string" && payload.meta.request_id) ||
+    (typeof payload?.request_id === "string" && payload.request_id) ||
+    null;
+  return { code, message, requestId };
+}
 
 /** Performs the signed call and always returns a redacted trace (never throws). */
 export async function flashtopupRequestTraced(
