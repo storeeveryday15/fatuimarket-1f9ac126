@@ -112,13 +112,13 @@ export async function flashtopupRequestTraced(
   const canonical = [method, `${BASE_PATH}${cleanPath}`, timestamp, nonce, await sha256Hex(rawBody)].join("\n");
   const signature = await hmacHex(apiKey, canonical);
 
-  // Redacted header snapshot — the API key itself is never included anywhere.
+  // Redacted header snapshot — neither the API id, key nor signature leaves the server.
   const headers = {
     "Content-Type": "application/json",
-    "X-FT-API-ID": apiId,
+    "X-FT-API-ID": "(redacted)",
     "X-FT-Timestamp": timestamp,
     "X-FT-Nonce": nonce,
-    "X-FT-Signature": `${signature.slice(0, 8)}…(${signature.length} hex chars)`,
+    "X-FT-Signature": "(redacted)",
   };
 
   try {
