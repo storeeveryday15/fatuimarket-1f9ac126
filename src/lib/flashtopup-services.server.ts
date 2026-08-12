@@ -113,7 +113,16 @@ export async function syncServicesForProduct(
       .in("service_code", gone);
   }
 
-  return { ok: true, inserted: rows.length, deactivated: gone.length, status: 200, error: null, errorCode: null };
+  return {
+    ok: true,
+    fetched: fetched.rows.length,
+    inserted: rows.length,
+    deactivated: gone.length,
+    status: 200,
+    error: null,
+    errorCode: null,
+    requestId: null,
+  };
 }
 
 /** Pulls services for every active supplier product and upserts them. */
