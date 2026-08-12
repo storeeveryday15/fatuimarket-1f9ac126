@@ -293,8 +293,22 @@ export function normalizeService(row: Record<string, any>): NormalizedSupplierSe
   return {
     service_code: code,
     service_name: pick(row, ["service_name", "serviceName", "name", "title", "product_name"]) ?? code,
-    supplier_price: num(row, ["price", "supplier_price", "supplierPrice", "cost", "amount", "price_inr"]),
-    currency: pick(row, ["currency", "currency_code", "currencyCode"]) ?? "INR",
+    supplier_price:
+      num(row, [
+        "price",
+        "supplier_price",
+        "supplierPrice",
+        "reseller_price",
+        "sell_price",
+        "base_price",
+        "cost",
+        "amount",
+        "price_inr",
+      ]) ?? num((row?.price && typeof row.price === "object" ? row.price : {}) as any, ["amount", "value", "inr"]),
+    currency:
+      pick(row, ["currency", "currency_code", "currencyCode"]) ??
+      pick((row?.price && typeof row.price === "object" ? row.price : {}) as any, ["currency"]) ??
+      "INR",
     min_quantity: Math.max(1, Math.round(min)),
     max_quantity: Math.max(1, Math.round(max)),
     validation_code: validation,
