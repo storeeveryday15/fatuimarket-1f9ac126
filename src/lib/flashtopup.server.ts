@@ -94,6 +94,8 @@ export async function flashtopupRequestTraced(
     responseBody: null,
     rawResponse: "",
     error: null,
+    errorCode: null,
+    requestId: null,
     durationMs: 0,
   };
 
