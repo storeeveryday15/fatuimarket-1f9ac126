@@ -41,8 +41,38 @@ export type FlashtopupTrace = {
   responseBody: unknown;
   rawResponse: string;
   error: string | null;
+  errorCode: string | null;
+  requestId: string | null;
   durationMs: number;
 };
+
+/**
+ * Reads the v2 error envelope:
+ * `{ success:false, error:{ code, message }, meta:{ request_id } }`
+ * and always returns plain strings — never objects that stringify to
+ * "[object Object]".
+ */
+export function parseSupplierError(
+  payload: any,
+  status: number | null,
+): { code: string | null; message: string; requestId: string | null } {
+  const err = payload?.error;
+  const code =
+    (typeof err?.code === "string" && err.code) ||
+    (typeof payload?.code === "string" && payload.code) ||
+    (typeof payload?.error_code === "string" && payload.error_code) ||
+    null;
+  const message =
+    (typeof err?.message === "string" && err.message) ||
+    (typeof err === "string" && err) ||
+    (typeof payload?.message === "string" && payload.message) ||
+    `FlashTopup API error${status ? ` (${status})` : ""}`;
+  const requestId =
+    (typeof payload?.meta?.request_id === "string" && payload.meta.request_id) ||
+    (typeof payload?.request_id === "string" && payload.request_id) ||
+    null;
+  return { code, message, requestId };
+}
 
 /** Performs the signed call and always returns a redacted trace (never throws). */
 export async function flashtopupRequestTraced(
@@ -64,6 +94,8 @@ export async function flashtopupRequestTraced(
     responseBody: null,
     rawResponse: "",
     error: null,
+    errorCode: null,
+    requestId: null,
     durationMs: 0,
   };
 
@@ -80,13 +112,13 @@ export async function flashtopupRequestTraced(
   const canonical = [method, `${BASE_PATH}${cleanPath}`, timestamp, nonce, await sha256Hex(rawBody)].join("\n");
   const signature = await hmacHex(apiKey, canonical);
 
-  // Redacted header snapshot — the API key itself is never included anywhere.
+  // Redacted header snapshot — neither the API id, key nor signature leaves the server.
   const headers = {
     "Content-Type": "application/json",
-    "X-FT-API-ID": apiId,
+    "X-FT-API-ID": "(redacted)",
     "X-FT-Timestamp": timestamp,
     "X-FT-Nonce": nonce,
-    "X-FT-Signature": `${signature.slice(0, 8)}…(${signature.length} hex chars)`,
+    "X-FT-Signature": "(redacted)",
   };
 
   try {
@@ -108,6 +140,7 @@ export async function flashtopupRequestTraced(
     } catch {
       /* non-JSON response */
     }
+    const parsed = res.ok ? null : parseSupplierError(json, res.status);
     const trace: FlashtopupTrace = {
       ...base,
       headers,
@@ -115,17 +148,21 @@ export async function flashtopupRequestTraced(
       ok: res.ok,
       responseBody: json,
       rawResponse: text.slice(0, 4000),
-      error: res.ok ? null : json?.message || json?.error || `FlashTopup API error (${res.status})`,
+      error: parsed ? parsed.message : null,
+      errorCode: parsed?.code ?? null,
+      requestId:
+        parsed?.requestId ??
+        (typeof json?.meta?.request_id === "string" ? json.meta.request_id : null),
       durationMs: Date.now() - started,
     };
     console[res.ok ? "log" : "error"]("[flashtopup] request", {
       method: trace.method,
       url: trace.url,
       signedPath: trace.signedPath,
-      headers: trace.headers,
-      requestBody: trace.requestBody,
       status: trace.status,
-      response: trace.rawResponse.slice(0, 1500),
+      supplier_code: trace.errorCode,
+      supplier_message: trace.error,
+      request_id: trace.requestId,
       durationMs: trace.durationMs,
     });
     return trace;
@@ -256,8 +293,22 @@ export function normalizeService(row: Record<string, any>): NormalizedSupplierSe
   return {
     service_code: code,
     service_name: pick(row, ["service_name", "serviceName", "name", "title", "product_name"]) ?? code,
-    supplier_price: num(row, ["price", "supplier_price", "supplierPrice", "cost", "amount", "price_inr"]),
-    currency: pick(row, ["currency", "currency_code", "currencyCode"]) ?? "INR",
+    supplier_price:
+      num(row, [
+        "price",
+        "supplier_price",
+        "supplierPrice",
+        "reseller_price",
+        "sell_price",
+        "base_price",
+        "cost",
+        "amount",
+        "price_inr",
+      ]) ?? num((row?.price && typeof row.price === "object" ? row.price : {}) as any, ["amount", "value", "inr"]),
+    currency:
+      pick(row, ["currency", "currency_code", "currencyCode"]) ??
+      pick((row?.price && typeof row.price === "object" ? row.price : {}) as any, ["currency"]) ??
+      "INR",
     min_quantity: Math.max(1, Math.round(min)),
     max_quantity: Math.max(1, Math.round(max)),
     validation_code: validation,
@@ -312,6 +363,7 @@ export type ServicesFetch = {
   status: number | null;
   error: string | null;
   errorCode: string | null;
+  requestId: string | null;
 };
 
 /**
@@ -332,23 +384,26 @@ export async function fetchAllServices(
     const trace = await fetchServicesPage(productCode, productType, { page, cursor });
     pages = page;
     if (!trace.ok) {
-      const body = trace.responseBody as any;
-      const errorCode =
-        (typeof body?.code === "string" && body.code) ||
-        (typeof body?.error === "string" && body.error) ||
-        (typeof body?.error_code === "string" && body.error_code) ||
-        null;
       // Sanitized diagnostics only — no credentials, signatures or customer data.
       console.error("[flashtopup] /services failed", {
         product_code: productCode,
         product_type: productType ?? null,
         page,
-        status: trace.status,
-        errorCode,
-        message: trace.error,
+        http_status: trace.status,
+        supplier_code: trace.errorCode,
+        supplier_message: trace.error,
+        request_id: trace.requestId,
       });
       if (rows.length) break; // keep whatever pages already succeeded
-      return { rows: [], pages, ok: false, status: trace.status, error: trace.error, errorCode };
+      return {
+        rows: [],
+        pages,
+        ok: false,
+        status: trace.status,
+        error: trace.error,
+        errorCode: trace.errorCode,
+        requestId: trace.requestId,
+      };
     }
 
     const list = extractServiceList(trace.responseBody);
@@ -370,7 +425,7 @@ export async function fetchAllServices(
     }
   }
 
-  return { rows, pages, ok: true, status: 200, error: null, errorCode: null };
+  return { rows, pages, ok: true, status: 200, error: null, errorCode: null, requestId: null };
 }
 
 /** Back-compat single-call helper (throws on supplier error). */

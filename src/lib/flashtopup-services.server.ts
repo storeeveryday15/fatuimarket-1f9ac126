@@ -4,27 +4,49 @@ import { fetchAllServices, normalizeService, extractAvailability, extractDescrip
 
 type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
+/** Structured, sanitized failure record shown to admins. */
+export type ServiceSyncFailure = {
+  product_code: string;
+  product_type: string | null;
+  http_status: number | null;
+  supplier_code: string | null;
+  supplier_message: string;
+  request_id: string | null;
+};
+
 export type ServiceSyncResult = {
   products: number;
   services: number;
   deactivated: number;
   failed: number;
+  failures: ServiceSyncFailure[];
 };
 
 /** Syncs services for one supplier product. Never throws. */
 export async function syncServicesForProduct(
   admin: AdminClient,
   product: { id: string; product_code: string; product_type: string | null },
-): Promise<{ ok: boolean; inserted: number; deactivated: number; status: number | null; error: string | null; errorCode: string | null }> {
+): Promise<{
+  ok: boolean;
+  fetched: number;
+  inserted: number;
+  deactivated: number;
+  status: number | null;
+  error: string | null;
+  errorCode: string | null;
+  requestId: string | null;
+}> {
   const fetched = await fetchAllServices(product.product_code, product.product_type);
   if (!fetched.ok) {
     return {
       ok: false,
+      fetched: 0,
       inserted: 0,
       deactivated: 0,
       status: fetched.status,
       error: fetched.error,
       errorCode: fetched.errorCode,
+      requestId: fetched.requestId,
     };
   }
 
@@ -68,7 +90,16 @@ export async function syncServicesForProduct(
       { onConflict: "supplier_product_id,service_code" },
     );
     if (error) {
-      return { ok: false, inserted: 0, deactivated: 0, status: null, error: error.message, errorCode: null };
+      return {
+        ok: false,
+        fetched: rows.length,
+        inserted: 0,
+        deactivated: 0,
+        status: null,
+        error: `Database upsert failed: ${error.message}`,
+        errorCode: "DB_UPSERT_FAILED",
+        requestId: null,
+      };
     }
   }
 
@@ -82,7 +113,16 @@ export async function syncServicesForProduct(
       .in("service_code", gone);
   }
 
-  return { ok: true, inserted: rows.length, deactivated: gone.length, status: 200, error: null, errorCode: null };
+  return {
+    ok: true,
+    fetched: fetched.rows.length,
+    inserted: rows.length,
+    deactivated: gone.length,
+    status: 200,
+    error: null,
+    errorCode: null,
+    requestId: null,
+  };
 }
 
 /** Pulls services for every active supplier product and upserts them. */
@@ -96,25 +136,27 @@ export async function syncServicesForAllProducts(admin: AdminClient): Promise<Se
   const list = products ?? [];
   let services = 0;
   let deactivated = 0;
-  let failed = 0;
+  const failures: ServiceSyncFailure[] = [];
 
   for (const product of list) {
     const result = await syncServicesForProduct(admin, product);
     if (!result.ok) {
-      // Sanitized failure log — the rest of the catalog keeps syncing.
-      console.error("[flashtopup] service sync failed", {
+      const failure: ServiceSyncFailure = {
         product_code: product.product_code,
         product_type: product.product_type,
-        status: result.status,
-        errorCode: result.errorCode,
-        message: result.error,
-      });
-      failed += 1;
+        http_status: result.status,
+        supplier_code: result.errorCode,
+        supplier_message: result.error ?? "Unknown supplier error",
+        request_id: result.requestId,
+      };
+      // Sanitized failure log — the rest of the catalog keeps syncing.
+      console.error("[flashtopup] service sync failed", failure);
+      failures.push(failure);
       continue;
     }
     services += result.inserted;
     deactivated += result.deactivated;
   }
 
-  return { products: list.length, services, deactivated, failed };
+  return { products: list.length, services, deactivated, failed: failures.length, failures };
 }

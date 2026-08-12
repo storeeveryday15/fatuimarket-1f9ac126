@@ -133,77 +133,28 @@ export async function runCatalogSync(admin: AdminClient): Promise<CatalogSyncRes
 
     let servicesTotal = 0;
     let servicesDisabled = 0;
-    let failedProducts = 0;
+    const failures: ServiceSyncFailure[] = [];
 
     for (const product of liveProducts ?? []) {
-      try {
-        const fetched = await fetchAllServices(product.product_code, product.product_type);
-        if (!fetched.ok) {
-          failedProducts += 1;
-          continue; // the 191 synced games stay intact
-        }
-        const list = fetched.rows;
-        const rows = list
-          .map((r) => {
-            const norm = normalizeService(r);
-            if (!norm) return null;
-            return { ...norm, available: extractAvailability(r), description: extractDescription(r) };
-          })
-          .filter(Boolean) as Array<
-          NonNullable<ReturnType<typeof normalizeService>> & { available: boolean; description: string | null }
-        >;
-
-
-        const { data: existingSvc } = await admin
-          .from("supplier_services")
-          .select("service_code")
-          .eq("supplier_product_id", product.id);
-        const existingCodes = new Set((existingSvc ?? []).map((r) => r.service_code));
-
-        if (rows.length) {
-          const { error } = await admin.from("supplier_services").upsert(
-            rows.map((r, index) => ({
-              supplier_product_id: product.id,
-              service_code: r.service_code,
-              service_name: r.service_name,
-              supplier_price: r.supplier_price,
-              currency: r.currency,
-              min_quantity: r.min_quantity,
-              max_quantity: r.max_quantity,
-              validation_code: r.validation_code,
-              input_fields: r.input_fields as never,
-              requires_validation: r.requires_validation,
-              available: r.available,
-              description: r.description,
-              sort_order: index,
-              raw: r.raw as never,
-              active: true,
-              updated_at: now,
-            })),
-            { onConflict: "supplier_product_id,service_code" },
-          );
-          if (error) throw new Error(error.message);
-          servicesTotal += rows.length;
-        }
-
-        const incomingSvc = new Set(rows.map((r) => r.service_code));
-        const gone = [...existingCodes].filter((c) => !incomingSvc.has(c));
-        if (gone.length) {
-          await admin
-            .from("supplier_services")
-            .update({ active: false, available: false })
-            .eq("supplier_product_id", product.id)
-            .in("service_code", gone);
-          servicesDisabled += gone.length;
-        }
-      } catch (err) {
-        failedProducts += 1;
-        console.error("[flashtopup] service sync failed", {
+      // One product failing never aborts the run — the 191 synced games stay intact.
+      const result = await syncServicesForProduct(admin, product);
+      if (!result.ok) {
+        const failure: ServiceSyncFailure = {
           product_code: product.product_code,
-          message: err instanceof Error ? err.message : "unknown",
-        });
+          product_type: product.product_type,
+          http_status: result.status,
+          supplier_code: result.errorCode,
+          supplier_message: result.error ?? "Unknown supplier error",
+          request_id: result.requestId,
+        };
+        console.error("[flashtopup] service sync failed", failure);
+        failures.push(failure);
+        continue;
       }
+      servicesTotal += result.inserted;
+      servicesDisabled += result.deactivated;
     }
+    const failedProducts = failures.length;
 
     // Selling prices always follow the current markup rules.
     await (admin as any).rpc("recompute_sell_prices");
