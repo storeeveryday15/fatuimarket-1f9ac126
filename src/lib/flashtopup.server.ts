@@ -411,7 +411,7 @@ export async function fetchAllServices(
     }
   }
 
-  return { rows, pages, ok: true, status: 200, error: null, errorCode: null };
+  return { rows, pages, ok: true, status: 200, error: null, errorCode: null, requestId: null };
 }
 
 /** Back-compat single-call helper (throws on supplier error). */
