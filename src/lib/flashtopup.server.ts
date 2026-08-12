@@ -140,6 +140,7 @@ export async function flashtopupRequestTraced(
     } catch {
       /* non-JSON response */
     }
+    const parsed = res.ok ? null : parseSupplierError(json, res.status);
     const trace: FlashtopupTrace = {
       ...base,
       headers,
@@ -147,17 +148,21 @@ export async function flashtopupRequestTraced(
       ok: res.ok,
       responseBody: json,
       rawResponse: text.slice(0, 4000),
-      error: res.ok ? null : json?.message || json?.error || `FlashTopup API error (${res.status})`,
+      error: parsed ? parsed.message : null,
+      errorCode: parsed?.code ?? null,
+      requestId:
+        parsed?.requestId ??
+        (typeof json?.meta?.request_id === "string" ? json.meta.request_id : null),
       durationMs: Date.now() - started,
     };
     console[res.ok ? "log" : "error"]("[flashtopup] request", {
       method: trace.method,
       url: trace.url,
       signedPath: trace.signedPath,
-      headers: trace.headers,
-      requestBody: trace.requestBody,
       status: trace.status,
-      response: trace.rawResponse.slice(0, 1500),
+      supplier_code: trace.errorCode,
+      supplier_message: trace.error,
+      request_id: trace.requestId,
       durationMs: trace.durationMs,
     });
     return trace;
