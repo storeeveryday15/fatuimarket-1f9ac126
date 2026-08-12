@@ -90,7 +90,16 @@ export async function syncServicesForProduct(
       { onConflict: "supplier_product_id,service_code" },
     );
     if (error) {
-      return { ok: false, inserted: 0, deactivated: 0, status: null, error: error.message, errorCode: null };
+      return {
+        ok: false,
+        fetched: rows.length,
+        inserted: 0,
+        deactivated: 0,
+        status: null,
+        error: `Database upsert failed: ${error.message}`,
+        errorCode: "DB_UPSERT_FAILED",
+        requestId: null,
+      };
     }
   }
 
