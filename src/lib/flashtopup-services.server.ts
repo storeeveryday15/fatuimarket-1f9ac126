@@ -136,25 +136,27 @@ export async function syncServicesForAllProducts(admin: AdminClient): Promise<Se
   const list = products ?? [];
   let services = 0;
   let deactivated = 0;
-  let failed = 0;
+  const failures: ServiceSyncFailure[] = [];
 
   for (const product of list) {
     const result = await syncServicesForProduct(admin, product);
     if (!result.ok) {
-      // Sanitized failure log — the rest of the catalog keeps syncing.
-      console.error("[flashtopup] service sync failed", {
+      const failure: ServiceSyncFailure = {
         product_code: product.product_code,
         product_type: product.product_type,
-        status: result.status,
-        errorCode: result.errorCode,
-        message: result.error,
-      });
-      failed += 1;
+        http_status: result.status,
+        supplier_code: result.errorCode,
+        supplier_message: result.error ?? "Unknown supplier error",
+        request_id: result.requestId,
+      };
+      // Sanitized failure log — the rest of the catalog keeps syncing.
+      console.error("[flashtopup] service sync failed", failure);
+      failures.push(failure);
       continue;
     }
     services += result.inserted;
     deactivated += result.deactivated;
   }
 
-  return { products: list.length, services, deactivated, failed };
+  return { products: list.length, services, deactivated, failed: failures.length, failures };
 }
