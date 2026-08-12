@@ -4,27 +4,49 @@ import { fetchAllServices, normalizeService, extractAvailability, extractDescrip
 
 type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
+/** Structured, sanitized failure record shown to admins. */
+export type ServiceSyncFailure = {
+  product_code: string;
+  product_type: string | null;
+  http_status: number | null;
+  supplier_code: string | null;
+  supplier_message: string;
+  request_id: string | null;
+};
+
 export type ServiceSyncResult = {
   products: number;
   services: number;
   deactivated: number;
   failed: number;
+  failures: ServiceSyncFailure[];
 };
 
 /** Syncs services for one supplier product. Never throws. */
 export async function syncServicesForProduct(
   admin: AdminClient,
   product: { id: string; product_code: string; product_type: string | null },
-): Promise<{ ok: boolean; inserted: number; deactivated: number; status: number | null; error: string | null; errorCode: string | null }> {
+): Promise<{
+  ok: boolean;
+  fetched: number;
+  inserted: number;
+  deactivated: number;
+  status: number | null;
+  error: string | null;
+  errorCode: string | null;
+  requestId: string | null;
+}> {
   const fetched = await fetchAllServices(product.product_code, product.product_type);
   if (!fetched.ok) {
     return {
       ok: false,
+      fetched: 0,
       inserted: 0,
       deactivated: 0,
       status: fetched.status,
       error: fetched.error,
       errorCode: fetched.errorCode,
+      requestId: fetched.requestId,
     };
   }
 
