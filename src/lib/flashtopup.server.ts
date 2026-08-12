@@ -370,23 +370,26 @@ export async function fetchAllServices(
     const trace = await fetchServicesPage(productCode, productType, { page, cursor });
     pages = page;
     if (!trace.ok) {
-      const body = trace.responseBody as any;
-      const errorCode =
-        (typeof body?.code === "string" && body.code) ||
-        (typeof body?.error === "string" && body.error) ||
-        (typeof body?.error_code === "string" && body.error_code) ||
-        null;
       // Sanitized diagnostics only — no credentials, signatures or customer data.
       console.error("[flashtopup] /services failed", {
         product_code: productCode,
         product_type: productType ?? null,
         page,
-        status: trace.status,
-        errorCode,
-        message: trace.error,
+        http_status: trace.status,
+        supplier_code: trace.errorCode,
+        supplier_message: trace.error,
+        request_id: trace.requestId,
       });
       if (rows.length) break; // keep whatever pages already succeeded
-      return { rows: [], pages, ok: false, status: trace.status, error: trace.error, errorCode };
+      return {
+        rows: [],
+        pages,
+        ok: false,
+        status: trace.status,
+        error: trace.error,
+        errorCode: trace.errorCode,
+        requestId: trace.requestId,
+      };
     }
 
     const list = extractServiceList(trace.responseBody);
