@@ -18,6 +18,7 @@ import { SiteFooter } from "../components/site-footer";
 
 import { AdsterraBanner2 } from "../components/adsterra-banner-2";
 import { ChatWidget } from "../components/chat-widget";
+import { WhatsappPopup } from "../components/whatsapp-popup";
 import { Toaster } from "sonner";
 
 // Must run before any component renders: privacy-restricted Android browsers
@@ -184,6 +185,7 @@ function RootComponent() {
           
           <AdsterraBanner2 />
           <SiteFooter />
+           <WhatsappPopup />
           <ChatWidget />
           <Toaster richColors position="top-right" />
         </div>
