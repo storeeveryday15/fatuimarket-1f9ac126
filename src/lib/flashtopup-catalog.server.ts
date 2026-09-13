@@ -19,6 +19,10 @@ import {
   extractDescription,
   slugify,
 } from "./flashtopup.server";
+import {
+  syncServicesForProduct,
+  type ServiceSyncFailure,
+} from "./flashtopup-services.server";
 
 type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
