@@ -1100,6 +1100,48 @@ export type Database = {
           },
         ]
       }
+      payment_webhook_events: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_id: string
+          event_type: string | null
+          id: string
+          order_code: string | null
+          payload: Json
+          payment_reference: string | null
+          processed_at: string | null
+          provider: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_id: string
+          event_type?: string | null
+          id?: string
+          order_code?: string | null
+          payload?: Json
+          payment_reference?: string | null
+          processed_at?: string | null
+          provider?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_id?: string
+          event_type?: string | null
+          id?: string
+          order_code?: string | null
+          payload?: Json
+          payment_reference?: string | null
+          processed_at?: string | null
+          provider?: string
+          status?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           ai_behaviour: string | null
