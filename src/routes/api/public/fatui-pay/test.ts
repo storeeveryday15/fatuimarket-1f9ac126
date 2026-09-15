@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/public/fatui-pay/test")({
           return Response.json({ error: "FATUI_PAY_WEBHOOK_SECRET not set" }, { status: 500 });
         }
 
-        const WEBHOOK_URL = "https://fatuimarket.lovable.app/api/public/fatui-pay/verify";
+        const WEBHOOK_URL = "http://localhost:8080/api/public/fatui-pay/verify";
         const results: Array<Record<string, unknown>> = [];
 
         const sign = (body: string) =>
