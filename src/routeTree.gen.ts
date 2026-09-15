@@ -57,7 +57,6 @@ import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/em
 import { Route as ApiPublicHooksSupplierSyncRouteImport } from './routes/api/public/hooks/supplier-sync'
 import { Route as ApiPublicFlashtopupWebhookRouteImport } from './routes/api/public/flashtopup/webhook'
 import { Route as ApiPublicFatuiPayVerifyRouteImport } from './routes/api/public/fatui-pay/verify'
-import { Route as ApiPublicFatuiPayTestRouteImport } from './routes/api/public/fatui-pay/test'
 import { Route as ApiPublicEORouteImport } from './routes/api/public/e/o'
 import { Route as ApiPublicECRouteImport } from './routes/api/public/e/c'
 
@@ -308,11 +307,6 @@ const ApiPublicFatuiPayVerifyRoute = ApiPublicFatuiPayVerifyRouteImport.update({
   path: '/api/public/fatui-pay/verify',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicFatuiPayTestRoute = ApiPublicFatuiPayTestRouteImport.update({
-  id: '/api/public/fatui-pay/test',
-  path: '/api/public/fatui-pay/test',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicEORoute = ApiPublicEORouteImport.update({
   id: '/api/public/e/o',
   path: '/api/public/e/o',
@@ -367,7 +361,6 @@ export interface FileRoutesByFullPath {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/e/c': typeof ApiPublicECRoute
   '/api/public/e/o': typeof ApiPublicEORoute
-  '/api/public/fatui-pay/test': typeof ApiPublicFatuiPayTestRoute
   '/api/public/fatui-pay/verify': typeof ApiPublicFatuiPayVerifyRoute
   '/api/public/flashtopup/webhook': typeof ApiPublicFlashtopupWebhookRoute
   '/api/public/hooks/supplier-sync': typeof ApiPublicHooksSupplierSyncRoute
@@ -419,7 +412,6 @@ export interface FileRoutesByTo {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/e/c': typeof ApiPublicECRoute
   '/api/public/e/o': typeof ApiPublicEORoute
-  '/api/public/fatui-pay/test': typeof ApiPublicFatuiPayTestRoute
   '/api/public/fatui-pay/verify': typeof ApiPublicFatuiPayVerifyRoute
   '/api/public/flashtopup/webhook': typeof ApiPublicFlashtopupWebhookRoute
   '/api/public/hooks/supplier-sync': typeof ApiPublicHooksSupplierSyncRoute
@@ -473,7 +465,6 @@ export interface FileRoutesById {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/api/public/e/c': typeof ApiPublicECRoute
   '/api/public/e/o': typeof ApiPublicEORoute
-  '/api/public/fatui-pay/test': typeof ApiPublicFatuiPayTestRoute
   '/api/public/fatui-pay/verify': typeof ApiPublicFatuiPayVerifyRoute
   '/api/public/flashtopup/webhook': typeof ApiPublicFlashtopupWebhookRoute
   '/api/public/hooks/supplier-sync': typeof ApiPublicHooksSupplierSyncRoute
@@ -528,7 +519,6 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/api/public/e/c'
     | '/api/public/e/o'
-    | '/api/public/fatui-pay/test'
     | '/api/public/fatui-pay/verify'
     | '/api/public/flashtopup/webhook'
     | '/api/public/hooks/supplier-sync'
@@ -580,7 +570,6 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/api/public/e/c'
     | '/api/public/e/o'
-    | '/api/public/fatui-pay/test'
     | '/api/public/fatui-pay/verify'
     | '/api/public/flashtopup/webhook'
     | '/api/public/hooks/supplier-sync'
@@ -633,7 +622,6 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/api/public/e/c'
     | '/api/public/e/o'
-    | '/api/public/fatui-pay/test'
     | '/api/public/fatui-pay/verify'
     | '/api/public/flashtopup/webhook'
     | '/api/public/hooks/supplier-sync'
@@ -675,7 +663,6 @@ export interface RootRouteChildren {
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicECRoute: typeof ApiPublicECRoute
   ApiPublicEORoute: typeof ApiPublicEORoute
-  ApiPublicFatuiPayTestRoute: typeof ApiPublicFatuiPayTestRoute
   ApiPublicFatuiPayVerifyRoute: typeof ApiPublicFatuiPayVerifyRoute
   ApiPublicFlashtopupWebhookRoute: typeof ApiPublicFlashtopupWebhookRoute
   ApiPublicHooksSupplierSyncRoute: typeof ApiPublicHooksSupplierSyncRoute
@@ -1024,13 +1011,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicFatuiPayVerifyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/fatui-pay/test': {
-      id: '/api/public/fatui-pay/test'
-      path: '/api/public/fatui-pay/test'
-      fullPath: '/api/public/fatui-pay/test'
-      preLoaderRoute: typeof ApiPublicFatuiPayTestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/e/o': {
       id: '/api/public/e/o'
       path: '/api/public/e/o'
@@ -1113,7 +1093,6 @@ const rootRouteChildren: RootRouteChildren = {
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicECRoute: ApiPublicECRoute,
   ApiPublicEORoute: ApiPublicEORoute,
-  ApiPublicFatuiPayTestRoute: ApiPublicFatuiPayTestRoute,
   ApiPublicFatuiPayVerifyRoute: ApiPublicFatuiPayVerifyRoute,
   ApiPublicFlashtopupWebhookRoute: ApiPublicFlashtopupWebhookRoute,
   ApiPublicHooksSupplierSyncRoute: ApiPublicHooksSupplierSyncRoute,
