@@ -89,7 +89,7 @@ export const Route = createFileRoute("/api/public/fatui-pay/verify")({
 
         const { data: order, error: orderError } = await supabaseAdmin
           .from("orders")
-          .select("id, order_code, status, amount_inr, currency")
+          .select("id, order_code, status, utr, amount_inr, amount_usd, currency")
           .eq("order_code", event.orderCode)
           .maybeSingle();
 
@@ -104,17 +104,84 @@ export const Route = createFileRoute("/api/public/fatui-pay/verify")({
         }
 
         // Guard against re-processing an order that is already paid/fulfilled.
-        if (["completed", "processing", "pending_verification"].includes(order.status)) {
+        if (["paid", "completed", "delivered", "processing"].includes(order.status)) {
           await finish("skipped", `Order already ${order.status}`);
           return new Response("ok", { status: 200 });
+        }
+
+        const orderAmount = Number(
+          (order.currency === "INR" ? order.amount_inr : order.amount_usd) ?? 0,
+        );
+        const reference = event.paymentReference;
+
+        // 1. The bank RRN must match the reference the customer submitted.
+        if (order.utr && reference && order.utr.toLowerCase() !== reference.toLowerCase()) {
+          await supabaseAdmin
+            .from("orders")
+            .update({
+              status: "rejected",
+              rejected_at: new Date().toISOString(),
+              reason: "Bank reference does not match the submitted UTR",
+              needs_review: true,
+            })
+            .eq("id", order.id);
+          await finish("rejected", "RRN mismatch");
+          return new Response("ok", { status: 200 });
+        }
+
+        // 2. The paid amount must equal the order amount exactly.
+        if (event.amount == null || Math.abs(Number(event.amount) - orderAmount) > 0.009) {
+          console.warn("[fatui-pay] amount mismatch", {
+            event_id: event.eventId,
+            order_code: order.order_code,
+          });
+          await supabaseAdmin
+            .from("orders")
+            .update({
+              status: "rejected",
+              rejected_at: new Date().toISOString(),
+              reason: "Paid amount does not match the order amount",
+              needs_review: true,
+            })
+            .eq("id", order.id);
+          await finish("rejected", "Amount mismatch");
+          return new Response("ok", { status: 200 });
+        }
+
+        // 3. The RRN may never be consumed by more than one order.
+        if (reference) {
+          const { data: others } = await supabaseAdmin
+            .from("orders")
+            .select("id, status")
+            .ilike("utr", reference)
+            .neq("id", order.id);
+          const rows = others ?? [];
+          const consumed = rows.some((o) =>
+            ["paid", "processing", "completed", "delivered"].includes(o.status),
+          );
+          if (consumed || rows.length > 0) {
+            await supabaseAdmin
+              .from("orders")
+              .update({
+                status: consumed ? "duplicate_rrn" : order.status,
+                needs_review: true,
+                reason: consumed
+                  ? "This payment reference was already used for another order"
+                  : "Same payment reference appears on more than one order — manual review required",
+              })
+              .eq("id", order.id);
+            await finish(consumed ? "duplicate" : "review", "RRN already present on another order");
+            return new Response("ok", { status: 200 });
+          }
         }
 
         await supabaseAdmin
           .from("orders")
           .update({
-            status: "pending_verification",
+            status: "paid",
+            verified_at: new Date().toISOString(),
             payment_method: "fatui_pay",
-            ...(event.paymentReference ? { utr: event.paymentReference } : {}),
+            ...(reference ? { utr: reference } : {}),
           })
           .eq("id", order.id);
 
