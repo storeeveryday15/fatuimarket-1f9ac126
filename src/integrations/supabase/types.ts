@@ -971,6 +971,8 @@ export type Database = {
           failed_at: string | null
           game_id: string | null
           id: string
+          idempotency_key: string | null
+          needs_review: boolean
           notes: string | null
           order_code: string
           payment_method: string | null
@@ -993,6 +995,8 @@ export type Database = {
           updated_at: string
           user_id: string | null
           utr: string | null
+          utr_submitted_at: string | null
+          verified_at: string | null
           wallet_used_inr: number
         }
         Insert: {
@@ -1015,6 +1019,8 @@ export type Database = {
           failed_at?: string | null
           game_id?: string | null
           id?: string
+          idempotency_key?: string | null
+          needs_review?: boolean
           notes?: string | null
           order_code: string
           payment_method?: string | null
@@ -1037,6 +1043,8 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           utr?: string | null
+          utr_submitted_at?: string | null
+          verified_at?: string | null
           wallet_used_inr?: number
         }
         Update: {
@@ -1059,6 +1067,8 @@ export type Database = {
           failed_at?: string | null
           game_id?: string | null
           id?: string
+          idempotency_key?: string | null
+          needs_review?: boolean
           notes?: string | null
           order_code?: string
           payment_method?: string | null
@@ -1081,6 +1091,8 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           utr?: string | null
+          utr_submitted_at?: string | null
+          verified_at?: string | null
           wallet_used_inr?: number
         }
         Relationships: [
