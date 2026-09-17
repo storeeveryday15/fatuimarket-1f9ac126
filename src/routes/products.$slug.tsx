@@ -131,6 +131,7 @@ function ProductPage() {
   const [serverRegion, setServerRegion] = useState<string>(product.servers?.[0]?.id ?? "");
   const [email, setEmail] = useState("");
   const [placing, setPlacing] = useState(false);
+  const checkoutKeyRef = useRef<string | null>(null);
   const [coupon, setCoupon] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
   const [useWallet, setUseWallet] = useState(false);
