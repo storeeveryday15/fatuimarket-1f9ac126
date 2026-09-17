@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   PRODUCTS,
   getProduct,
@@ -131,6 +131,7 @@ function ProductPage() {
   const [serverRegion, setServerRegion] = useState<string>(product.servers?.[0]?.id ?? "");
   const [email, setEmail] = useState("");
   const [placing, setPlacing] = useState(false);
+  const checkoutKeyRef = useRef<string | null>(null);
   const [coupon, setCoupon] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
   const [useWallet, setUseWallet] = useState(false);
@@ -266,6 +267,7 @@ function ProductPage() {
   );
 
   const continueToPayment = async () => {
+    if (placing) return; // double-tap guard
     if (status !== "authed" || !user) {
       navigate({ to: "/auth", search: { redirect: `/products/${product.slug}` } });
       return;
@@ -281,10 +283,18 @@ function ProductPage() {
 
     setPlacing(true);
     try {
+      // Server-side idempotency: the same checkout attempt can only ever
+      // produce one order, no matter how many times the button is tapped.
+      if (!checkoutKeyRef.current) {
+        checkoutKeyRef.current = `${user.id}:${product.slug}:${selected.label}:${qty}:${Date.now()}:${Math.random().toString(36).slice(2, 10)}`;
+      }
+      const idempotencyKey = checkoutKeyRef.current;
+
       const code = generateOrderCode();
       const game_id = needsId ? `${playerId.trim()}${needsZone ? ` (${zone.trim()})` : ""}` : null;
       const { error } = await supabase.from("orders").insert({
         order_code: code,
+        idempotency_key: idempotencyKey,
         user_id: user.id,
         customer_email: (email || user.email || "").trim(),
         customer_contact: null,
@@ -309,10 +319,24 @@ function ProductPage() {
         quantity: qty,
         catalog_product_id: stockInfo.productId,
       } as never);
-      if (error) throw error;
+
+      if (error) {
+        // Duplicate submission — reuse the order that already exists.
+        const { data: existing } = await supabase
+          .from("orders")
+          .select("order_code")
+          .eq("idempotency_key", idempotencyKey)
+          .maybeSingle();
+        if (existing?.order_code) {
+          navigate({ to: "/orders/$code", params: { code: existing.order_code } });
+          return;
+        }
+        throw error;
+      }
       void notifyOrder(code, "created");
 
       toast.success(`Order ${code} created!`);
+      checkoutKeyRef.current = null;
       navigate({ to: "/orders/$code", params: { code } });
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Could not create order");
