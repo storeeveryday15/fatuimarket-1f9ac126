@@ -22,7 +22,8 @@
 ### Leaderboard
 - The storefront requests 10 rows initially and can request up to 50; there is no `.slice(0, 4)` or four-row query limit.
 - The exact database rule is: group real INR orders by signed-in customer, include only `completed` or `delivered`, rank by total spend then order count, and mask the profile name. Current data has 6 eligible orders belonging to exactly 4 distinct customers, which is why approximately four appear.
-- The current database function is authenticated-only while the leaderboard is on the public homepage, so guest reads are unreliable. Reviews are not currently represented in leaderboard data.
+- Payment verification first writes `paid`; only confirmed supplier fulfilment advances an order to `completed`. The leaderboard must continue excluding paid-but-unfulfilled orders as requested rather than inflating ranks.
+- A database integrity gap allows customers to update their own order rows without a sufficient status-transition guard. This could let a malicious customer forge leaderboard/verified-buyer eligibility and must be closed. Reviews are not currently represented in leaderboard data.
 
 ## Implementation
 
@@ -49,6 +50,7 @@
 
 ### 4. Make the leaderboard reliably public and live
 - Replace the browser’s direct RPC call with a public server function that returns only masked name, country, fulfilled-order totals, spend, tier, and approved-review count. It will use the same `completed`/`delivered` eligibility rule, cap requests reasonably, and expose no email, phone, UTR, payment, or order details.
+- Add a database guard preventing customers from changing protected order/payment/status fields; only trusted server/admin paths may advance fulfilment state.
 - Refresh on an interval and after relevant order/review changes so newly fulfilled purchases update automatically; approved reviews update the eligible customer’s review count.
 - Keep the initial top-ten/full-list interaction, but remove dependence on guest database execute permissions. Do not invent customers or count pending, paid-only, failed, rejected, duplicate, cancelled, expired, or unverified orders.
 
