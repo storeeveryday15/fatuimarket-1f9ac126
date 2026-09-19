@@ -526,6 +526,33 @@ export type Database = {
           },
         ]
       }
+      consumed_payment_rrns: {
+        Row: {
+          amount_inr: number
+          consumed_at: string
+          event_id: string
+          payment_target: string
+          rrn_normalized: string
+          target_id: string
+        }
+        Insert: {
+          amount_inr: number
+          consumed_at?: string
+          event_id: string
+          payment_target: string
+          rrn_normalized: string
+          target_id: string
+        }
+        Update: {
+          amount_inr?: number
+          consumed_at?: string
+          event_id?: string
+          payment_target?: string
+          rrn_normalized?: string
+          target_id?: string
+        }
+        Relationships: []
+      }
       customer_flags: {
         Row: {
           ban_reason: string | null
@@ -1461,6 +1488,54 @@ export type Database = {
         }
         Relationships: []
       }
+      review_replies: {
+        Row: {
+          body: string
+          created_at: string
+          display_name: string
+          id: string
+          is_seller: boolean
+          review_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_seller?: boolean
+          review_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_seller?: boolean
+          review_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_replies_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_replies_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           created_at: string
@@ -2072,6 +2147,57 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_topups: {
+        Row: {
+          amount_inr: number
+          created_at: string
+          credited_at: string | null
+          expires_at: string
+          id: string
+          needs_review: boolean
+          reason: string | null
+          status: string
+          topup_code: string
+          updated_at: string
+          user_id: string
+          utr: string | null
+          utr_submitted_at: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          amount_inr: number
+          created_at?: string
+          credited_at?: string | null
+          expires_at?: string
+          id?: string
+          needs_review?: boolean
+          reason?: string | null
+          status?: string
+          topup_code: string
+          updated_at?: string
+          user_id: string
+          utr?: string | null
+          utr_submitted_at?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          amount_inr?: number
+          created_at?: string
+          credited_at?: string | null
+          expires_at?: string
+          id?: string
+          needs_review?: boolean
+          reason?: string | null
+          status?: string
+          topup_code?: string
+          updated_at?: string
+          user_id?: string
+          utr?: string | null
+          utr_submitted_at?: string | null
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount_inr: number
@@ -2235,6 +2361,32 @@ export type Database = {
         }
         Relationships: []
       }
+      review_replies_public: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string | null
+          is_seller: boolean | null
+          review_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_replies_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_replies_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews_public: {
         Row: {
           created_at: string | null
@@ -2350,6 +2502,15 @@ export type Database = {
         Returns: number
       }
       expire_stale_orders: { Args: never; Returns: undefined }
+      finalize_fatui_wallet_topup: {
+        Args: {
+          _amount: number
+          _event_id: string
+          _rrn: string
+          _topup_code: string
+        }
+        Returns: Json
+      }
       get_assistant_stats: {
         Args: never
         Returns: {
@@ -2380,6 +2541,18 @@ export type Database = {
           level: string
           masked_username: string
           rank: number
+          total_orders: number
+          total_spent_inr: number
+        }[]
+      }
+      get_leaderboard_v2: {
+        Args: { _limit?: number }
+        Returns: {
+          country: string
+          level: string
+          masked_username: string
+          rank: number
+          review_count: number
           total_orders: number
           total_spent_inr: number
         }[]
@@ -2441,6 +2614,15 @@ export type Database = {
           _tier_label?: string
         }
         Returns: undefined
+      }
+      register_fatui_order_payment: {
+        Args: {
+          _amount: number
+          _event_id: string
+          _order_id: string
+          _rrn: string
+        }
+        Returns: Json
       }
       visitor_heartbeat: {
         Args: {
