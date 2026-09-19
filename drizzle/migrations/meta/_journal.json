@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789794979083,
+      "tag": "0000_fatui_pay_wallet_reviews_replies_leaderboard",
+      "breakpoints": true
+    }
+  ]
+}
