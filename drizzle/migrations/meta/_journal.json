@@ -8,6 +8,13 @@
       "when": 1789794979083,
       "tag": "0000_fatui_pay_wallet_reviews_replies_leaderboard",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790474181137,
+      "tag": "0001_tighten_review_reply_privacy_and_order_guards",
+      "breakpoints": true
     }
   ]
 }
