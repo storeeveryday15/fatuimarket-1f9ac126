@@ -18,7 +18,8 @@ export async function verifyPaymentSignature(rawBody: string, header: string | n
   const secret = process.env.FATUI_PAY_WEBHOOK_SECRET;
   if (!secret || !header) return false;
 
-  const provided = header.includes("=") ? header.split("=").pop()!.trim() : header.trim();
+  const providedPart = header.includes("=") ? header.split("=").pop() : header;
+  const provided = providedPart?.trim() ?? "";
   const { createHmac, timingSafeEqual } = await import("crypto");
   const digest = createHmac("sha256", secret).update(rawBody, "utf8");
   const expectedHex = digest.digest("hex");

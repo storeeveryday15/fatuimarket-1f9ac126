@@ -87,6 +87,29 @@ export const Route = createFileRoute("/api/public/fatui-pay/verify")({
           return new Response("Missing order reference", { status: 400 });
         }
 
+        // Wallet top-ups use the same signed verification event and shared RRN registry.
+        if (event.orderCode.startsWith("WLT-")) {
+          if (!event.paymentReference || event.amount == null) {
+            await finish("error", "Wallet event is missing payment reference or amount");
+            return new Response("Missing payment details", { status: 400 });
+          }
+          const { data: result, error } = await (supabaseAdmin.rpc as unknown as (
+            fn: string,
+            args: Record<string, unknown>,
+          ) => Promise<{ data: { result?: string } | null; error: { message: string } | null }>)(
+            "finalize_fatui_wallet_topup",
+            { _topup_code: event.orderCode, _rrn: event.paymentReference, _amount: event.amount, _event_id: event.eventId },
+          );
+          if (error) {
+            console.error("[fatui-pay] wallet finalization failed", { event_id: event.eventId });
+            await finish("error", "Wallet finalization failed");
+            return new Response("Processing failed", { status: 500 });
+          }
+          const outcome = result?.result ?? "unknown";
+          await finish(outcome === "credited" || outcome === "already_paid" ? "processed" : outcome, `wallet:${outcome}`);
+          return new Response("ok", { status: 200 });
+        }
+
         const { data: order, error: orderError } = await supabaseAdmin
           .from("orders")
           .select("id, order_code, status, utr, amount_inr, amount_usd, currency")
@@ -103,87 +126,32 @@ export const Route = createFileRoute("/api/public/fatui-pay/verify")({
           return new Response("ok", { status: 200 });
         }
 
-        // Guard against re-processing an order that is already paid/fulfilled.
-        if (["paid", "completed", "delivered", "processing"].includes(order.status)) {
-          await finish("skipped", `Order already ${order.status}`);
-          return new Response("ok", { status: 200 });
-        }
-
         const orderAmount = Number(
           (order.currency === "INR" ? order.amount_inr : order.amount_usd) ?? 0,
         );
         const reference = event.paymentReference;
 
-        // 1. The bank RRN must match the reference the customer submitted.
-        if (order.utr && reference && order.utr.toLowerCase() !== reference.toLowerCase()) {
-          await supabaseAdmin
-            .from("orders")
-            .update({
-              status: "rejected",
-              rejected_at: new Date().toISOString(),
-              reason: "Bank reference does not match the submitted UTR",
-              needs_review: true,
-            })
-            .eq("id", order.id);
-          await finish("rejected", "RRN mismatch");
+        if (!reference || event.amount == null || orderAmount <= 0) {
+          await finish("error", "Event is missing verifiable payment details");
+          return new Response("Missing payment details", { status: 400 });
+        }
+        const { data: paymentResult, error: paymentError } = await (supabaseAdmin.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ data: { result?: string } | null; error: { message: string } | null }>)(
+          "register_fatui_order_payment",
+          { _order_id: order.id, _rrn: reference, _amount: event.amount, _event_id: event.eventId },
+        );
+        if (paymentError) {
+          console.error("[fatui-pay] order finalization failed", { event_id: event.eventId });
+          await finish("error", "Order finalization failed");
+          return new Response("Processing failed", { status: 500 });
+        }
+        const outcome = paymentResult?.result ?? "unknown";
+        if (outcome !== "paid") {
+          await finish(outcome === "already_paid" ? "skipped" : outcome, outcome);
           return new Response("ok", { status: 200 });
         }
-
-        // 2. The paid amount must equal the order amount exactly.
-        if (event.amount == null || Math.abs(Number(event.amount) - orderAmount) > 0.009) {
-          console.warn("[fatui-pay] amount mismatch", {
-            event_id: event.eventId,
-            order_code: order.order_code,
-          });
-          await supabaseAdmin
-            .from("orders")
-            .update({
-              status: "rejected",
-              rejected_at: new Date().toISOString(),
-              reason: "Paid amount does not match the order amount",
-              needs_review: true,
-            })
-            .eq("id", order.id);
-          await finish("rejected", "Amount mismatch");
-          return new Response("ok", { status: 200 });
-        }
-
-        // 3. The RRN may never be consumed by more than one order.
-        if (reference) {
-          const { data: others } = await supabaseAdmin
-            .from("orders")
-            .select("id, status")
-            .ilike("utr", reference)
-            .neq("id", order.id);
-          const rows = others ?? [];
-          const consumed = rows.some((o) =>
-            ["paid", "processing", "completed", "delivered"].includes(o.status),
-          );
-          if (consumed || rows.length > 0) {
-            await supabaseAdmin
-              .from("orders")
-              .update({
-                status: consumed ? "duplicate_rrn" : order.status,
-                needs_review: true,
-                reason: consumed
-                  ? "This payment reference was already used for another order"
-                  : "Same payment reference appears on more than one order — manual review required",
-              })
-              .eq("id", order.id);
-            await finish(consumed ? "duplicate" : "review", "RRN already present on another order");
-            return new Response("ok", { status: 200 });
-          }
-        }
-
-        await supabaseAdmin
-          .from("orders")
-          .update({
-            status: "paid",
-            verified_at: new Date().toISOString(),
-            payment_method: "fatui_pay",
-            ...(reference ? { utr: reference } : {}),
-          })
-          .eq("id", order.id);
 
         let fulfilStatus = "skipped";
         try {

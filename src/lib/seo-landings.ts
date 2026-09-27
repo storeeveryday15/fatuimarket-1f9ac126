@@ -98,7 +98,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     ],
     safety: [
       "We never ask for your Moonton account password, email OTP, or 2FA code.",
-      "All payments are processed through Razorpay with 3D Secure and bank-grade encryption.",
+      "Payments use secure UPI with server-side UTR/RRN verification.",
       "Every order has a unique FM-XXXXXX tracking code — trackable anytime on our order page.",
       "If a top-up cannot be delivered we issue a full refund automatically.",
     ],
@@ -174,7 +174,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     ],
     safety: [
       "Zero password sharing — your HoYoverse account stays fully under your control.",
-      "Payments processed through Razorpay with 3D-Secure enforced.",
+      "Payments use secure UPI with server-side verification.",
       "Automatic refund if a top-up cannot be completed.",
       "24/7 WhatsApp support for order tracking and edge cases.",
     ],
@@ -248,7 +248,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     ],
     safety: [
       "We never request Kuro Games account credentials.",
-      "3D-Secure payment gateway (Razorpay) — no card data is stored on our servers.",
+      "Secure UPI verification — no banking credentials are stored on our servers.",
       "Refund guarantee if delivery is not possible.",
       "WhatsApp support 24/7 for stuck orders.",
     ],
@@ -313,7 +313,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     ],
     safety: [
       "Password-free — we only need your Character ID.",
-      "Secure Razorpay checkout with 3D-Secure.",
+      "Secure UPI checkout with automatic verification.",
       "Automatic refunds when a top-up cannot be delivered.",
       "24/7 support on WhatsApp.",
     ],
@@ -380,7 +380,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     ],
     safety: [
       "Only your Player ID is required — never your password.",
-      "Razorpay checkout with bank-grade security.",
+      "Secure UPI checkout with server-side verification.",
       "Refund policy backed by every order.",
       "24/7 chat support via WhatsApp.",
     ],
@@ -442,7 +442,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     ],
     safety: [
       "Password-free top-ups — we only ask for your Player ID.",
-      "Secure Razorpay payments with 3D-Secure.",
+      "Secure UPI payments with automatic verification.",
       "Full refunds if delivery fails.",
       "WhatsApp support around the clock.",
     ],
@@ -508,7 +508,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     ],
     safety: [
       "We never ask for account passwords or verification codes.",
-      "Payments via Razorpay with 3D-Secure enforced.",
+      "Payments via UPI with server-side verification.",
       "Auto-refund on any failed delivery.",
       "WhatsApp support 24/7.",
     ],
@@ -562,13 +562,13 @@ export const SEO_LANDINGS: SeoLanding[] = [
     buyingGuide: [
       "Choose your Steam Wallet denomination.",
       "Enter your email — the code is delivered here.",
-      "Complete payment in INR through Razorpay.",
+      "Complete payment in INR through UPI.",
       "Check your inbox — the code arrives within minutes.",
       "Redeem on Steam and start shopping.",
     ],
     safety: [
       "Codes are unused and delivered directly to you.",
-      "Encrypted checkout via Razorpay.",
+      "Secure checkout with automatic UTR/RRN verification.",
       "Instant refund if a code fails to redeem.",
       "Support available 24/7 via WhatsApp.",
     ],
@@ -628,7 +628,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     buyingGuide: [
       "Pick your Google Play code denomination.",
       "Enter the email where you want the code sent.",
-      "Pay in INR via Razorpay.",
+      "Pay in INR via UPI.",
       "The code lands in your inbox within minutes.",
       "Redeem it on the Play Store.",
     ],
@@ -690,13 +690,13 @@ export const SEO_LANDINGS: SeoLanding[] = [
     buyingGuide: [
       "Choose your Razer Gold denomination.",
       "Enter the email where you'd like the code delivered.",
-      "Pay securely in INR through Razorpay.",
+      "Pay securely in INR through UPI.",
       "Receive your PIN in your inbox within minutes.",
       "Redeem at razer.com/gold or in-app on supported games.",
     ],
     safety: [
       "Codes are original, unused and delivered to you only.",
-      "Razorpay 3D-Secure payments.",
+      "Secure UPI payment verification.",
       "Refund if redemption fails.",
       "24/7 WhatsApp support.",
     ],
@@ -757,7 +757,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     ],
     safety: [
       "We never ask for your Roblox password.",
-      "Razorpay-secured payments with 3D-Secure.",
+      "Secure UPI payments with server-side verification.",
       "Refund if delivery is not possible.",
       "WhatsApp support 24/7.",
     ],
@@ -824,7 +824,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     ],
     safety: [
       "Password-free top-ups; only your User ID and Zone ID are needed.",
-      "Razorpay checkout with 3D-Secure.",
+      "Secure UPI checkout with automatic verification.",
       "Auto-refund on delivery failure.",
       "WhatsApp support 24/7.",
     ],
@@ -885,7 +885,7 @@ export const SEO_LANDINGS: SeoLanding[] = [
     ],
     safety: [
       "Password-free — we only ask for your MLBB IDs.",
-      "Razorpay checkout, 3D-Secure enforced.",
+      "Secure UPI checkout with server-side verification.",
       "Refunds on failed deliveries.",
       "WhatsApp support 24/7.",
     ],
