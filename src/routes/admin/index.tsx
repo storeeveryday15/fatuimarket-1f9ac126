@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MessageSquare, Users, Package, Search, Eye, Star, Trash2 } from "lucide-react";
+import { MessageSquare, Users, Package, Search, Eye, Star, Trash2, Send } from "lucide-react";
 import { notifyOrder } from "@/lib/notify-order";
 import { useServerFn } from "@tanstack/react-start";
 import { pollSupplierOrders, fulfilOrderWithSupplier } from "@/lib/flashtopup.functions";
@@ -42,7 +42,6 @@ type Order = {
   currency: string;
   payment_method: string | null;
   utr: string | null;
-  screenshot_url: string | null;
   admin_notes: string | null;
   completed_at: string | null;
   rejected_at?: string | null;
@@ -85,7 +84,6 @@ function AdminPage() {
   const [reviewFilter, setReviewFilter] = useState<"all" | "pending" | "approved" | "rejected">("pending");
   const [search, setSearch] = useState("");
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [shotUrl, setShotUrl] = useState<string | null>(null);
   const load = async () => {
     const [{ data: o }, { data: s }, { data: p }, { data: r }] = await Promise.all([
       supabase.from("orders").select("*").order("created_at", { ascending: false }),
@@ -110,11 +108,6 @@ function AdminPage() {
 
   const openOrder = async (o: Order) => {
     setActiveOrder(o);
-    setShotUrl(null);
-    if (o.screenshot_url) {
-      const { data } = await supabase.storage.from("payment-screenshots").createSignedUrl(o.screenshot_url, 600);
-      setShotUrl(data?.signedUrl ?? null);
-    }
   };
 
   const updateOrder = async (id: string, patch: Partial<Order>, event?: "processing" | "completed" | "rejected") => {
@@ -301,7 +294,7 @@ function AdminPage() {
       )}
 
       {activeOrder && (
-        <OrderDrawer order={activeOrder} screenshotUrl={shotUrl} onClose={() => setActiveOrder(null)} onAction={updateOrder} />
+        <OrderDrawer order={activeOrder} onClose={() => setActiveOrder(null)} onAction={updateOrder} />
       )}
     </div>
   );
@@ -342,7 +335,7 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
       <table className="w-full text-sm">
         <thead className="bg-secondary/50 text-left text-xs uppercase tracking-wider text-muted-foreground">
           <tr>
-            <th className="px-3 py-3">Order</th><th className="px-3 py-3">Customer</th><th className="px-3 py-3">Product</th><th className="px-3 py-3">Server / Region</th><th className="px-3 py-3">Amount</th><th className="px-3 py-3">Proof</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Actions</th>
+            <th className="px-3 py-3">Order</th><th className="px-3 py-3">Customer</th><th className="px-3 py-3">Product</th><th className="px-3 py-3">Server / Region</th><th className="px-3 py-3">Amount</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -375,9 +368,6 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
                 {o.utr && <div className="text-[11px] font-mono text-muted-foreground">UTR: {o.utr}</div>}
               </td>
               <td className="px-3 py-3">
-                {o.screenshot_url ? <span className="rounded bg-success/15 px-2 py-1 text-[11px] font-semibold text-success">✓ uploaded</span> : <span className="text-[11px] text-muted-foreground">none</span>}
-              </td>
-              <td className="px-3 py-3">
                 <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_STYLES[o.status] ?? "bg-secondary"}`}>{o.status.replace(/_/g, " ")}</span>
               </td>
               <td className="px-3 py-3">
@@ -390,16 +380,15 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
               </td>
             </tr>
           ))}
-          {orders.length === 0 && <tr><td colSpan={8} className="px-3 py-10 text-center text-sm text-muted-foreground">No orders.</td></tr>}
+          {orders.length === 0 && <tr><td colSpan={7} className="px-3 py-10 text-center text-sm text-muted-foreground">No orders.</td></tr>}
         </tbody>
       </table>
     </div>
   );
 }
 
-function OrderDrawer({ order, screenshotUrl, onClose, onAction }: {
+function OrderDrawer({ order, onClose, onAction }: {
   order: Order;
-  screenshotUrl: string | null;
   onClose: () => void;
   onAction: (id: string, patch: Partial<Order>, event?: "processing" | "completed" | "rejected") => void;
 }) {
@@ -428,14 +417,6 @@ function OrderDrawer({ order, screenshotUrl, onClose, onAction }: {
           <KV k="Amount" v={order.currency === "INR" ? `₹${order.amount_inr}` : `$${order.amount_usd}`} />
           <KV k="UTR" v={order.utr ?? "—"} />
           {order.completed_at && <KV k="Completed" v={new Date(order.completed_at).toLocaleString()} />}
-        </div>
-        <div className="mt-4">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Payment screenshot</div>
-          {screenshotUrl ? (
-            <a href={screenshotUrl} target="_blank" rel="noreferrer">
-              <img src={screenshotUrl} alt="Payment screenshot" className="mt-2 max-h-80 w-full rounded-lg border border-border object-contain" />
-            </a>
-          ) : <div className="mt-2 rounded-lg border border-dashed border-border p-6 text-center text-xs text-muted-foreground">No screenshot uploaded yet</div>}
         </div>
         <div className="mt-4">
           <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Admin notes</label>
@@ -482,6 +463,17 @@ function ReviewsAdmin({ reviews, onChange, onDelete }: {
   onChange: (id: string, patch: Partial<Review>) => void;
   onDelete: (id: string) => void;
 }) {
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const reply = async (reviewId: string) => {
+    const body = (drafts[reviewId] ?? "").trim();
+    if (!body) return;
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return toast.error("Sign in again to reply");
+    const { error } = await supabase.from("review_replies").insert({ review_id: reviewId, user_id: userData.user.id, body });
+    if (error) return toast.error(error.message);
+    setDrafts((current) => ({ ...current, [reviewId]: "" }));
+    toast.success("Official seller reply posted");
+  };
   return (
     <div className="mt-4 overflow-x-auto rounded-xl border border-border">
       <table className="w-full text-sm">
@@ -510,7 +502,7 @@ function ReviewsAdmin({ reviews, onChange, onDelete }: {
                   ))}
                 </div>
               </td>
-              <td className="px-3 py-3 max-w-md"><div className="line-clamp-3 whitespace-pre-wrap">{r.review}</div></td>
+              <td className="max-w-md px-3 py-3"><div className="line-clamp-3 whitespace-pre-wrap">{r.review}</div><div className="mt-2 flex gap-1"><input value={drafts[r.id] ?? ""} onChange={(event) => setDrafts((current) => ({ ...current, [r.id]: event.target.value }))} maxLength={1000} placeholder="Reply as Fatui Market Seller" className="min-w-0 flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs" /><button onClick={() => void reply(r.id)} aria-label="Post seller reply" className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground"><Send className="h-3 w-3" /></button></div></td>
               <td className="px-3 py-3 text-xs text-muted-foreground">{r.product_slug ?? "site"}</td>
               <td className="px-3 py-3">
                 <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${r.status === "approved" ? "bg-success/15 text-success" : r.status === "rejected" ? "bg-destructive/15 text-destructive" : "bg-warning/15 text-warning"}`}>{r.status}</span>
