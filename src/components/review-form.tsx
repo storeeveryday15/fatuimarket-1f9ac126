@@ -60,7 +60,7 @@ export function ReviewForm({ productSlug, onSubmitted }: { productSlug?: string;
     });
     setSubmitting(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Thanks! Your review is pending admin approval.");
+    toast.success("Thanks! Your review is now live.");
     setFullName(""); setRating(0); setReview("");
     onSubmitted?.();
   };

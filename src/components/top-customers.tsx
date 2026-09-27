@@ -9,6 +9,7 @@ type Row = {
   total_orders: number;
   total_spent_inr: number;
   level: "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond";
+  review_count: number;
 };
 
 const LEVEL_STYLES: Record<Row["level"], { chip: string; badge: string; emoji: string }> = {
@@ -39,7 +40,7 @@ export function TopCustomers() {
   const [limit, setLimit] = useState(10);
 
   const fetchRows = async (l: number) => {
-    const { data } = await supabase.rpc("get_leaderboard", { _limit: l });
+    const { data } = await supabase.rpc("get_leaderboard_v2", { _limit: l });
     setRows((data ?? []) as Row[]);
   };
 
@@ -94,7 +95,7 @@ export function TopCustomers() {
                       <span className="text-lg" aria-label={r.country ?? "unknown"}>{flagEmoji(r.country)}</span>
                     </div>
                     <div className="mt-0.5 text-xs text-muted-foreground">
-                      🛍 {r.total_orders} orders
+                      🛍 {r.total_orders} orders · ★ {r.review_count} reviews
                     </div>
                   </div>
                   <div className="text-right">

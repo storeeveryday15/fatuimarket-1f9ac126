@@ -174,7 +174,7 @@ function SeoLandingPage() {
         </div>
         <div>
           <div className="text-sm font-semibold text-foreground">🔒 Secure payments</div>
-          <p className="text-xs text-muted-foreground">Razorpay with 3D-Secure.</p>
+          <p className="text-xs text-muted-foreground">Verified UPI payment.</p>
         </div>
         <div>
           <div className="text-sm font-semibold text-foreground">💬 24/7 support</div>
@@ -278,7 +278,7 @@ function SeoLandingPage() {
       <section className="rounded-xl border border-primary/30 bg-primary/5 p-5 text-center">
         <h2 className="text-lg font-semibold">Ready to order?</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Instant delivery, secure Razorpay checkout, real humans on WhatsApp 24/7.
+          Instant delivery, secure payment verification, real humans on WhatsApp 24/7.
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           {product && (

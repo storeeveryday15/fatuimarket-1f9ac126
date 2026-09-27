@@ -31,18 +31,18 @@ to a few hours; the order page always shows the current status.
 
 IS IT SAFE
 Yes. We never ask for your game account password, OTP or login credentials — only
-the public player/user ID and server. Payments run through Razorpay (cards, UPI,
-netbanking) or direct UPI. We do not store card details.
+the public player/user ID and server. Payments use direct UPI with secure
+server-side UTR/RRN verification. We do not store banking credentials.
 
 PAYMENT METHODS
-- India: UPI (QR or UPI ID), cards, netbanking and wallets through Razorpay.
-- International: card payments in USD.
+- India: UPI (QR or UPI ID) with automatic UTR/RRN verification.
+- International availability is shown at checkout.
 - Fatui Wallet balance can be used on any order, alone or combined with another
   method.
 
 WALLET
 Every signed-in customer has a Fatui Wallet at /wallet. You can top it up with
-any payment method and spend it instantly on future orders. Completed orders
+UPI and spend it instantly on future orders. Completed orders
 earn automatic cashback that lands in the wallet. Wallet balance is store credit
 and is not withdrawable to a bank account.
 
