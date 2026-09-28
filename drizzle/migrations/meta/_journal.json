@@ -15,6 +15,13 @@
       "when": 1790474181137,
       "tag": "0001_tighten_review_reply_privacy_and_order_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790577263479,
+      "tag": "0002_restrict_payment_and_review_grants",
+      "breakpoints": true
     }
   ]
 }
