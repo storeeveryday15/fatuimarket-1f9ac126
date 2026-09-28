@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 // Notify owner about an order event via Telegram + Email (Resend).
-// Events: created | screenshot_uploaded | processing | completed | rejected
+// Events: created | payment_submitted | processing | completed | rejected
 // Authentication: called from server-side after sensitive ops or
 // fire-and-forget from client after creating a row that the caller owns.
 
-type EventType = "created" | "screenshot_uploaded" | "processing" | "completed" | "rejected";
+type EventType = "created" | "payment_submitted" | "processing" | "completed" | "rejected";
 
 const SUBJECTS: Record<EventType, string> = {
   created: "New order received",
-  screenshot_uploaded: "Payment screenshot uploaded",
+  payment_submitted: "Payment reference submitted",
   processing: "Order is being processed",
   completed: "Order completed",
   rejected: "Order rejected",
@@ -17,7 +17,7 @@ const SUBJECTS: Record<EventType, string> = {
 
 const CUSTOMER_INTRO: Record<EventType, string> = {
   created: "Thanks for your order at Fatui Market! We've received it and you'll get an update shortly.",
-  screenshot_uploaded: "Thanks for uploading your payment screenshot. Our team will verify and process your order soon.",
+  payment_submitted: "Thanks for submitting your payment reference. Verification will update your order automatically.",
   processing: "Good news — your order is now being processed and will be delivered shortly.",
   completed: "Your order is complete. Enjoy your top-up!",
   rejected: "Your order was rejected. Please review the admin notes on your dashboard or contact support.",

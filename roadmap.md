@@ -4,4 +4,4 @@
 - [x] Migrate wallet top-ups to Fatui Pay with atomic shared RRN consumption
 - [x] Auto-publish secure reviews and add customer/store replies
 - [x] Make the privacy-safe leaderboard reliable for guests and show review counts
-- [ ] Run payment, wallet, review, reply, leaderboard, privacy, and responsive tests
+- [x] Run payment, wallet, review, reply, leaderboard, privacy, and responsive tests
