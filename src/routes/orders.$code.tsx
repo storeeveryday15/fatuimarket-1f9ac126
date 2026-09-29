@@ -195,7 +195,7 @@ function OrderPage() {
       const state = await sendUtr({ data: { order_code: order.order_code, utr: utr.trim() } });
       void notifyOrder(order.order_code, "processing");
       toast.success(
-        state.payment_state === "verified" ? "✅ Payment Verified" : "Reference received — verifying automatically",
+        state.payment_state === "verified" ? "✅ Payment Verified" : "UTR accepted by Fatui Pay — verifying automatically",
       );
       setUtr("");
       await fetchOrder();
