@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFatuiPayUtrPayload, normalizeUtr } from "@/lib/fatui-pay-submit";
+import { buildFatuiPayUtrPayload, normalizeUtr } from "../lib/fatui-pay-submit";
 
 const order = {
   order_code: "FM-ABC123",
