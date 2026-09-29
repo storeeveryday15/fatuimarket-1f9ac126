@@ -9,6 +9,7 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { buildFatuiPayUtrPayload, normalizeUtr } from "@/lib/fatui-pay-submit";
 
 /** Checkout window (matches the visible countdown). */
 export const CHECKOUT_WINDOW_MS = 5 * 60 * 1000;
@@ -53,10 +54,17 @@ type OrderRow = {
   reason: string | null;
   delivery_details: string | null;
   supplier_status: string | null;
+  user_id: string | null;
+  customer_email: string | null;
+  customer_contact: string | null;
+  player_name: string | null;
+  product_name: string;
+  tier_label: string;
+  quantity: number;
 };
 
 const ORDER_COLUMNS =
-  "id, order_code, status, utr, amount_inr, amount_usd, currency, expires_at, needs_review, reason, delivery_details, supplier_status";
+  "id, order_code, status, utr, amount_inr, amount_usd, currency, expires_at, needs_review, reason, delivery_details, supplier_status, user_id, customer_email, customer_contact, player_name, product_name, tier_label, quantity";
 
 export function paymentStateFor(status: string): OrderPaymentState["payment_state"] {
   switch (status) {
@@ -156,7 +164,7 @@ export const submitOrderUtr = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { order_code: string; utr: string }) => {
     const code = String(input?.order_code ?? "").trim();
-    const utr = String(input?.utr ?? "").trim();
+    const utr = normalizeUtr(String(input?.utr ?? ""));
     if (!code) throw new Error("Order code is required");
     if (!/^[A-Za-z0-9]{6,32}$/.test(utr)) throw new Error("Enter a valid UTR / RRN (6–32 letters or digits)");
     return { order_code: code, utr };
@@ -191,48 +199,74 @@ export const submitOrderUtr = createServerFn({ method: "POST" })
       throw new Error("This payment reference has already been used for another order");
     }
 
+    // Retain the normalized reference for a safe retry, but do not claim that
+    // Fatui Pay accepted it until the provider returns a successful response.
     const { error: updateError } = await supabaseAdmin
       .from("orders")
       .update({
         utr: data.utr,
-        utr_submitted_at: new Date().toISOString(),
-        status: "pending_verification",
         needs_review: (clash ?? []).length > 0,
       })
       .eq("id", order.id);
     if (updateError) throw new Error("Could not save your payment reference");
 
-    let forwarded = false;
     const apiKey = process.env["FATUI_PAY_API_KEY"];
     if (!apiKey) {
       console.error("[fatui-pay] submit-utr skipped: API key is not configured");
-    } else {
-      try {
-        const res = await fetch(FATUI_PAY_SUBMIT_URL, {
-          method: "POST",
-          headers: { "content-type": "application/json", "x-api-key": apiKey },
-          body: JSON.stringify({
-            order_code: order.order_code,
-            amount: amountOf(order),
-            currency: order.currency,
-            utr: data.utr,
-          }),
-        });
-        forwarded = res.ok;
-        if (!res.ok) {
-          console.warn("[fatui-pay] submit-utr rejected", {
-            order_code: order.order_code,
-            http_status: res.status,
-          });
-        }
-      } catch (err) {
-        console.error("[fatui-pay] submit-utr request failed", {
-          order_code: order.order_code,
-          message: err instanceof Error ? err.message : "unknown error",
-        });
-      }
+      throw new Error("Payment verification is temporarily unavailable. Your UTR was saved — please retry shortly.");
     }
 
+    const { data: customer } = order.user_id
+      ? await supabaseAdmin.from("profiles").select("display_name, contact").eq("id", order.user_id).maybeSingle()
+      : { data: null };
+    const payload = buildFatuiPayUtrPayload(order, customer, data.utr);
+
+    let res: Response;
+    try {
+      res = await fetch(FATUI_PAY_SUBMIT_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-api-key": apiKey },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error("[fatui-pay] submit-utr request failed", {
+        order_id: order.order_code,
+        amount: payload.amount,
+        message: err instanceof Error ? err.message : "network error",
+      });
+      throw new Error("Fatui Pay could not be reached. Your UTR was saved — please retry.");
+    }
+
+    if (!res.ok) {
+      let providerMessage = "request rejected";
+      try {
+        const responseBody = await res.json() as { error?: string | { message?: string }; message?: string };
+        providerMessage = typeof responseBody.error === "string"
+          ? responseBody.error
+          : responseBody.error?.message || responseBody.message || providerMessage;
+      } catch {
+        // Provider returned a non-JSON error; keep the generic safe message.
+      }
+      console.warn("[fatui-pay] submit-utr rejected", {
+        order_id: order.order_code,
+        amount: payload.amount,
+        http_status: res.status,
+        message: providerMessage,
+      });
+      throw new Error(`Fatui Pay rejected this submission (${res.status}). Your UTR was saved — please retry.`);
+    }
+
+    const submittedAt = new Date().toISOString();
+    const { error: acceptedUpdateError } = await supabaseAdmin
+      .from("orders")
+      .update({
+        utr: data.utr,
+        utr_submitted_at: submittedAt,
+        status: "pending_verification",
+      })
+      .eq("id", order.id);
+    if (acceptedUpdateError) throw new Error("Fatui Pay accepted the UTR, but the order status could not be refreshed. Please check status shortly.");
+
     const refreshed: OrderRow = { ...order, utr: data.utr, status: "pending_verification" };
-    return { ...toState(refreshed), forwarded };
+    return { ...toState(refreshed), forwarded: true };
   });
