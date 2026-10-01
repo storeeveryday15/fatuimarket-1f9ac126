@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, useRouter, type ErrorComponentProps } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { BarChart3, Bell, ImagePlus, Megaphone, Send, X } from "lucide-react";
@@ -377,14 +377,15 @@ function Composer() {
   );
 }
 
-function NotificationsError({ error, reset }: { error: Error; reset: () => void }) {
+function NotificationsError({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   console.error("[/admin/notifications] render error:", error);
+  const message = error instanceof Error ? error.message : "An unexpected error occurred.";
   return (
     <div className="surface-card flex flex-col items-center gap-3 p-10 text-center">
       <Bell className="h-8 w-8 text-muted-foreground" />
       <div className="text-sm font-semibold">Notifications couldn't load</div>
-      <p className="max-w-md text-xs text-muted-foreground">{error.message}</p>
+      <p className="max-w-md text-xs text-muted-foreground">{message}</p>
       <button
         onClick={() => {
           void router.invalidate();
