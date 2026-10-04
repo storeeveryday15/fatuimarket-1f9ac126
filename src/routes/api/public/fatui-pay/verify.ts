@@ -59,8 +59,31 @@ export const Route = createFileRoute("/api/public/fatui-pay/verify")({
           payload: payload as never,
         });
         if (dupeError) {
+          // A prior delivery may have been safely recorded but not processed
+          // (for example, a transient parser/database failure). Atomically
+          // reclaim only retryable rows; completed/in-flight events stay no-ops.
+          const { data: reclaimed } = await supabaseAdmin
+            .from("payment_webhook_events")
+            .update({
+              status: "received",
+              event_type: event.eventType || null,
+              order_code: event.orderCode,
+              payment_reference: event.paymentReference,
+              payload: payload as never,
+              error_message: null,
+              processed_at: null,
+            })
+            .eq("provider", "fatui_pay")
+            .eq("event_id", event.eventId)
+            .in("status", ["ignored", "error", "unmatched"])
+            .select("event_id")
+            .maybeSingle();
+          if (reclaimed) {
+            console.info("[fatui-pay] retrying previously unprocessed event", { event_id: event.eventId });
+          } else {
           console.info("[fatui-pay] duplicate event ignored", { event_id: event.eventId });
           return new Response("ok", { status: 200 });
+          }
         }
 
         const finish = async (status: string, message?: string) => {
