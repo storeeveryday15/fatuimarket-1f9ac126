@@ -53,10 +53,17 @@ export function parsePaymentEvent(payload: Record<string, any>): VerifiedPayment
   };
   return {
     eventId: str(payload?.event_id ?? payload?.eventId ?? body?.event_id ?? body?.id) ?? "",
-    eventType: (str(payload?.event ?? payload?.type ?? body?.event) ?? "").toLowerCase(),
+    eventType: (str(payload?.event_type ?? payload?.event ?? payload?.type ?? body?.event_type ?? body?.event) ?? "").toLowerCase(),
     paymentStatus: (str(body?.status ?? body?.payment_status) ?? "").toLowerCase(),
-    orderCode: str(body?.order_code ?? body?.orderCode ?? body?.reference ?? body?.reference_id),
-    paymentReference: str(body?.payment_id ?? body?.paymentId ?? body?.transaction_id ?? body?.utr),
+    orderCode: str(
+      body?.external_order_id ??
+      body?.order_code ??
+      body?.orderCode ??
+      body?.reference ??
+      body?.reference_id ??
+      payload?.order_id,
+    ),
+    paymentReference: str(body?.rrn ?? body?.payment_id ?? body?.paymentId ?? body?.transaction_id ?? body?.utr),
     amount: body?.amount != null && !Number.isNaN(Number(body.amount)) ? Number(body.amount) : null,
     currency: str(body?.currency)?.toUpperCase() ?? null,
   };
