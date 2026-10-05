@@ -65,13 +65,15 @@ export async function fulfilOrder(orderCode: string): Promise<FulfilResult> {
     console.error("[supplier] service resolution failed", { orderCode, message: serviceError.message });
     return { ok: false, status: "error", skipped: true, message: "Supplier mapping could not be resolved" };
   }
-  const candidates = (services ?? []).map((service: any) => ({
-    serviceCode: service.service_code,
-    supplierKey: service.supplier_products.supplier_key,
-    minQuantity: service.min_quantity,
-    maxQuantity: service.max_quantity,
-    sortOrder: service.sort_order ?? 0,
-  }));
+  const candidates = (services ?? [])
+    .map((service: any) => ({
+      serviceCode: service.service_code,
+      supplierKey: service.supplier_products.supplier_key,
+      minQuantity: service.min_quantity,
+      maxQuantity: service.max_quantity,
+      sortOrder: service.sort_order ?? 0,
+    }))
+    .filter((service) => !existing || service.supplierKey === existing.supplier_key);
   const service = selectSupplierService(candidates, getSupportedSupplierKeys());
   if (!service) {
     console.error("[supplier] no supported active mapping", { orderCode, catalogProductId: order.catalog_product_id });
