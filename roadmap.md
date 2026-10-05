@@ -8,3 +8,7 @@
 - [x] Repair and safely verify the production Fatui Pay UTR submission contract
 - [x] Enable and validate the production Fatui Pay verified-payment webhook
 - [ ] Generalize supplier fulfillment for multiple providers without changing payments
+  - [x] Add provider identity and provider-scoped webhook idempotency
+  - [ ] Route fulfilment and polling through provider adapters
+  - [ ] Generalize supplier catalog ownership display
+  - [ ] Complete mock regressions and service-sync diagnosis

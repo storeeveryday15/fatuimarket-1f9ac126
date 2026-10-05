@@ -188,8 +188,7 @@ export const getCatalogOverview = createServerFn({ method: "GET" })
 
     const { data: games } = await context.supabase
       .from("supplier_products")
-      .select("id, product_code, slug, name, display_name, region, category, icon_url, active, enabled, featured, hidden, validation_code, updated_at")
-      .eq("supplier_key", "flashtopup")
+      .select("id, supplier_key, product_code, slug, name, display_name, region, category, icon_url, active, enabled, featured, hidden, validation_code, updated_at")
       .order("name", { ascending: true });
 
     const { data: services } = await context.supabase

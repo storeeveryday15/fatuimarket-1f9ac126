@@ -5,7 +5,8 @@
  * derived from the order code, so a retry can never create a duplicate.
  */
 
-import { createSupplierOrder, fetchOrderStatus, mapSupplierStatus } from "./flashtopup.server";
+import { selectSupplierService } from "./supplier-provider";
+import { getSupplierProvider, getSupportedSupplierKeys } from "./supplier-providers.server";
 
 export type FulfilResult = { ok: boolean; status: string; message?: string; skipped?: boolean };
 
@@ -43,7 +44,7 @@ export async function fulfilOrder(orderCode: string): Promise<FulfilResult> {
   // Already sent? Reuse the existing supplier order.
   const { data: existing } = await admin
     .from("supplier_orders")
-    .select("id, status, supplier_order_id, reference_id")
+    .select("id, status, supplier_order_id, reference_id, supplier_key")
     .eq("order_id", order.id)
     .maybeSingle();
   if (existing && existing.supplier_order_id) {
@@ -53,27 +54,47 @@ export async function fulfilOrder(orderCode: string): Promise<FulfilResult> {
   // Resolve the mapped supplier service.
   let serviceQuery = admin
     .from("supplier_services")
-    .select("service_code, min_quantity, max_quantity, active, catalog_product_id")
+    .select("service_code, min_quantity, max_quantity, sort_order, active, catalog_product_id, supplier_products!inner(supplier_key)")
     .eq("active", true)
-    .limit(1);
+    .eq("available", true);
   serviceQuery = order.catalog_product_id
     ? serviceQuery.eq("catalog_product_id", order.catalog_product_id)
     : serviceQuery.eq("catalog_product_id", "00000000-0000-0000-0000-000000000000");
-  const { data: services } = await serviceQuery;
-  const service = services?.[0];
-  if (!service) return { ok: false, status: "unmapped", skipped: true, message: "No supplier service mapped" };
+  const { data: services, error: serviceError } = await serviceQuery;
+  if (serviceError) {
+    console.error("[supplier] service resolution failed", { orderCode, message: serviceError.message });
+    return { ok: false, status: "error", skipped: true, message: "Supplier mapping could not be resolved" };
+  }
+  const candidates = (services ?? [])
+    .map((service: any) => ({
+      serviceCode: service.service_code,
+      supplierKey: service.supplier_products.supplier_key,
+      minQuantity: service.min_quantity,
+      maxQuantity: service.max_quantity,
+      sortOrder: service.sort_order ?? 0,
+    }))
+    .filter((service) => !existing || service.supplierKey === existing.supplier_key);
+  const service = selectSupplierService(candidates, getSupportedSupplierKeys());
+  if (!service) {
+    console.error("[supplier] no supported active mapping", { orderCode, catalogProductId: order.catalog_product_id });
+    return { ok: false, status: "unmapped", skipped: true, message: "No supported supplier service mapped" };
+  }
+
+  const provider = getSupplierProvider(service.supplierKey);
+  if (!provider) return { ok: false, status: "unsupported", skipped: true, message: "Supplier is not supported" };
 
   const uid = extractPlayerUid(order.game_id);
   if (!uid) return { ok: false, status: "invalid", message: "Order has no player ID" };
 
   const referenceId = existing?.reference_id ?? referenceIdFor(order.order_code);
-  const quantity = Math.min(Math.max(order.quantity ?? 1, service.min_quantity ?? 1), service.max_quantity ?? 999);
+  const quantity = Math.min(Math.max(order.quantity ?? 1, service.minQuantity ?? 1), service.maxQuantity ?? 999);
 
   if (!existing) {
     const { error: insertErr } = await admin.from("supplier_orders").insert({
       order_id: order.id,
-      service_code: service.service_code,
+      service_code: service.serviceCode,
       reference_id: referenceId,
+      supplier_key: service.supplierKey,
       status: "pending",
     });
     // A unique violation means another request is already fulfilling this order.
@@ -84,18 +105,18 @@ export async function fulfilOrder(orderCode: string): Promise<FulfilResult> {
   }
 
   try {
-    const result = await createSupplierOrder({
-      service_code: service.service_code,
-      reference_id: referenceId,
-      user_id: uid,
-      server_id: order.server_id,
+    const result = await provider.createOrder({
+      serviceCode: service.serviceCode,
+      referenceId,
+      userId: uid,
+      serverId: order.server_id,
       quantity,
     });
 
     await admin
       .from("supplier_orders")
       .update({
-        supplier_order_id: result.supplier_order_id,
+        supplier_order_id: result.supplierOrderId,
         status: result.status,
         last_response: result.raw as never,
         error_message: null,
@@ -106,7 +127,7 @@ export async function fulfilOrder(orderCode: string): Promise<FulfilResult> {
       .from("orders")
       .update({
         supplier_status: result.status,
-        supplier_order_id: result.supplier_order_id,
+        supplier_order_id: result.supplierOrderId,
         status: orderStatusFor(result.status, order.status),
       })
       .eq("id", order.id);
@@ -114,7 +135,7 @@ export async function fulfilOrder(orderCode: string): Promise<FulfilResult> {
     return { ok: true, status: result.status };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Supplier order failed";
-    console.error("[flashtopup] create order failed", { orderCode, message });
+    console.error("[supplier] create order failed", { orderCode, supplierKey: service.supplierKey, message });
     await admin
       .from("supplier_orders")
       .update({ status: "failed", error_message: message })
@@ -131,23 +152,26 @@ export async function refreshSupplierOrder(referenceId: string): Promise<{ statu
 
   const { data: row } = await admin
     .from("supplier_orders")
-    .select("id, order_id, reference_id, supplier_order_id, status")
+    .select("id, order_id, reference_id, supplier_order_id, supplier_key, status")
     .eq("reference_id", referenceId)
     .maybeSingle();
   if (!row) return { status: "unknown" };
   if (row.status === "completed" || row.status === "failed") return { status: row.status };
 
-  const res = await fetchOrderStatus({
-    reference_id: row.reference_id,
-    supplier_order_id: row.supplier_order_id,
+  const provider = getSupplierProvider(row.supplier_key);
+  if (!provider) return { status: "unsupported" };
+
+  const res = await provider.getOrderStatus({
+    referenceId: row.reference_id,
+    supplierOrderId: row.supplier_order_id,
   });
-  const status = mapSupplierStatus(res.status);
+  const status = provider.normalizeStatus(res.status);
 
   await admin
     .from("supplier_orders")
     .update({
       status,
-      supplier_order_id: res.supplier_order_id ?? row.supplier_order_id,
+      supplier_order_id: res.supplierOrderId ?? row.supplier_order_id,
       last_response: res.raw as never,
       ...(res.delivered ? { delivered_payload: res.delivered as never } : {}),
       ...(status === "failed" && res.message ? { error_message: res.message } : {}),
@@ -159,7 +183,7 @@ export async function refreshSupplierOrder(referenceId: string): Promise<{ statu
     .from("orders")
     .update({
       supplier_status: status,
-      supplier_order_id: res.supplier_order_id ?? row.supplier_order_id,
+      supplier_order_id: res.supplierOrderId ?? row.supplier_order_id,
       ...(res.delivered ? { delivery_details: formatDelivery(res.delivered) } : {}),
       status: orderStatusFor(status, order?.status ?? "processing"),
     })

@@ -16,8 +16,9 @@ export const Route = createFileRoute("/api/public/flashtopup/webhook")({
           request.headers.get("x-signature") ??
           request.headers.get("x-webhook-signature");
 
-        const { verifyWebhookSignature, mapSupplierStatus } = await import("@/lib/flashtopup.server");
-        if (!(await verifyWebhookSignature(rawBody, signature))) {
+        const { getSupplierProvider } = await import("@/lib/supplier-providers.server");
+        const provider = getSupplierProvider("flashtopup");
+        if (!provider?.verifyWebhook || !(await provider.verifyWebhook(rawBody, signature))) {
           return new Response("Invalid signature", { status: 401 });
         }
 
@@ -37,19 +38,20 @@ export const Route = createFileRoute("/api/public/flashtopup/webhook")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        // Dedupe: the unique event_id makes a replay a no-op.
+        // Dedupe is provider-scoped so two suppliers may safely reuse an event id.
         const { error: dupeError } = await supabaseAdmin
           .from("supplier_webhook_events")
-          .insert({ event_id: eventId, payload: payload as never });
+          .insert({ supplier_key: provider.key, event_id: eventId, payload: payload as never });
         if (dupeError) return new Response("ok", { status: 200 });
 
-        const status = mapSupplierStatus(body?.status ?? body?.order_status);
+        const status = provider.normalizeStatus(body?.status ?? body?.order_status);
         const delivered = body?.delivery ?? body?.codes ?? body?.sn ?? body?.serial ?? null;
         const supplierOrderId = body?.order_id ?? body?.orderId ?? null;
 
         const { data: supplierOrder } = await supabaseAdmin
           .from("supplier_orders")
           .select("id, order_id")
+          .eq("supplier_key", provider.key)
           .eq("reference_id", referenceId)
           .maybeSingle();
         if (!supplierOrder) return new Response("ok", { status: 200 });
