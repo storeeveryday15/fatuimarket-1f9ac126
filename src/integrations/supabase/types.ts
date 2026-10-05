@@ -1693,6 +1693,7 @@ export type Database = {
           reference_id: string
           service_code: string
           status: string
+          supplier_key: string
           supplier_order_id: string | null
           updated_at: string
         }
@@ -1706,6 +1707,7 @@ export type Database = {
           reference_id: string
           service_code: string
           status?: string
+          supplier_key?: string
           supplier_order_id?: string | null
           updated_at?: string
         }
@@ -1719,6 +1721,7 @@ export type Database = {
           reference_id?: string
           service_code?: string
           status?: string
+          supplier_key?: string
           supplier_order_id?: string | null
           updated_at?: string
         }
@@ -1958,18 +1961,21 @@ export type Database = {
           event_id: string
           id: string
           payload: Json
+          supplier_key: string
         }
         Insert: {
           created_at?: string
           event_id: string
           id?: string
           payload?: Json
+          supplier_key?: string
         }
         Update: {
           created_at?: string
           event_id?: string
           id?: string
           payload?: Json
+          supplier_key?: string
         }
         Relationships: []
       }
