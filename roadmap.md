@@ -7,3 +7,4 @@
 - [x] Run payment, wallet, review, reply, leaderboard, privacy, and responsive tests
 - [x] Repair and safely verify the production Fatui Pay UTR submission contract
 - [x] Enable and validate the production Fatui Pay verified-payment webhook
+- [ ] Generalize supplier fulfillment for multiple providers without changing payments
