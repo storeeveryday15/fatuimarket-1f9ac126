@@ -73,7 +73,7 @@ function SupplierCatalogPage() {
     mutationFn: () => syncServices({ data: undefined as never }),
     onSuccess: (res) => {
       toast.success(
-        `Synced ${res.services} services across ${res.products} products` +
+        `Synced ${res.services} FlashTopup services across ${res.products} products` +
           (res.failed ? ` · ${res.failed} failed` : ""),
       );
       void qc.invalidateQueries({ queryKey: ["supplier-services"] });
@@ -144,7 +144,7 @@ function SupplierCatalogPage() {
         <div>
           <h1 className="text-2xl font-extrabold">Supplier Catalog</h1>
           <p className="text-sm text-muted-foreground">
-            FlashTopup products · {rows.length} stored
+            All supplier products · {rows.length} stored
             {lastSync ? ` · last synced ${new Date(lastSync).toLocaleString()}` : ""}
           </p>
         </div>
@@ -212,7 +212,8 @@ function SupplierCatalogPage() {
               <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <th className="p-3 w-8" />
                 <th className="p-3">Icon</th>
-                <th className="p-3">Product</th>
+                 <th className="p-3">Provider</th>
+                 <th className="p-3">Product</th>
                 <th className="p-3">Code</th>
                 <th className="p-3">Type</th>
                 <th className="p-3">Validation code</th>
@@ -247,7 +248,8 @@ function SupplierCatalogPage() {
                       <div className="h-9 w-9 rounded-lg bg-secondary" />
                     )}
                   </td>
-                  <td className="p-3 font-semibold">
+                   <td className="p-3 text-xs font-semibold uppercase text-muted-foreground">{r.supplier_key}</td>
+                   <td className="p-3 font-semibold">
                     {r.name}
                     {!r.active && <span className="ml-2 text-[10px] uppercase text-muted-foreground">inactive</span>}
                   </td>
@@ -274,7 +276,7 @@ function SupplierCatalogPage() {
                 </tr>
                 {expanded.has(r.id) && (
                   <tr className="border-b border-border/60 bg-background/40">
-                    <td colSpan={7} className="p-3">
+                     <td colSpan={8} className="p-3">
                       {(servicesByProduct.get(r.id) ?? []).length === 0 ? (
                         <p className="px-2 py-3 text-xs text-muted-foreground">
                           No services synced for this product yet.
@@ -283,7 +285,8 @@ function SupplierCatalogPage() {
                         <table className="w-full text-xs">
                           <thead>
                             <tr className="text-left uppercase tracking-wider text-muted-foreground">
-                              <th className="p-2">Service</th>
+                               <th className="p-2">Provider</th>
+                               <th className="p-2">Service</th>
                               <th className="p-2">Code</th>
                               <th className="p-2">Price</th>
                               <th className="p-2">Qty</th>
@@ -294,7 +297,8 @@ function SupplierCatalogPage() {
                           <tbody>
                             {(servicesByProduct.get(r.id) ?? []).map((svc) => (
                               <tr key={svc.id} className={svc.active ? "" : "opacity-50"}>
-                                <td className="p-2 font-semibold">{svc.service_name}</td>
+                                 <td className="p-2 font-semibold uppercase text-muted-foreground">{svc.supplier_key}</td>
+                                 <td className="p-2 font-semibold">{svc.service_name}</td>
                                 <td className="p-2 font-mono">{svc.service_code}</td>
                                 <td className="p-2">
                                   {svc.supplier_price != null ? `${svc.currency ?? ""} ${svc.supplier_price}` : "—"}

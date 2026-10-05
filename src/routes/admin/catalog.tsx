@@ -99,7 +99,7 @@ function CatalogPage() {
           <div>
             <h1 className="text-xl font-bold">API Catalog</h1>
             <p className="text-sm text-muted-foreground">
-              FlashTopup is the source of truth for games, packages and prices.
+              Supplier products, packages and prices with provider ownership.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -274,7 +274,8 @@ function CatalogPage() {
           <table className="w-full min-w-[820px] text-sm">
             <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="px-2 py-2">Game</th>
+                 <th className="px-2 py-2">Provider</th>
+                 <th className="px-2 py-2">Game</th>
                 <th className="px-2 py-2">Region</th>
                 <th className="px-2 py-2">Category</th>
                 <th className="px-2 py-2">Packages</th>
@@ -286,7 +287,8 @@ function CatalogPage() {
             <tbody>
               {games.map((g: any) => (
                 <tr key={g.id} className="border-t border-border/60">
-                  <td className="px-2 py-2 font-semibold">
+                   <td className="px-2 py-2 text-xs font-semibold uppercase text-muted-foreground">{g.supplier_key}</td>
+                   <td className="px-2 py-2 font-semibold">
                     {g.display_name || g.name}
                     {!g.active && <span className="ml-2 text-xs text-muted-foreground">(removed upstream)</span>}
                   </td>
@@ -325,7 +327,7 @@ function CatalogPage() {
               ))}
               {!games.length && (
                 <tr>
-                  <td colSpan={7} className="px-2 py-8 text-center text-muted-foreground">
+                   <td colSpan={8} className="px-2 py-8 text-center text-muted-foreground">
                     No games yet — run a sync to pull the supplier catalog.
                   </td>
                 </tr>
