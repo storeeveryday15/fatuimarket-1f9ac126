@@ -93,11 +93,16 @@ export const listSupplierServices = createServerFn({ method: "GET" })
     const { data, error } = await context.supabase
       .from("supplier_services")
       .select(
-        "id,supplier_product_id,service_code,service_name,supplier_price,currency,min_quantity,max_quantity,validation_code,input_fields,requires_validation,active,catalog_product_id",
+        "id,supplier_product_id,service_code,service_name,supplier_price,currency,min_quantity,max_quantity,validation_code,input_fields,requires_validation,active,catalog_product_id,supplier_products!inner(supplier_key)",
       )
       .order("service_name", { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((r) => ({ ...r, input_fields: toStringArray(r.input_fields) })) as Array<{
+    return (data ?? []).map((r: any) => ({
+      ...r,
+      supplier_key: r.supplier_products.supplier_key,
+      supplier_products: undefined,
+      input_fields: toStringArray(r.input_fields),
+    })) as Array<{
       id: string;
       supplier_product_id: string;
       service_code: string;
@@ -111,6 +116,7 @@ export const listSupplierServices = createServerFn({ method: "GET" })
       requires_validation: boolean;
       active: boolean;
       catalog_product_id: string | null;
+      supplier_key: string;
     }>;
   });
 
@@ -145,7 +151,7 @@ export const verifyPlayerId = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: service } = await context.supabase
       .from("supplier_services")
-      .select("validation_code, requires_validation, active, input_fields, service_code")
+      .select("validation_code, requires_validation, active, input_fields, service_code, supplier_products!inner(supplier_key)")
       .eq("catalog_product_id", data.catalogProductId)
       .eq("active", true)
       .limit(1)
@@ -166,11 +172,16 @@ export const verifyPlayerId = createServerFn({ method: "POST" })
       };
     }
 
-    const { checkPlayerId } = await import("./flashtopup.server");
-    const res = await checkPlayerId({
-      validation_code: service.validation_code,
-      user_id: data.userId,
-      server_id: data.serverId ?? null,
+    const { getSupplierProvider } = await import("./supplier-providers.server");
+    const provider = getSupplierProvider((service.supplier_products as { supplier_key: string }).supplier_key);
+    if (!provider?.checkId) {
+      return { required: true as const, verified: false as const, nickname: null, message: "Player verification is unavailable for this supplier." };
+    }
+    const res = (await provider.checkId({
+      validationCode: service.validation_code,
+      userId: data.userId,
+      serverId: data.serverId ?? null,
+    })) as Awaited<ReturnType<typeof import("./flashtopup.server")["checkPlayerId"]>>;
     });
     console.log("[check-id] verify", {
       catalogProductId: data.catalogProductId,
@@ -199,7 +210,7 @@ export const getServiceRequirement = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: service } = await context.supabase
       .from("supplier_services")
-      .select("requires_validation, validation_code, input_fields")
+      .select("requires_validation, validation_code, input_fields, supplier_products!inner(supplier_key)")
       .eq("catalog_product_id", data.catalogProductId)
       .eq("active", true)
       .limit(1)
@@ -260,12 +271,12 @@ export const listSupplierProducts = createServerFn({ method: "GET" })
 
     const { data, error } = await context.supabase
       .from("supplier_products")
-      .select("id,product_code,name,product_type,icon_url,validation_code,active,catalog_product_id,updated_at")
-      .eq("supplier_key", "flashtopup")
+    .select("id,supplier_key,product_code,name,product_type,icon_url,validation_code,active,catalog_product_id,updated_at")
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
     return (data ?? []) as Array<{
       id: string;
+      supplier_key: string;
       product_code: string;
       name: string;
       product_type: string | null;
