@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { selectSupplierService, type SupplierServiceCandidate } from "@/lib/supplier-provider";
-import { mapSupplierStatus } from "@/lib/flashtopup.server";
+import { selectSupplierService, type SupplierServiceCandidate } from "../lib/supplier-provider";
+import { mapSupplierStatus } from "../lib/flashtopup.server";
 
 const supported = new Set(["flashtopup", "future-provider"]);
 
