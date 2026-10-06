@@ -42,7 +42,8 @@ export const Route = createFileRoute("/api/public/flashtopup/webhook")({
         const { error: dupeError } = await supabaseAdmin
           .from("supplier_webhook_events")
           .insert({ supplier_key: provider.key, event_id: eventId, payload: payload as never });
-        if (dupeError) return new Response("ok", { status: 200 });
+        if (dupeError?.code === "23505") return new Response("ok", { status: 200 });
+        if (dupeError) return new Response("Webhook unavailable", { status: 503 });
 
         const status = provider.normalizeStatus(body?.status ?? body?.order_status);
         const delivered = body?.delivery ?? body?.codes ?? body?.sn ?? body?.serial ?? null;
