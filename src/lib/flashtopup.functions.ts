@@ -182,8 +182,8 @@ export const verifyPlayerId = createServerFn({ method: "POST" })
       userId: data.userId,
       serverId: data.serverId ?? null,
     })) as Awaited<ReturnType<typeof import("./flashtopup.server")["checkPlayerId"]>>;
-    });
     console.log("[check-id] verify", {
+      supplier_key: provider.key,
       catalogProductId: data.catalogProductId,
       service_code: service.service_code,
       validation_code: service.validation_code,
