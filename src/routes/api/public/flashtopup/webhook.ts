@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
  * FlashTopup delivery webhook.
  *
  * Public endpoint: the caller is authenticated purely by the HMAC signature
- * over the raw body. Duplicate deliveries are ignored via `event_id`.
+ * over the raw body. Duplicate deliveries are ignored per provider/event id.
  */
 export const Route = createFileRoute("/api/public/flashtopup/webhook")({
   server: {
@@ -31,7 +31,13 @@ export const Route = createFileRoute("/api/public/flashtopup/webhook")({
 
         const body = (payload?.data ?? payload) as Record<string, any>;
         const { isFreshSupplierWebhook } = await import("@/lib/supplier-provider");
-        if (!isFreshSupplierWebhook(payload?.sent_at ?? payload?.timestamp ?? body?.sent_at ?? body?.timestamp)) {
+        const webhookTimestamp =
+          request.headers.get("x-ft-timestamp") ??
+          payload?.sent_at ??
+          payload?.timestamp ??
+          body?.sent_at ??
+          body?.timestamp;
+        if (!isFreshSupplierWebhook(webhookTimestamp)) {
           return new Response("Stale webhook", { status: 401 });
         }
         const eventId = String(
