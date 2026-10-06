@@ -12,3 +12,4 @@
   - [x] Route fulfilment and polling through provider adapters
   - [x] Generalize supplier catalog ownership display
   - [x] Complete mock regressions and service-sync diagnosis
+- [ ] Run the temporary read-only production FlashTopup product-ID services diagnostic, then remove it

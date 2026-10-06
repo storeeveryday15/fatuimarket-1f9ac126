@@ -12,6 +12,7 @@ import {
   savePricingRule,
   deletePricingRule,
   getSupplierConnectivity,
+  diagnoseSupplierServicesByProductId,
 } from "@/lib/flashtopup-catalog.functions";
 
 export const Route = createFileRoute("/admin/catalog")({
@@ -38,12 +39,14 @@ function CatalogPage() {
   const saveRule = useServerFn(savePricingRule);
   const removeRule = useServerFn(deletePricingRule);
   const checkConnection = useServerFn(getSupplierConnectivity);
+  const diagnoseServicesByProductId = useServerFn(diagnoseSupplierServicesByProductId);
 
   const [data, setData] = useState<Overview | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [diag, setDiag] = useState<Awaited<ReturnType<typeof getSupplierConnectivity>> | null>(null);
+  const [servicesDiag, setServicesDiag] = useState<Awaited<ReturnType<typeof diagnoseSupplierServicesByProductId>> | null>(null);
   const [draft, setDraft] = useState({
     scope: "global" as "global" | "category" | "product",
     scope_value: "",
