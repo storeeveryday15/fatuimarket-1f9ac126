@@ -1,5 +1,5 @@
 /**
- * Automatic FlashTopup fulfilment (server-only).
+ * Provider-agnostic automatic supplier fulfilment (server-only).
  *
  * `fulfilOrder` is idempotent: the supplier order is keyed by a reference id
  * derived from the order code, so a retry can never create a duplicate.
@@ -77,6 +77,7 @@ export async function fulfilOrder(orderCode: string): Promise<FulfilResult> {
   const service = selectSupplierService(candidates, getSupportedSupplierKeys());
   if (!service) {
     console.error("[supplier] no supported active mapping", { orderCode, catalogProductId: order.catalog_product_id });
+    await admin.from("orders").update({ supplier_status: "unmapped", needs_review: true }).eq("id", order.id);
     return { ok: false, status: "unmapped", skipped: true, message: "No supported supplier service mapped" };
   }
 

@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
  * FlashTopup delivery webhook.
  *
  * Public endpoint: the caller is authenticated purely by the HMAC signature
- * over the raw body. Duplicate deliveries are ignored via `event_id`.
+ * over the raw body. Duplicate deliveries are ignored per provider/event id.
  */
 export const Route = createFileRoute("/api/public/flashtopup/webhook")({
   server: {
@@ -30,6 +30,16 @@ export const Route = createFileRoute("/api/public/flashtopup/webhook")({
         }
 
         const body = (payload?.data ?? payload) as Record<string, any>;
+        const { isFreshSupplierWebhook } = await import("@/lib/supplier-provider");
+        const webhookTimestamp =
+          request.headers.get("x-ft-timestamp") ??
+          payload?.sent_at ??
+          payload?.timestamp ??
+          body?.sent_at ??
+          body?.timestamp;
+        if (!isFreshSupplierWebhook(webhookTimestamp)) {
+          return new Response("Stale webhook", { status: 401 });
+        }
         const eventId = String(
           payload?.event_id ?? payload?.eventId ?? body?.event_id ?? body?.reference_id ?? "",
         ).trim();
@@ -42,7 +52,8 @@ export const Route = createFileRoute("/api/public/flashtopup/webhook")({
         const { error: dupeError } = await supabaseAdmin
           .from("supplier_webhook_events")
           .insert({ supplier_key: provider.key, event_id: eventId, payload: payload as never });
-        if (dupeError) return new Response("ok", { status: 200 });
+        if (dupeError?.code === "23505") return new Response("ok", { status: 200 });
+        if (dupeError) return new Response("Webhook unavailable", { status: 503 });
 
         const status = provider.normalizeStatus(body?.status ?? body?.order_status);
         const delivered = body?.delivery ?? body?.codes ?? body?.sn ?? body?.serial ?? null;

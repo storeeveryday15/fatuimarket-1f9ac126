@@ -156,7 +156,7 @@ function SupplierCatalogPage() {
           className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:border-foreground/30 disabled:opacity-60"
         >
           <Layers className={`h-4 w-4 ${servicesSync.isPending ? "animate-pulse" : ""}`} />
-          {servicesSync.isPending ? "Syncing services…" : "Sync Services"}
+          {servicesSync.isPending ? "Syncing FlashTopup services…" : "Sync FlashTopup Services"}
         </button>
         <button
           type="button"
@@ -165,7 +165,7 @@ function SupplierCatalogPage() {
           className="inline-flex items-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] disabled:opacity-60"
         >
           <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? "animate-spin" : ""}`} />
-          {syncMutation.isPending ? "Syncing…" : "Sync Products"}
+          {syncMutation.isPending ? "Syncing FlashTopup…" : "Sync FlashTopup Products"}
         </button>
         </div>
       </div>

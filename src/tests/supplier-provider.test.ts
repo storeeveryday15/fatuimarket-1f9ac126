@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { selectSupplierService, type SupplierServiceCandidate } from "@/lib/supplier-provider";
-import { mapSupplierStatus } from "@/lib/flashtopup.server";
+import {
+  isFreshSupplierWebhook,
+  selectSupplierService,
+  type SupplierServiceCandidate,
+} from "../lib/supplier-provider";
+import { mapSupplierStatus, verifyWebhookSignature } from "../lib/flashtopup.server";
 
 const supported = new Set(["flashtopup", "future-provider"]);
 
@@ -38,5 +42,33 @@ describe("supplier provider dispatch", () => {
     expect(mapSupplierStatus("DELIVERED")).toBe("completed");
     expect(mapSupplierStatus("in-progress")).toBe("processing");
     expect(mapSupplierStatus("refunded")).toBe("failed");
+  });
+
+  it("preserves FlashTopup raw-body HMAC verification", async () => {
+    const original = process.env["FLASHTOPUP_API_KEY"];
+    process.env["FLASHTOPUP_API_KEY"] = "test-only-key";
+    const body = JSON.stringify({ event_id: "evt-1", status: "completed" });
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode("test-only-key"),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const bytes = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body)));
+    const signature = Array.from(bytes).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+
+    expect(await verifyWebhookSignature(body, signature)).toBe(true);
+    expect(await verifyWebhookSignature(`${body} `, signature)).toBe(false);
+
+    if (original === undefined) delete process.env["FLASHTOPUP_API_KEY"];
+    else process.env["FLASHTOPUP_API_KEY"] = original;
+  });
+
+  it("rejects stale supplier webhooks while accepting missing legacy timestamps", () => {
+    const now = Date.parse("2026-10-06T04:00:00Z");
+    expect(isFreshSupplierWebhook("2026-10-06T03:59:00Z", now)).toBe(true);
+    expect(isFreshSupplierWebhook("2026-10-06T03:00:00Z", now)).toBe(false);
+    expect(isFreshSupplierWebhook(undefined, now)).toBe(true);
   });
 });
