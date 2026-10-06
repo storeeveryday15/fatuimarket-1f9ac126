@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { selectSupplierService, type SupplierServiceCandidate } from "../lib/supplier-provider";
+import {
+  isFreshSupplierWebhook,
+  selectSupplierService,
+  type SupplierServiceCandidate,
+} from "../lib/supplier-provider";
 import { mapSupplierStatus, verifyWebhookSignature } from "../lib/flashtopup.server";
 
 const supported = new Set(["flashtopup", "future-provider"]);
@@ -59,5 +63,12 @@ describe("supplier provider dispatch", () => {
 
     if (original === undefined) delete process.env["FLASHTOPUP_API_KEY"];
     else process.env["FLASHTOPUP_API_KEY"] = original;
+  });
+
+  it("rejects stale supplier webhooks while accepting missing legacy timestamps", () => {
+    const now = Date.parse("2026-10-06T04:00:00Z");
+    expect(isFreshSupplierWebhook("2026-10-06T03:59:00Z", now)).toBe(true);
+    expect(isFreshSupplierWebhook("2026-10-06T03:00:00Z", now)).toBe(false);
+    expect(isFreshSupplierWebhook(undefined, now)).toBe(true);
   });
 });

@@ -30,6 +30,10 @@ export const Route = createFileRoute("/api/public/flashtopup/webhook")({
         }
 
         const body = (payload?.data ?? payload) as Record<string, any>;
+        const { isFreshSupplierWebhook } = await import("@/lib/supplier-provider");
+        if (!isFreshSupplierWebhook(payload?.sent_at ?? payload?.timestamp ?? body?.sent_at ?? body?.timestamp)) {
+          return new Response("Stale webhook", { status: 401 });
+        }
         const eventId = String(
           payload?.event_id ?? payload?.eventId ?? body?.event_id ?? body?.reference_id ?? "",
         ).trim();

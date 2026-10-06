@@ -61,3 +61,19 @@ export function selectSupplierService(
       )[0] ?? null
   );
 }
+
+/** Reject a supplied webhook timestamp outside the accepted clock-skew window. */
+export function isFreshSupplierWebhook(
+  timestamp: unknown,
+  nowMs = Date.now(),
+  maxAgeMs = 5 * 60 * 1000,
+): boolean {
+  if (timestamp === undefined || timestamp === null || timestamp === "") return true;
+  const numeric = typeof timestamp === "number" ? timestamp : Number(timestamp);
+  const parsed = Number.isFinite(numeric)
+    ? numeric < 10_000_000_000
+      ? numeric * 1000
+      : numeric
+    : Date.parse(String(timestamp));
+  return Number.isFinite(parsed) && Math.abs(nowMs - parsed) <= maxAgeMs;
+}
