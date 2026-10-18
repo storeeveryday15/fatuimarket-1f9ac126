@@ -8,7 +8,7 @@
  */
 
 const BASE_PATH = "/api/reseller/v2";
-const BASE_URL = `https://api.flashtopup.com${BASE_PATH}`;
+const BASE_URL = `https://flashtopup.com${BASE_PATH}`;
 
 const hex = (buf: ArrayBuffer) =>
   Array.from(new Uint8Array(buf))
