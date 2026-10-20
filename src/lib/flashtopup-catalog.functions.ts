@@ -349,29 +349,3 @@ export const getSupplierConnectivity = createServerFn({ method: "GET" })
       durationMs: trace.durationMs,
     };
   });
-
-/** Temporary admin-only, read-only production diagnostic for FlashTopup services by product ID. */
-export const diagnoseSupplierServicesByProductId = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { assertAdmin } = await import("./flashtopup-admin.server");
-    await assertAdmin(context.supabase, context.userId);
-    const { extractServiceList, flashtopupRequestTraced } = await import("./flashtopup.server");
-    const trace = await flashtopupRequestTraced("/services", {
-      query: {
-        product_code: "TOPUP_8_BALL_POOL",
-        product_id: "3254",
-        product_type: "topup",
-        page: "1",
-        per_page: "500",
-      },
-    });
-    return {
-      url: trace.url,
-      signedPath: trace.signedPath,
-      status: trace.status,
-      response: trace.responseBody ?? trace.rawResponse,
-      requestId: trace.requestId,
-      servicesReturned: extractServiceList(trace.responseBody).length,
-    };
-  });
