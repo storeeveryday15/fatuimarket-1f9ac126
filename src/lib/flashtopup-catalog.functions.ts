@@ -359,13 +359,15 @@ export const diagnoseSupplierServicesByProductId = createServerFn({ method: "GET
     const { extractServiceList, flashtopupRequestTraced } = await import("./flashtopup.server");
     const trace = await flashtopupRequestTraced("/services", {
       query: {
-        product_id: "1",
+        product_id: "172",
         product_type: "topup",
         page: "1",
         per_page: "500",
       },
     });
     return {
+      url: trace.url,
+      signedPath: trace.signedPath,
       status: trace.status,
       response: trace.responseBody ?? trace.rawResponse,
       requestId: trace.requestId,
