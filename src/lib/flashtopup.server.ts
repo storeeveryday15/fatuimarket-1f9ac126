@@ -318,14 +318,37 @@ export function normalizeService(row: Record<string, any>): NormalizedSupplierSe
   };
 }
 
-/** Pulls the service array out of whatever envelope the API returns. */
+/** True when an entry carries the identifying fields of a FlashTopup service. */
+function isServiceEntry(item: unknown): item is Record<string, any> {
+  if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+  const row = item as Record<string, any>;
+  const hasId = ["service_code", "serviceCode", "service_id", "serviceId", "code", "sku"].some(
+    (k) => (typeof row[k] === "string" && row[k].trim() !== "") || typeof row[k] === "number",
+  );
+  return hasId;
+}
+
+/**
+ * Pulls the service array out of the `/services` envelope. Live v2 returns
+ * `{ success, data: { product_code, product_id, product_type, service: [...] }, meta }`;
+ * other known envelopes are kept for compatibility. Only arrays (never
+ * Object.values of metadata) are read, and entries must look like services.
+ */
 export function extractServiceList(payload: any): Record<string, any>[] {
-  if (Array.isArray(payload)) return payload;
-  for (const key of ["data", "services", "result", "items"]) {
-    const v = payload?.[key];
-    if (Array.isArray(v)) return v;
-    if (v && Array.isArray(v.services)) return v.services;
-    if (v && Array.isArray(v.data)) return v.data;
+  const candidates: unknown[] = [
+    payload,
+    payload?.data?.service,
+    payload?.data?.services,
+    payload?.data?.services?.data,
+    payload?.data?.data,
+    payload?.data,
+    payload?.services,
+    payload?.services?.data,
+    payload?.result,
+    payload?.items,
+  ];
+  for (const c of candidates) {
+    if (Array.isArray(c)) return c.filter(isServiceEntry);
   }
   return [];
 }

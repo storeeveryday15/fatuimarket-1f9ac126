@@ -12,7 +12,6 @@ import {
   savePricingRule,
   deletePricingRule,
   getSupplierConnectivity,
-  diagnoseSupplierServicesByProductId,
 } from "@/lib/flashtopup-catalog.functions";
 
 export const Route = createFileRoute("/admin/catalog")({
@@ -39,14 +38,12 @@ function CatalogPage() {
   const saveRule = useServerFn(savePricingRule);
   const removeRule = useServerFn(deletePricingRule);
   const checkConnection = useServerFn(getSupplierConnectivity);
-  const diagnoseServicesByProductId = useServerFn(diagnoseSupplierServicesByProductId);
 
   const [data, setData] = useState<Overview | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [diag, setDiag] = useState<Awaited<ReturnType<typeof getSupplierConnectivity>> | null>(null);
-  const [servicesDiag, setServicesDiag] = useState<Awaited<ReturnType<typeof diagnoseSupplierServicesByProductId>> | null>(null);
   const [draft, setDraft] = useState({
     scope: "global" as "global" | "category" | "product",
     scope_value: "",
@@ -136,20 +133,6 @@ function CatalogPage() {
               <Activity className="mr-2 inline h-4 w-4" />
               Test connection
             </button>
-            <button
-              className="rounded-xl border border-border px-4 py-2 text-sm font-semibold"
-              disabled={busy !== null}
-              onClick={async () => {
-                setBusy("services-diag");
-                try {
-                  setServicesDiag(await diagnoseServicesByProductId({}));
-                } finally {
-                  setBusy(null);
-                }
-              }}
-            >
-              Test services by product ID
-            </button>
           </div>
         </div>
 
@@ -179,11 +162,6 @@ function CatalogPage() {
         {diag && (
           <pre className="mt-3 max-h-48 overflow-auto rounded-lg bg-background/60 p-3 font-mono text-[11px]">
             {JSON.stringify(diag, null, 2)}
-          </pre>
-        )}
-        {servicesDiag && (
-          <pre data-testid="services-product-id-diag" className="mt-3 max-h-96 overflow-auto rounded-lg bg-background/60 p-3 font-mono text-[11px]">
-            {JSON.stringify(servicesDiag, null, 2)}
           </pre>
         )}
       </header>
