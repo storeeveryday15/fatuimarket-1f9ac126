@@ -12,4 +12,4 @@
   - [x] Route fulfilment and polling through provider adapters
   - [x] Generalize supplier catalog ownership display
   - [x] Complete mock regressions and service-sync diagnosis
-- [ ] Run the temporary read-only production FlashTopup product-ID services diagnostic, then remove it
+- [ ] Run the temporary read-only production FlashTopup services diagnostic for TOPUP_8_BALL_POOL / 3254 after publishing; report the result before any further changes
