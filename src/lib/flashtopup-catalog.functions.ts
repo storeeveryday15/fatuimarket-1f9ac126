@@ -1,3 +1,4 @@
+import { fetchAllRows } from "./fetch-all-rows";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -72,13 +73,10 @@ export const listPublicGames = createServerFn({ method: "GET" }).handler(async (
 
   if (!games?.length) return [];
 
-  const { data: services } = await supabase
-    .from("supplier_services")
-    .select("supplier_product_id, sell_price_inr, available")
-    .in(
-      "supplier_product_id",
-      games.map((g: { id: string }) => g.id),
-    );
+  // Page through every package: a single read stops at 1,000 rows.
+  const services = await fetchAllRows<any>(() =>
+    supabase.from("supplier_services").select("supplier_product_id, sell_price_inr, available").order("id"),
+  );
 
   const byGame = new Map<string, { count: number; available: boolean; from: number | null }>();
   for (const s of services ?? []) {
@@ -191,9 +189,12 @@ export const getCatalogOverview = createServerFn({ method: "GET" })
       .select("id, supplier_key, product_code, slug, name, display_name, region, category, icon_url, active, enabled, featured, hidden, validation_code, updated_at")
       .order("name", { ascending: true });
 
-    const { data: services } = await context.supabase
-      .from("supplier_services")
-      .select("supplier_product_id, supplier_price, sell_price_inr, available, active");
+    const services = await fetchAllRows<any>(() =>
+      context.supabase
+        .from("supplier_services")
+        .select("supplier_product_id, supplier_price, sell_price_inr, available, active")
+        .order("id"),
+    );
 
     const { data: runs } = await context.supabase
       .from("supplier_sync_runs")

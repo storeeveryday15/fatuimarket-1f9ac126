@@ -90,13 +90,16 @@ export const listSupplierServices = createServerFn({ method: "GET" })
     const { assertAdmin } = await import("./flashtopup-admin.server");
     await assertAdmin(context.supabase, context.userId);
 
-    const { data, error } = await context.supabase
-      .from("supplier_services")
-      .select(
-        "id,supplier_product_id,service_code,service_name,supplier_price,currency,min_quantity,max_quantity,validation_code,input_fields,requires_validation,active,catalog_product_id,supplier_products!inner(supplier_key)",
-      )
-      .order("service_name", { ascending: true });
-    if (error) throw new Error(error.message);
+    const { fetchAllRows } = await import("./fetch-all-rows");
+    const data = await fetchAllRows<any>(() =>
+      context.supabase
+        .from("supplier_services")
+        .select(
+          "id,supplier_product_id,service_code,service_name,supplier_price,currency,min_quantity,max_quantity,validation_code,input_fields,requires_validation,active,catalog_product_id,supplier_products!inner(supplier_key)",
+        )
+        .order("service_name", { ascending: true })
+        .order("id", { ascending: true }),
+    );
     return (data ?? []).map((r: any) => ({
       ...r,
       supplier_key: r.supplier_products.supplier_key,
