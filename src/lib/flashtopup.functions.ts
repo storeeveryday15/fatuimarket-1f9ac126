@@ -139,8 +139,41 @@ export const mapSupplierService = createServerFn({ method: "POST" })
   });
 
 /**
+ * Loads the supplier package (and its parent product) that backs a store
+ * product, then resolves Check-ID requirements with parent-product fallback.
+ */
+async function loadRequirement(supabase: any, catalogProductId: string) {
+  const { resolveCheckIdRequirement } = await import("./check-id-requirements");
+  const { data: service } = await supabase
+    .from("supplier_services")
+    .select(
+      "validation_code, input_fields, raw, service_code, supplier_products!inner(product_code, product_type, validation_code, raw, supplier_key)",
+    )
+    .eq("catalog_product_id", catalogProductId)
+    .eq("active", true)
+    .order("sort_order", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (service) {
+    const product = service.supplier_products as any;
+    return { requirement: resolveCheckIdRequirement(product, service), supplierKey: product.supplier_key as string, serviceCode: service.service_code as string | null };
+  }
+  // Store product mapped at the supplier-product level only.
+  const { data: product } = await supabase
+    .from("supplier_products")
+    .select("product_code, product_type, validation_code, raw, supplier_key")
+    .eq("catalog_product_id", catalogProductId)
+    .eq("active", true)
+    .limit(1)
+    .maybeSingle();
+  if (!product) return null;
+  return { requirement: resolveCheckIdRequirement(product, null), supplierKey: product.supplier_key as string, serviceCode: null };
+}
+
+/**
  * Player-ID verification for checkout. Signed-in customers only; the supplier
- * credentials and raw provider payload never reach the browser.
+ * credentials and raw provider payload never reach the browser. Verification
+ * never marks an order paid or delivered.
  */
 export const verifyPlayerId = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -152,56 +185,49 @@ export const verifyPlayerId = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data, context }) => {
-    const { data: service } = await context.supabase
-      .from("supplier_services")
-      .select("validation_code, requires_validation, active, input_fields, service_code, supplier_products!inner(supplier_key)")
-      .eq("catalog_product_id", data.catalogProductId)
-      .eq("active", true)
-      .limit(1)
-      .maybeSingle();
-
-    if (!service || !service.requires_validation || !service.validation_code) {
+    const loaded = await loadRequirement(context.supabase, data.catalogProductId);
+    if (!loaded || !loaded.requirement.supported) {
       return { required: false as const, verified: true as const, nickname: null, message: null };
     }
-
-    // Required-input guard: don't waste a supplier call when a field is missing.
-    const required = toStringArray(service.input_fields);
-    if (required.some((f) => /server|zone/i.test(f)) && !data.serverId) {
-      return {
-        required: true as const,
-        verified: false as const,
-        nickname: null,
-        message: "Please select your server/zone before verifying.",
-      };
+    const { requirement } = loaded;
+    const { missingRequiredFields } = await import("./check-id-requirements");
+    const missing = missingRequiredFields(requirement, data.userId, data.serverId ?? null);
+    if (missing.length) {
+      return { required: true as const, verified: false as const, nickname: null, message: `Please enter: ${missing.join(", ")}.` };
     }
 
     const { getSupplierProvider } = await import("./supplier-providers.server");
-    const provider = getSupplierProvider((service.supplier_products as { supplier_key: string }).supplier_key);
+    const provider = getSupplierProvider(loaded.supplierKey);
     if (!provider?.checkId) {
       return { required: true as const, verified: false as const, nickname: null, message: "Player verification is unavailable for this supplier." };
     }
     const res = (await provider.checkId({
-      validationCode: service.validation_code,
+      validationCode: requirement.validationCode!,
       userId: data.userId,
-      serverId: data.serverId ?? null,
+      serverId: requirement.needsServer ? data.serverId ?? null : null,
     })) as Awaited<ReturnType<typeof import("./flashtopup.server")["checkPlayerId"]>>;
     console.log("[check-id] verify", {
       supplier_key: provider.key,
       catalogProductId: data.catalogProductId,
-      service_code: service.service_code,
-      validation_code: service.validation_code,
-      required_fields: required,
-      sent: { user_id: data.userId, server_id: data.serverId ?? null },
+      service_code: loaded.serviceCode,
+      validation_code: requirement.validationCode,
+      validation_source: requirement.source,
+      required_fields: requirement.fields.map((f) => f.name),
       status: res.status,
       ok: res.ok,
       supplier_message: res.message,
     });
+    // A supplier/network failure (no HTTP 4xx answer) is not the customer's fault.
+    const supplierDown = res.status === null || res.status >= 500;
     return {
       required: true as const,
       verified: res.ok,
       nickname: res.nickname,
-      // Surface the exact supplier message rather than failing silently.
-      message: res.ok ? null : res.message || "Verification failed. Please check the details and try again.",
+      message: res.ok
+        ? null
+        : supplierDown
+          ? "We couldn't reach the game's verification service. Please try again in a moment."
+          : res.message || "This player ID couldn't be verified. Please check the details and try again.",
     };
   });
 
@@ -211,17 +237,45 @@ export const getServiceRequirement = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(z.object({ catalogProductId: z.string().uuid() }))
   .handler(async ({ data, context }) => {
-    const { data: service } = await context.supabase
-      .from("supplier_services")
-      .select("requires_validation, validation_code, input_fields, supplier_products!inner(supplier_key)")
-      .eq("catalog_product_id", data.catalogProductId)
-      .eq("active", true)
-      .limit(1)
-      .maybeSingle();
+    const loaded = await loadRequirement(context.supabase, data.catalogProductId);
+    const req = loaded?.requirement;
     return {
-      requiresValidation: Boolean(service?.requires_validation && service?.validation_code),
-      inputFields: toStringArray(service?.input_fields),
+      requiresValidation: Boolean(req?.supported),
+      needsServer: Boolean(req?.needsServer),
+      inputFields: (req?.fields ?? []).map((f) => f.name),
+      fields: (req?.fields ?? []).map((f) => ({ name: f.name, label: f.label, required: f.required, role: f.role, placeholder: f.placeholder })),
     };
+  });
+
+/** Admin: every supplier product with its resolved Check-ID requirement. */
+export const listCheckIdProducts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { assertAdmin } = await import("./flashtopup-admin.server");
+    await assertAdmin(context.supabase, context.userId);
+    const { resolveCheckIdRequirement } = await import("./check-id-requirements");
+    const { data, error } = await context.supabase
+      .from("supplier_products")
+      .select("id, product_code, name, product_type, region, validation_code, active, fields:raw->fields, check_id_status:raw->>check_id_status")
+      .eq("active", true)
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((p: any) => {
+      const req = resolveCheckIdRequirement({
+        product_code: p.product_code,
+        product_type: p.product_type,
+        validation_code: p.validation_code,
+        raw: { fields: p.fields, check_id_status: p.check_id_status },
+      });
+      return {
+        id: p.id as string,
+        product_code: p.product_code as string,
+        name: p.name as string,
+        product_type: (p.product_type ?? null) as string | null,
+        region: (p.region ?? null) as string | null,
+        requirement: req,
+      };
+    });
   });
 
 /** Admin: poll every supplier order still in flight. */
@@ -308,15 +362,13 @@ export const mapSupplierProduct = createServerFn({ method: "POST" })
 
 export type CheckIdTestResult = {
   ok: boolean;
-  matchesService: boolean;
-  service: {
-    service_code: string;
-    service_name: string;
-    validation_code: string | null;
-    requires_validation: boolean;
-    input_fields: string[];
-  } | null;
+  supported: boolean;
+  product: { product_code: string; name: string } | null;
+  validationCode: string | null;
+  validationSource: "service" | "product" | null;
+  fields: Array<{ name: string; label: string; required: boolean; role: string }>;
   missingFields: string[];
+  unsupportedFields: string[];
   status: number | null;
   nickname: string | null;
   message: string | null;
@@ -334,79 +386,59 @@ export type CheckIdTestResult = {
 };
 
 /**
- * Admin debugging: run a raw Check-ID call and return the full redacted trace
- * (request, HTTP status, supplier response). The API key is never included.
+ * Admin debugging: run a raw Check-ID call for a supplier product and return
+ * the full redacted trace. The validation code always comes from the
+ * supplier's own definition; credentials are never included.
  */
-
 export const testCheckId = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(
     z.object({
-      serviceId: z.string().uuid().optional().nullable(),
-      validationCode: z.string().trim().max(60).optional().nullable(),
+      supplierProductId: z.string().uuid(),
       userId: z.string().trim().min(1).max(40),
       serverId: z.string().trim().max(20).optional().nullable(),
     }),
   )
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<CheckIdTestResult> => {
     const { assertAdmin } = await import("./flashtopup-admin.server");
     await assertAdmin(context.supabase, context.userId);
+    const { resolveCheckIdRequirement, missingRequiredFields } = await import("./check-id-requirements");
 
-    let validationCode = data.validationCode?.trim() || null;
-    let service: {
-      service_code: string;
-      service_name: string;
-      validation_code: string | null;
-      requires_validation: boolean;
-      input_fields: string[];
-    } | null = null;
+    const { data: product, error } = await context.supabase
+      .from("supplier_products")
+      .select("product_code, name, product_type, validation_code, raw")
+      .eq("id", data.supplierProductId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!product) throw new Error("Supplier product not found");
 
-    if (data.serviceId) {
-      const { data: row, error } = await context.supabase
-        .from("supplier_services")
-        .select("service_code,service_name,validation_code,requires_validation,input_fields")
-        .eq("id", data.serviceId)
-        .maybeSingle();
-      if (error) throw new Error(error.message);
-      if (!row) throw new Error("Service not found");
-      service = { ...row, input_fields: toStringArray(row.input_fields) };
-      // The service's own validation code always wins over a manual override.
-      validationCode = row.validation_code ?? validationCode;
+    const req = resolveCheckIdRequirement(product as any, null);
+    const base = {
+      supported: req.supported,
+      product: { product_code: product.product_code, name: product.name },
+      validationCode: req.validationCode,
+      validationSource: req.source,
+      fields: req.fields.map((f) => ({ name: f.name, label: f.label, required: f.required, role: f.role })),
+      unsupportedFields: req.unsupportedFields,
+    };
+    if (!req.supported) {
+      return { ...base, ok: false, missingFields: [], status: null, nickname: null, message: req.reason, trace: null };
     }
-
-    if (!validationCode) {
-      const empty: CheckIdTestResult = {
-        ok: false,
-        matchesService: false,
-        service,
-        missingFields: [],
-        status: null,
-        nickname: null,
-        message: "No validation code — this service does not support Check-ID.",
-        trace: null,
-      };
-      return empty;
+    const missingFields = missingRequiredFields(req, data.userId, data.serverId ?? null);
+    if (missingFields.length) {
+      return { ...base, ok: false, missingFields, status: null, nickname: null, message: `Missing required inputs: ${missingFields.join(", ")}`, trace: null };
     }
-
-    const required = service?.input_fields ?? [];
-    const missingFields = required.filter((f) => {
-      if (/server|zone/i.test(f)) return !data.serverId;
-      if (/user|player|uid/i.test(f)) return !data.userId;
-      return false;
-    });
 
     const { checkPlayerId } = await import("./flashtopup.server");
     const res = await checkPlayerId({
-      validation_code: validationCode,
+      validation_code: req.validationCode!,
       user_id: data.userId,
-      server_id: data.serverId ?? null,
+      server_id: req.needsServer ? data.serverId ?? null : null,
     });
-
-    const out: CheckIdTestResult = {
+    return {
+      ...base,
       ok: res.ok,
-      matchesService: service ? service.validation_code === validationCode : false,
-      service,
-      missingFields,
+      missingFields: [],
       status: res.status,
       nickname: res.nickname,
       message: res.message,
@@ -422,9 +454,7 @@ export const testCheckId = createServerFn({ method: "POST" })
         durationMs: res.trace.durationMs,
       },
     };
-    return out;
   });
-
 
 export type ServiceSyncTestResult = {
   ok: boolean;
