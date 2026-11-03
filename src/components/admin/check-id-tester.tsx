@@ -1,20 +1,11 @@
 import { useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Bug, CheckCircle2, XCircle } from "lucide-react";
-import { testCheckId } from "@/lib/flashtopup.functions";
-
-type Service = {
-  id: string;
-  service_name: string;
-  service_code: string;
-  validation_code: string | null;
-  requires_validation: boolean;
-  input_fields: string[];
-};
+import { Bug, CheckCircle2, XCircle, Search } from "lucide-react";
+import { testCheckId, listCheckIdProducts } from "@/lib/flashtopup.functions";
 
 const field = "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm";
-/** Pretty-prints a JSON payload, falling back to the raw text. */
+
 function prettyJson(raw: string): string {
   if (!raw) return "";
   try {
@@ -24,29 +15,52 @@ function prettyJson(raw: string): string {
   }
 }
 
+/** Android / iOS hint taken from the supplier's own product name or code. */
+function platformOf(name: string, code: string): string | null {
+  const s = `${name} ${code}`.toLowerCase();
+  if (/\bios\b|iphone|apple/.test(s)) return "iOS";
+  if (/android|google play/.test(s)) return "Android";
+  return null;
+}
+
+const TYPE_LABEL: Record<string, string> = { topup: "Top-ups", giftcard: "Gift cards", voucher: "Vouchers" };
 
 /** Admin-only debugging panel for the FlashTopup Check-ID endpoint. */
-export function CheckIdTester({ services }: { services: Service[] }) {
+export function CheckIdTester() {
   const run = useServerFn(testCheckId);
-  const [serviceId, setServiceId] = useState("");
-  const [validationCode, setValidationCode] = useState("");
+  const list = useServerFn(listCheckIdProducts);
+  const { data: products = [], isLoading } = useQuery({ queryKey: ["check-id-products"], queryFn: () => list() });
+
+  const [q, setQ] = useState("");
+  const [onlySupported, setOnlySupported] = useState(true);
+  const [productId, setProductId] = useState("");
   const [userId, setUserId] = useState("");
   const [serverId, setServerId] = useState("");
 
-  const selected = useMemo(() => services.find((s) => s.id === serviceId) ?? null, [services, serviceId]);
+  const selected = useMemo(() => products.find((p) => p.id === productId) ?? null, [products, productId]);
+
+  const groups = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    const filtered = products.filter((p) => {
+      if (onlySupported && !p.requirement.supported) return false;
+      if (!term) return true;
+      return `${p.name} ${p.product_code} ${p.region ?? ""} ${p.requirement.validationCode ?? ""}`.toLowerCase().includes(term);
+    });
+    const map = new Map<string, typeof filtered>();
+    for (const p of filtered) {
+      const key = TYPE_LABEL[p.product_type ?? ""] ?? "Other";
+      map.set(key, [...(map.get(key) ?? []), p]);
+    }
+    return [...map.entries()];
+  }, [products, q, onlySupported]);
+
+  const userField = selected?.requirement.fields.find((f) => f.role === "user");
+  const serverField = selected?.requirement.fields.find((f) => f.role === "server");
 
   const mutation = useMutation({
     mutationFn: () =>
-      run({
-        data: {
-          serviceId: serviceId || null,
-          validationCode: validationCode.trim() || null,
-          userId: userId.trim(),
-          serverId: serverId.trim() || null,
-        },
-      }),
+      run({ data: { supplierProductId: productId, userId: userId.trim(), serverId: serverId.trim() || null } }),
   });
-
   const result = mutation.data;
 
   return (
@@ -56,68 +70,118 @@ export function CheckIdTester({ services }: { services: Service[] }) {
         <h2 className="text-sm font-bold uppercase tracking-wider">Test Check-ID</h2>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Runs a live Check-ID call and shows the exact request, HTTP status and supplier response. Credentials are never
-        included.
+        Pick a supplier game. The validation code and required fields come from the supplier's own product definition.
+        Runs a live player check only — no order is placed. Credentials are never shown.
       </p>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <select
-          value={serviceId}
-          onChange={(e) => setServiceId(e.target.value)}
-          aria-label="Supplier service"
-          className={field}
-        >
-          <option value="">Manual validation code…</option>
-          {services.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.service_name} ({s.service_code})
-            </option>
-          ))}
-        </select>
-        <input
-          value={selected ? (selected.validation_code ?? "—") : validationCode}
-          onChange={(e) => setValidationCode(e.target.value)}
-          disabled={Boolean(selected)}
-          placeholder="Validation code"
-          aria-label="Validation code"
-          className={`${field} disabled:opacity-60`}
-        />
-        <input
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          placeholder="Player / user ID"
-          aria-label="Player user ID"
-          className={field}
-        />
-        <input
-          value={serverId}
-          onChange={(e) => setServerId(e.target.value)}
-          placeholder="Server / zone ID (optional)"
-          aria-label="Server or zone ID"
-          className={field}
-        />
+      <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search game, region, product code…"
+            aria-label="Search supplier games"
+            className={`${field} pl-9`}
+          />
+        </div>
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <input type="checkbox" checked={onlySupported} onChange={(e) => setOnlySupported(e.target.checked)} />
+          Only games with Check-ID
+        </label>
       </div>
 
+      <select
+        value={productId}
+        onChange={(e) => {
+          setProductId(e.target.value);
+          setServerId("");
+          mutation.reset();
+        }}
+        aria-label="Supplier game"
+        size={8}
+        className={`${field} mt-3`}
+      >
+        {isLoading && <option disabled>Loading games…</option>}
+        {groups.map(([label, items]) => (
+          <optgroup key={label} label={`${label} (${items.length})`}>
+            {items.map((p) => {
+              const platform = platformOf(p.name, p.product_code);
+              return (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                  {p.region ? ` · ${p.region}` : ""}
+                  {platform ? ` · ${platform}` : ""} — {p.requirement.supported ? p.requirement.validationCode : "no Check-ID"}
+                </option>
+              );
+            })}
+          </optgroup>
+        ))}
+      </select>
+
       {selected && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          Required inputs: {selected.input_fields.length ? selected.input_fields.join(", ") : "none reported"} ·
-          validation {selected.requires_validation ? "required" : "not required"}
-        </p>
+        <div className="mt-3 rounded-lg border border-border p-3 text-xs">
+          <p>
+            <strong>{selected.name}</strong> <span className="font-mono text-muted-foreground">{selected.product_code}</span>
+          </p>
+          {selected.requirement.supported ? (
+            <p className="mt-1 text-muted-foreground">
+              Check-ID supported · validation code{" "}
+              <span className="font-mono text-foreground">{selected.requirement.validationCode}</span> · required:{" "}
+              {selected.requirement.fields.filter((f) => f.required).map((f) => f.label).join(", ") || "none listed"}
+              {selected.requirement.unsupportedFields.length > 0 &&
+                ` · extra fields not sent by Check-ID: ${selected.requirement.unsupportedFields.join(", ")}`}
+            </p>
+          ) : (
+            <p className="mt-1 text-muted-foreground">{selected.requirement.reason}</p>
+          )}
+        </div>
+      )}
+
+      {selected?.requirement.supported && (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <input
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            placeholder={userField?.placeholder ?? userField?.label ?? "Player / user ID"}
+            aria-label={userField?.label ?? "Player ID"}
+            className={field}
+          />
+          {selected.requirement.needsServer && serverField && serverField.options.length > 0 ? (
+            <select value={serverId} onChange={(e) => setServerId(e.target.value)} aria-label={serverField.label} className={field}>
+              <option value="">{serverField.label}…</option>
+              {serverField.options.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+          ) : selected.requirement.needsServer && (
+            <input
+              value={serverId}
+              onChange={(e) => setServerId(e.target.value)}
+              placeholder={serverField?.placeholder ?? serverField?.label ?? "Server / zone ID"}
+              aria-label={serverField?.label ?? "Server ID"}
+              className={field}
+            />
+          )}
+        </div>
       )}
 
       <button
         type="button"
         onClick={() => mutation.mutate()}
-        disabled={mutation.isPending || !userId.trim()}
+        disabled={
+          mutation.isPending ||
+          !selected?.requirement.supported ||
+          !userId.trim() ||
+          (selected.requirement.needsServer && !serverId.trim())
+        }
         className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:border-foreground/30 disabled:opacity-60"
       >
         <Bug className={`h-4 w-4 ${mutation.isPending ? "animate-pulse" : ""}`} />
         {mutation.isPending ? "Testing…" : "Test Check-ID"}
       </button>
 
-      {mutation.error && (
-        <p className="mt-3 text-xs text-destructive">{(mutation.error as Error).message}</p>
-      )}
+      {mutation.error && <p className="mt-3 text-xs text-destructive">{(mutation.error as Error).message}</p>}
 
       {result && (
         <div className="mt-4 space-y-3 text-xs">
@@ -128,22 +192,21 @@ export function CheckIdTester({ services }: { services: Service[] }) {
               }`}
             >
               {result.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
-              {result.ok ? "Verified" : "Failed"}
+              {result.ok ? "Verified" : result.supported ? "Failed" : "Not supported"}
             </span>
             <span className="text-muted-foreground">HTTP {result.status ?? "—"}</span>
-            {result.nickname && <span>Nickname: <strong>{result.nickname}</strong></span>}
-            {result.service && (
-              <span className="text-muted-foreground">
-                Validation code {result.matchesService ? "matches" : "does NOT match"} the selected service
+            {result.nickname && (
+              <span>
+                Nickname: <strong>{result.nickname}</strong>
               </span>
             )}
-            {result.missingFields.length > 0 && (
-              <span className="text-destructive">Missing required inputs: {result.missingFields.join(", ")}</span>
+            {result.validationCode && (
+              <span className="text-muted-foreground">
+                Code {result.validationCode} (from {result.validationSource})
+              </span>
             )}
           </div>
-
-          {result.message && <p className="text-muted-foreground">Supplier message: {result.message}</p>}
-
+          {result.message && <p className="text-muted-foreground">Message: {result.message}</p>}
           {result.trace && (
             <div className="grid gap-3 lg:grid-cols-2">
               <div>
@@ -169,7 +232,6 @@ export function CheckIdTester({ services }: { services: Service[] }) {
                 <pre className="max-h-64 overflow-auto rounded-lg bg-background/60 p-3 font-mono text-[11px]">
                   {prettyJson(result.trace.rawResponse) || result.trace.error || "(empty)"}
                 </pre>
-
               </div>
             </div>
           )}

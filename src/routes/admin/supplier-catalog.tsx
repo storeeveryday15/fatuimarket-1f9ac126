@@ -172,7 +172,7 @@ function SupplierCatalogPage() {
 
       <ServiceSyncTester />
 
-      <CheckIdTester services={services ?? []} />
+      <CheckIdTester />
 
 
       <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">

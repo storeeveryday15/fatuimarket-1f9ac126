@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fetchAllRows } from "@/lib/fetch-all-rows";
+import { fetchAllRows } from "../lib/fetch-all-rows";
 
 describe("fetchAllRows", () => {
   it("keeps reading past the 1,000-row cap", async () => {

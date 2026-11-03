@@ -174,7 +174,9 @@ function ProductPage() {
   };
 
   const needsId = product.needsPlayerId;
-  const needsZone = product.slug === "mobile-legends";
+  const [supplierNeedsServer, setSupplierNeedsServer] = useState(false);
+  // Server/zone is required by the game itself or by the supplier product definition.
+  const needsZone = product.slug === "mobile-legends" || supplierNeedsServer;
   const needsServer = gameServers.length > 0;
 
   useEffect(() => {
@@ -192,11 +194,11 @@ function ProductPage() {
 
   useEffect(() => {
     setVerified(null);
-    if (!stockInfo.productId) { setNeedsVerify(false); return; }
+    if (!stockInfo.productId) { setNeedsVerify(false); setSupplierNeedsServer(false); return; }
     let cancelled = false;
     readRequirement({ data: { catalogProductId: stockInfo.productId } })
-      .then((r) => { if (!cancelled) setNeedsVerify(r.requiresValidation); })
-      .catch(() => { if (!cancelled) setNeedsVerify(false); });
+      .then((r) => { if (!cancelled) { setNeedsVerify(r.requiresValidation); setSupplierNeedsServer(r.needsServer); } })
+      .catch(() => { if (!cancelled) { setNeedsVerify(false); setSupplierNeedsServer(false); } });
     return () => { cancelled = true; };
   }, [stockInfo.productId, readRequirement]);
 
