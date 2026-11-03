@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveCheckIdRequirement, missingRequiredFields } from "@/lib/check-id-requirements";
+import { resolveCheckIdRequirement, missingRequiredFields } from "../lib/check-id-requirements";
 
 const f = (name: string, label = name) => ({ name, label, required: true, type: "text", options: [] });
 

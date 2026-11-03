@@ -147,7 +147,14 @@ export function CheckIdTester() {
             aria-label={userField?.label ?? "Player ID"}
             className={field}
           />
-          {selected.requirement.needsServer && (
+          {selected.requirement.needsServer && serverField && serverField.options.length > 0 ? (
+            <select value={serverId} onChange={(e) => setServerId(e.target.value)} aria-label={serverField.label} className={field}>
+              <option value="">{serverField.label}…</option>
+              {serverField.options.map((o) => (
+                <option key={o} value={o}>{o}</option>
+              ))}
+            </select>
+          ) : selected.requirement.needsServer && (
             <input
               value={serverId}
               onChange={(e) => setServerId(e.target.value)}
