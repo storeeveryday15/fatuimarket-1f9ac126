@@ -28,6 +28,7 @@ import { Route as AdminAssistantRouteImport } from './routes/admin/assistant'
 import { Route as AdminCatalogRouteImport } from './routes/admin/catalog'
 import { Route as AdminCustomersRouteImport } from './routes/admin/customers'
 import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
+import { Route as AdminPriceMonitorRouteImport } from './routes/admin/price-monitor'
 import { Route as AdminPricingRouteImport } from './routes/admin/pricing'
 import { Route as AdminProductsRouteImport } from './routes/admin/products'
 import { Route as AdminServersRouteImport } from './routes/admin/servers'
@@ -153,6 +154,11 @@ const AdminCustomersRoute = AdminCustomersRouteImport.update({
 const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPriceMonitorRoute = AdminPriceMonitorRouteImport.update({
+  id: '/price-monitor',
+  path: '/price-monitor',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminPricingRoute = AdminPricingRouteImport.update({
@@ -337,6 +343,7 @@ export interface FileRoutesByFullPath {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/price-monitor': typeof AdminPriceMonitorRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/servers': typeof AdminServersRoute
@@ -388,6 +395,7 @@ export interface FileRoutesByTo {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/price-monitor': typeof AdminPriceMonitorRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/servers': typeof AdminServersRoute
@@ -441,6 +449,7 @@ export interface FileRoutesById {
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/price-monitor': typeof AdminPriceMonitorRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/servers': typeof AdminServersRoute
@@ -495,6 +504,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/customers'
     | '/admin/notifications'
+    | '/admin/price-monitor'
     | '/admin/pricing'
     | '/admin/products'
     | '/admin/servers'
@@ -546,6 +556,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/customers'
     | '/admin/notifications'
+    | '/admin/price-monitor'
     | '/admin/pricing'
     | '/admin/products'
     | '/admin/servers'
@@ -598,6 +609,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/customers'
     | '/admin/notifications'
+    | '/admin/price-monitor'
     | '/admin/pricing'
     | '/admin/products'
     | '/admin/servers'
@@ -806,6 +818,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/admin/notifications'
       preLoaderRoute: typeof AdminNotificationsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/price-monitor': {
+      id: '/admin/price-monitor'
+      path: '/price-monitor'
+      fullPath: '/admin/price-monitor'
+      preLoaderRoute: typeof AdminPriceMonitorRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/pricing': {
@@ -1034,6 +1053,7 @@ interface AdminRouteRouteChildren {
   AdminCatalogRoute: typeof AdminCatalogRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminPriceMonitorRoute: typeof AdminPriceMonitorRoute
   AdminPricingRoute: typeof AdminPricingRoute
   AdminProductsRoute: typeof AdminProductsRoute
   AdminServersRoute: typeof AdminServersRoute
@@ -1049,6 +1069,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminCatalogRoute: AdminCatalogRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminPriceMonitorRoute: AdminPriceMonitorRoute,
   AdminPricingRoute: AdminPricingRoute,
   AdminProductsRoute: AdminProductsRoute,
   AdminServersRoute: AdminServersRoute,
