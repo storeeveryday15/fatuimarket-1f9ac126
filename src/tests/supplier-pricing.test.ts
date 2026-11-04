@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SUPPLIER_PRICING, hasSupplierPriceChanged, proposeSellPrice } from "@/lib/supplier-pricing";
+import { DEFAULT_SUPPLIER_PRICING, hasSupplierPriceChanged, proposeSellPrice } from "../lib/supplier-pricing";
 
 describe("supplier price proposals (₹111.1111/USD, 15%, round up ₹10)", () => {
   it.each([
