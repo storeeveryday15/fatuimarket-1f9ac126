@@ -1735,6 +1735,110 @@ export type Database = {
           },
         ]
       }
+      supplier_price_changes: {
+        Row: {
+          acquisition_cost_inr: number
+          current_sell_price_inr: number | null
+          detected_at: string
+          expected_margin_pct: number
+          expected_profit_inr: number
+          id: string
+          markup_pct: number
+          new_supplier_price_usd: number
+          old_supplier_price_usd: number | null
+          product_name: string | null
+          proposed_sell_price_inr: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          rounding_step: number
+          service_code: string
+          service_name: string
+          status: string
+          supplier_key: string
+          supplier_service_id: string
+          usd_inr_rate: number
+        }
+        Insert: {
+          acquisition_cost_inr: number
+          current_sell_price_inr?: number | null
+          detected_at?: string
+          expected_margin_pct: number
+          expected_profit_inr: number
+          id?: string
+          markup_pct: number
+          new_supplier_price_usd: number
+          old_supplier_price_usd?: number | null
+          product_name?: string | null
+          proposed_sell_price_inr: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rounding_step: number
+          service_code: string
+          service_name: string
+          status?: string
+          supplier_key?: string
+          supplier_service_id: string
+          usd_inr_rate: number
+        }
+        Update: {
+          acquisition_cost_inr?: number
+          current_sell_price_inr?: number | null
+          detected_at?: string
+          expected_margin_pct?: number
+          expected_profit_inr?: number
+          id?: string
+          markup_pct?: number
+          new_supplier_price_usd?: number
+          old_supplier_price_usd?: number | null
+          product_name?: string | null
+          proposed_sell_price_inr?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          rounding_step?: number
+          service_code?: string
+          service_name?: string
+          status?: string
+          supplier_key?: string
+          supplier_service_id?: string
+          usd_inr_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_price_changes_supplier_service_id_fkey"
+            columns: ["supplier_service_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_pricing_settings: {
+        Row: {
+          auto_apply_enabled: boolean
+          id: number
+          markup_pct: number
+          rounding_step: number
+          updated_at: string
+          usd_inr_rate: number
+        }
+        Insert: {
+          auto_apply_enabled?: boolean
+          id?: number
+          markup_pct?: number
+          rounding_step?: number
+          updated_at?: string
+          usd_inr_rate?: number
+        }
+        Update: {
+          auto_apply_enabled?: boolean
+          id?: number
+          markup_pct?: number
+          rounding_step?: number
+          updated_at?: string
+          usd_inr_rate?: number
+        }
+        Relationships: []
+      }
       supplier_products: {
         Row: {
           active: boolean

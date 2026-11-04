@@ -12,6 +12,7 @@ import {
   Globe,
   PackageSearch,
   Gamepad2,
+  BellRing,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -24,6 +25,7 @@ const LINKS: Array<{ to: string; label: string; icon: ComponentType<{ className?
   { to: "/admin/supplier-catalog", label: "Supplier Catalog", icon: PackageSearch },
   { to: "/admin/servers", label: "Game Servers", icon: Globe },
   { to: "/admin/pricing", label: "Price Engine", icon: TrendingUp },
+  { to: "/admin/price-monitor", label: "Price Monitor", icon: BellRing },
   { to: "/admin/analytics", label: "Analytics", icon: LineChart },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/notifications", label: "Notifications", icon: Bell },

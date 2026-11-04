@@ -29,6 +29,13 @@
       "when": 1791164202993,
       "tag": "0003_scope_supplier_fulfilment_by_provider",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793755671800,
+      "tag": "0004_supplier_price_monitor",
+      "breakpoints": true
     }
   ]
 }

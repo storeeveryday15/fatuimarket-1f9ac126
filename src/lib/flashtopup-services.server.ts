@@ -1,8 +1,64 @@
 /** Service catalogue sync for FlashTopup (server-only). */
 
 import { fetchAllServices, normalizeService, extractAvailability, extractDescription } from "./flashtopup.server";
+import { DEFAULT_SUPPLIER_PRICING, hasSupplierPriceChanged, proposeSellPrice, type SupplierPricingSettings } from "./supplier-pricing";
 
 type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
+
+type ExistingService = { id: string; service_code: string; supplier_price: number | null; sell_price_inr: number | null };
+
+async function loadPricingSettings(admin: AdminClient): Promise<SupplierPricingSettings> {
+  const { data } = await admin.from("supplier_pricing_settings").select("*").eq("id", 1).maybeSingle();
+  if (!data) return DEFAULT_SUPPLIER_PRICING;
+  return {
+    usd_inr_rate: Number(data.usd_inr_rate),
+    markup_pct: Number(data.markup_pct),
+    rounding_step: Number(data.rounding_step) as 1 | 5 | 10,
+  };
+}
+
+/** Queue pending price proposals for packages whose USD supplier price moved. */
+async function recordPriceChanges(
+  admin: AdminClient,
+  product: { id: string; product_code: string },
+  existing: ExistingService[],
+  rows: Array<{ service_code: string; service_name: string; supplier_price: number | null; currency: string | null }>,
+) {
+  const byCode = new Map(existing.map((e) => [e.service_code, e]));
+  const changed = rows
+    .filter((r) => !r.currency || r.currency.toUpperCase() === "USD")
+    .map((r) => ({ r, prev: byCode.get(r.service_code) }))
+    .filter(({ r, prev }) => prev && hasSupplierPriceChanged(prev.supplier_price, r.supplier_price));
+  if (!changed.length) return;
+
+  const settings = await loadPricingSettings(admin);
+  const { data: prod } = await admin.from("supplier_products").select("display_name, name").eq("id", product.id).maybeSingle();
+  const ids = changed.map(({ prev }) => prev!.id);
+  // Older pending proposals for the same package are replaced by the newest one.
+  await admin.from("supplier_price_changes").update({ status: "superseded" }).in("supplier_service_id", ids).eq("status", "pending");
+
+  await admin.from("supplier_price_changes").insert(
+    changed.map(({ r, prev }) => {
+      const p = proposeSellPrice(Number(r.supplier_price), settings);
+      return {
+        supplier_service_id: prev!.id,
+        product_name: prod?.display_name ?? prod?.name ?? product.product_code,
+        service_name: r.service_name,
+        service_code: r.service_code,
+        old_supplier_price_usd: prev!.supplier_price,
+        new_supplier_price_usd: Number(r.supplier_price),
+        usd_inr_rate: settings.usd_inr_rate,
+        markup_pct: settings.markup_pct,
+        rounding_step: settings.rounding_step,
+        acquisition_cost_inr: p.acquisitionCostInr,
+        current_sell_price_inr: prev!.sell_price_inr,
+        proposed_sell_price_inr: p.proposedSellPriceInr,
+        expected_profit_inr: p.expectedProfitInr,
+        expected_margin_pct: p.expectedMarginPct,
+      };
+    }),
+  );
+}
 
 /** Structured, sanitized failure record shown to admins. */
 export type ServiceSyncFailure = {
@@ -62,9 +118,16 @@ export async function syncServicesForProduct(
 
   const { data: existing } = await admin
     .from("supplier_services")
-    .select("service_code")
+    .select("id, service_code, supplier_price, sell_price_inr")
     .eq("supplier_product_id", product.id);
   const existingCodes = new Set((existing ?? []).map((r: { service_code: string }) => r.service_code));
+
+  // Price-change detection (preview only — customer prices are never touched here).
+  try {
+    await recordPriceChanges(admin, product, existing ?? [], rows);
+  } catch (e) {
+    console.error("[flashtopup] price-change detection failed", e instanceof Error ? e.message : e);
+  }
 
   const now = new Date().toISOString();
   if (rows.length) {
