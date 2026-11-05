@@ -43,6 +43,13 @@
       "when": 1793854966988,
       "tag": "0005_payment_window_11_minutes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793855703369,
+      "tag": "0006_secure_supplier_costs_and_pricing",
+      "breakpoints": true
     }
   ]
 }
