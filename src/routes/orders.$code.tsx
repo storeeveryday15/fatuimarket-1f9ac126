@@ -63,7 +63,21 @@ const STATE_UI: Record<string, { icon: typeof Clock; color: string; label: strin
   rejected: { icon: AlertCircle, color: "text-destructive", label: "Payment Rejected" },
   duplicate_rrn: { icon: AlertCircle, color: "text-destructive", label: "Duplicate RRN" },
   expired: { icon: AlertCircle, color: "text-muted-foreground", label: "Order Expired" },
+  refund_pending: { icon: Clock, color: "text-warning", label: "Refund Pending" },
+  refunded: { icon: CheckCircle2, color: "text-muted-foreground", label: "Refunded" },
+  processing: { icon: RefreshCw, color: "text-blue-500", label: "Processing" },
+  completed: { icon: CheckCircle2, color: "text-success", label: "Completed" },
+  failed: { icon: AlertCircle, color: "text-destructive", label: "Delivery Failed" },
 };
+
+/** Final customer label: supplier-confirmed results override "payment verified". */
+function displayState(paymentState: string, status: string, supplierStatus: string | null) {
+  if (paymentState !== "verified") return paymentState;
+  if (status === "completed" || status === "delivered") return "completed";
+  if (supplierStatus === "failed") return "failed";
+  if (status === "processing" || supplierStatus === "processing" || supplierStatus === "pending") return "processing";
+  return "verified";
+}
 
 function supplierLabel(s: string) {
   switch (s) {
@@ -181,7 +195,7 @@ function OrderPage() {
     </div>
   );
 
-  const ui = STATE_UI[paymentState] ?? STATE_UI.awaiting_payment;
+  const ui = STATE_UI[displayState(paymentState, order.status, order.supplier_status)] ?? STATE_UI.awaiting_payment;
   const SIcon = ui.icon;
   const awaitingPayment = paymentState === "awaiting_payment";
   const timerRunning = awaitingPayment && secondsLeft > 0;
@@ -260,7 +274,7 @@ function OrderPage() {
           )}
         </div>
 
-        {order.delivery_details && (
+        {order.delivery_details && (order.status === "completed" || order.status === "delivered") && (
           <div className="mt-4 rounded-xl border border-success/30 bg-success/10 p-4">
             <h2 className="text-sm font-semibold text-success">Delivery details</h2>
             <pre className="mt-2 whitespace-pre-wrap break-all text-xs text-foreground">{order.delivery_details}</pre>

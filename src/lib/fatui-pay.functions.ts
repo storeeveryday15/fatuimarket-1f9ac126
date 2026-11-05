@@ -12,7 +12,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { buildFatuiPayUtrPayload, normalizeUtr } from "@/lib/fatui-pay-submit";
 
 /** Checkout window (matches the visible countdown). */
-export const CHECKOUT_WINDOW_MS = 5 * 60 * 1000;
+export const CHECKOUT_WINDOW_MS = 11 * 60 * 1000;
 /** Bank/Gmail verification can land slightly after the window closes. */
 export const VERIFY_GRACE_MS = 15 * 60 * 1000;
 
@@ -27,7 +27,9 @@ export type OrderPaymentState = {
     | "verified"
     | "rejected"
     | "duplicate_rrn"
-    | "expired";
+    | "expired"
+    | "refund_pending"
+    | "refunded";
   amount: number;
   currency: string;
   utr: string | null;
@@ -80,6 +82,10 @@ export function paymentStateFor(status: string): OrderPaymentState["payment_stat
       return "verified";
     case "duplicate_rrn":
       return "duplicate_rrn";
+    case "refund_pending":
+      return "refund_pending";
+    case "refunded":
+      return "refunded";
     case "expired":
     case "failed":
       return "expired";

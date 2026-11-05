@@ -36,6 +36,13 @@
       "when": 1793755671800,
       "tag": "0004_supplier_price_monitor",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793854966988,
+      "tag": "0005_payment_window_11_minutes",
+      "breakpoints": true
     }
   ]
 }

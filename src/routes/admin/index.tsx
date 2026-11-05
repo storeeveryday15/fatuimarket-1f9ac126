@@ -373,9 +373,7 @@ function OrdersTable({ orders, onOpen, onQuickStatus }: { orders: Order[]; onOpe
               <td className="px-3 py-3">
                 <div className="flex flex-col gap-1">
                   <button onClick={() => onOpen(o)} className="inline-flex items-center justify-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] hover:bg-secondary"><Eye className="h-3 w-3" /> View</button>
-                  <button onClick={() => onQuickStatus(o.id, "completed", "completed")} className="rounded-md bg-success/15 px-2 py-1 text-[11px] font-semibold text-success hover:bg-success/25">Complete</button>
-                  <button onClick={() => onQuickStatus(o.id, "rejected", "rejected")} className="rounded-md bg-destructive/15 px-2 py-1 text-[11px] font-semibold text-destructive hover:bg-destructive/25">Reject</button>
-                  <button onClick={() => onQuickStatus(o.id, "refunded")} className="rounded-md bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-secondary">Refund</button>
+
                 </div>
               </td>
             </tr>
@@ -416,6 +414,9 @@ function OrderDrawer({ order, onClose, onAction }: {
           <KV k="Email" v={order.customer_email ?? "—"} />
           <KV k="Amount" v={order.currency === "INR" ? `₹${order.amount_inr}` : `$${order.amount_usd}`} />
           <KV k="UTR" v={order.utr ?? "—"} />
+          <KV k="Payment verified" v={(order as any).verified_at ? new Date((order as any).verified_at).toLocaleString() : "Not verified"} />
+          <KV k="Supplier status" v={(order as any).supplier_status ?? "—"} />
+          <KV k="Supplier order ID" v={(order as any).supplier_order_id ?? "—"} />
           {order.completed_at && <KV k="Completed" v={new Date(order.completed_at).toLocaleString()} />}
         </div>
         <div className="mt-4">
@@ -423,11 +424,12 @@ function OrderDrawer({ order, onClose, onAction }: {
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="mt-1 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="Internal/customer-visible note" />
           <button onClick={saveNotes} className="mt-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-secondary">Save notes</button>
         </div>
-        <div className="mt-6 grid grid-cols-2 gap-2">
-          <button onClick={() => onAction(order.id, { status: "completed" }, "completed")} className="rounded-lg bg-success/15 px-3 py-2 text-sm font-semibold text-success">Complete</button>
-          <button onClick={() => onAction(order.id, { status: "rejected", rejected_at: new Date().toISOString() }, "rejected")} className="rounded-lg bg-destructive/15 px-3 py-2 text-sm font-semibold text-destructive">Reject</button>
-          <button onClick={() => onAction(order.id, { status: "refunded" })} className="rounded-lg bg-muted px-3 py-2 text-sm font-semibold text-muted-foreground">Refund</button>
-          <button onClick={() => onAction(order.id, { status: "cancelled" })} className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-semibold text-destructive/80">Cancel</button>
+        <p className="mt-6 rounded-lg bg-background/40 p-3 text-xs text-muted-foreground">
+          Fulfilment is confirmed only by the supplier (webhook or status check). Refunds are a separate UPI payment operation and are not issued by the supplier.
+        </p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button onClick={() => confirm("Mark as refund pending? Send the UPI refund separately.") && onAction(order.id, { status: "refund_pending" })} className="rounded-lg bg-muted px-3 py-2 text-sm font-semibold text-muted-foreground">Refund pending</button>
+          <button onClick={() => confirm("Confirm the UPI refund was sent?") && onAction(order.id, { status: "refunded" })} className="rounded-lg bg-muted px-3 py-2 text-sm font-semibold text-muted-foreground">Mark refunded</button>
         </div>
       </div>
     </div>
