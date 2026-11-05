@@ -27,7 +27,9 @@ export type OrderPaymentState = {
     | "verified"
     | "rejected"
     | "duplicate_rrn"
-    | "expired";
+    | "expired"
+    | "refund_pending"
+    | "refunded";
   amount: number;
   currency: string;
   utr: string | null;
@@ -80,6 +82,10 @@ export function paymentStateFor(status: string): OrderPaymentState["payment_stat
       return "verified";
     case "duplicate_rrn":
       return "duplicate_rrn";
+    case "refund_pending":
+      return "refund_pending";
+    case "refunded":
+      return "refunded";
     case "expired":
     case "failed":
       return "expired";
