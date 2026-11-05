@@ -1738,14 +1738,19 @@ export type Database = {
       supplier_price_changes: {
         Row: {
           acquisition_cost_inr: number
+          applied_customer_price_inr: number | null
+          baseline_supplier_usd: number | null
+          change_pct: number | null
           current_sell_price_inr: number | null
           detected_at: string
           expected_margin_pct: number
           expected_profit_inr: number
           id: string
+          kind: string
           markup_pct: number
           new_supplier_price_usd: number
           old_supplier_price_usd: number | null
+          previous_customer_price_inr: number | null
           product_name: string | null
           proposed_sell_price_inr: number
           reviewed_at: string | null
@@ -1753,6 +1758,7 @@ export type Database = {
           rounding_step: number
           service_code: string
           service_name: string
+          source_sync_run_id: string | null
           status: string
           supplier_key: string
           supplier_service_id: string
@@ -1760,14 +1766,19 @@ export type Database = {
         }
         Insert: {
           acquisition_cost_inr: number
+          applied_customer_price_inr?: number | null
+          baseline_supplier_usd?: number | null
+          change_pct?: number | null
           current_sell_price_inr?: number | null
           detected_at?: string
           expected_margin_pct: number
           expected_profit_inr: number
           id?: string
+          kind?: string
           markup_pct: number
           new_supplier_price_usd: number
           old_supplier_price_usd?: number | null
+          previous_customer_price_inr?: number | null
           product_name?: string | null
           proposed_sell_price_inr: number
           reviewed_at?: string | null
@@ -1775,6 +1786,7 @@ export type Database = {
           rounding_step: number
           service_code: string
           service_name: string
+          source_sync_run_id?: string | null
           status?: string
           supplier_key?: string
           supplier_service_id: string
@@ -1782,14 +1794,19 @@ export type Database = {
         }
         Update: {
           acquisition_cost_inr?: number
+          applied_customer_price_inr?: number | null
+          baseline_supplier_usd?: number | null
+          change_pct?: number | null
           current_sell_price_inr?: number | null
           detected_at?: string
           expected_margin_pct?: number
           expected_profit_inr?: number
           id?: string
+          kind?: string
           markup_pct?: number
           new_supplier_price_usd?: number
           old_supplier_price_usd?: number | null
+          previous_customer_price_inr?: number | null
           product_name?: string | null
           proposed_sell_price_inr?: number
           reviewed_at?: string | null
@@ -1797,6 +1814,7 @@ export type Database = {
           rounding_step?: number
           service_code?: string
           service_name?: string
+          source_sync_run_id?: string | null
           status?: string
           supplier_key?: string
           supplier_service_id?: string
@@ -1812,11 +1830,88 @@ export type Database = {
           },
         ]
       }
+      supplier_price_history: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          markup_pct: number
+          new_customer_price_inr: number | null
+          new_supplier_usd: number | null
+          old_customer_price_inr: number | null
+          old_supplier_usd: number | null
+          price_change_id: string | null
+          product_code: string | null
+          rounding_step: number
+          service_code: string
+          source_sync_run_id: string | null
+          supplier_key: string
+          supplier_service_id: string
+          usd_inr_rate: number
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          markup_pct: number
+          new_customer_price_inr?: number | null
+          new_supplier_usd?: number | null
+          old_customer_price_inr?: number | null
+          old_supplier_usd?: number | null
+          price_change_id?: string | null
+          product_code?: string | null
+          rounding_step: number
+          service_code: string
+          source_sync_run_id?: string | null
+          supplier_key: string
+          supplier_service_id: string
+          usd_inr_rate: number
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          markup_pct?: number
+          new_customer_price_inr?: number | null
+          new_supplier_usd?: number | null
+          old_customer_price_inr?: number | null
+          old_supplier_usd?: number | null
+          price_change_id?: string | null
+          product_code?: string | null
+          rounding_step?: number
+          service_code?: string
+          source_sync_run_id?: string | null
+          supplier_key?: string
+          supplier_service_id?: string
+          usd_inr_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_price_history_price_change_id_fkey"
+            columns: ["price_change_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_price_changes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_price_history_supplier_service_id_fkey"
+            columns: ["supplier_service_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_pricing_settings: {
         Row: {
           auto_apply_enabled: boolean
           id: number
           markup_pct: number
+          min_change_pct: number
+          min_change_usd: number
           rounding_step: number
           updated_at: string
           usd_inr_rate: number
@@ -1825,6 +1920,8 @@ export type Database = {
           auto_apply_enabled?: boolean
           id?: number
           markup_pct?: number
+          min_change_pct?: number
+          min_change_usd?: number
           rounding_step?: number
           updated_at?: string
           usd_inr_rate?: number
@@ -1833,6 +1930,8 @@ export type Database = {
           auto_apply_enabled?: boolean
           id?: number
           markup_pct?: number
+          min_change_pct?: number
+          min_change_usd?: number
           rounding_step?: number
           updated_at?: string
           usd_inr_rate?: number
@@ -1927,11 +2026,15 @@ export type Database = {
           catalog_product_id: string | null
           created_at: string
           currency: string | null
+          customer_price_approved_at: string | null
+          customer_price_approved_by: string | null
+          customer_price_inr: number | null
           description: string | null
           id: string
           input_fields: Json
           max_quantity: number
           min_quantity: number
+          priced_at_supplier_usd: number | null
           raw: Json
           requires_validation: boolean
           sell_price_inr: number | null
@@ -1949,11 +2052,15 @@ export type Database = {
           catalog_product_id?: string | null
           created_at?: string
           currency?: string | null
+          customer_price_approved_at?: string | null
+          customer_price_approved_by?: string | null
+          customer_price_inr?: number | null
           description?: string | null
           id?: string
           input_fields?: Json
           max_quantity?: number
           min_quantity?: number
+          priced_at_supplier_usd?: number | null
           raw?: Json
           requires_validation?: boolean
           sell_price_inr?: number | null
@@ -1971,11 +2078,15 @@ export type Database = {
           catalog_product_id?: string | null
           created_at?: string
           currency?: string | null
+          customer_price_approved_at?: string | null
+          customer_price_approved_by?: string | null
+          customer_price_inr?: number | null
           description?: string | null
           id?: string
           input_fields?: Json
           max_quantity?: number
           min_quantity?: number
+          priced_at_supplier_usd?: number | null
           raw?: Json
           requires_validation?: boolean
           sell_price_inr?: number | null
