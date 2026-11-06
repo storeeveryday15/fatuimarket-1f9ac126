@@ -91,8 +91,9 @@ export const listSupplierServices = createServerFn({ method: "GET" })
     await assertAdmin(context.supabase, context.userId);
 
     const { fetchAllRows } = await import("./fetch-all-rows");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const data = await fetchAllRows<any>(() =>
-      context.supabase
+      (supabaseAdmin as any)
         .from("supplier_services")
         .select(
           "id,supplier_product_id,service_code,service_name,supplier_price,currency,min_quantity,max_quantity,validation_code,input_fields,requires_validation,active,catalog_product_id,supplier_products!inner(supplier_key)",
@@ -144,7 +145,9 @@ export const mapSupplierService = createServerFn({ method: "POST" })
  */
 async function loadRequirement(supabase: any, catalogProductId: string) {
   const { resolveCheckIdRequirement } = await import("./check-id-requirements");
-  const { data: service } = await supabase
+  // raw supplier payloads are column-restricted; read server-side only.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: service } = await (supabaseAdmin as any)
     .from("supplier_services")
     .select(
       "validation_code, input_fields, raw, service_code, supplier_products!inner(product_code, product_type, validation_code, raw, supplier_key)",
@@ -467,7 +470,7 @@ export type ServiceSyncTestResult = {
   status: number | null;
   errorCode: string | null;
   message: string | null;
-  sample: Array<{ service_code: string; service_name: string; sell_price_inr: number | null; available: boolean }>;
+  sample: Array<{ service_code: string; service_name: string; customer_price_inr: number | null; available: boolean }>;
 };
 
 /**
@@ -537,7 +540,7 @@ export const testProductServices = createServerFn({ method: "POST" })
 
     const { data: rows, count } = await supabaseAdmin
       .from("supplier_services")
-      .select("service_code, service_name, sell_price_inr, available", { count: "exact" })
+      .select("service_code, service_name, customer_price_inr, available", { count: "exact" })
       .eq("supplier_product_id", product.id)
       .eq("active", true)
       .order("sort_order", { ascending: true })

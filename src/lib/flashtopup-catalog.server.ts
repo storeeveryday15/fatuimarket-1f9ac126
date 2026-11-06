@@ -161,7 +161,6 @@ export async function runCatalogSync(admin: AdminClient): Promise<CatalogSyncRes
     const failedProducts = failures.length;
 
     // Selling prices always follow the current markup rules.
-    await (admin as any).rpc("recompute_sell_prices");
 
     await finish({
       status: failedProducts && !servicesTotal ? "partial" : "success",
@@ -233,6 +232,5 @@ export async function refreshCatalogPrices(admin: AdminClient) {
     }
   }
 
-  await (admin as any).rpc("recompute_sell_prices");
   return { updated, failed, products: products?.length ?? 0 };
 }

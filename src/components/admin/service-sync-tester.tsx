@@ -76,7 +76,7 @@ export function ServiceSyncTester() {
                     {s.service_name} <span className="opacity-60">({s.service_code})</span>
                   </span>
                   <span>
-                    {s.sell_price_inr != null ? `₹${s.sell_price_inr}` : "—"} · {s.available ? "available" : "unavailable"}
+                    {s.customer_price_inr != null ? `₹${s.customer_price_inr}` : "not priced"} · {s.available ? "available" : "unavailable"}
                   </span>
                 </li>
               ))}
