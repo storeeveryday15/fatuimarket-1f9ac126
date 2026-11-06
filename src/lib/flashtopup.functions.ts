@@ -147,7 +147,6 @@ async function loadRequirement(supabase: any, catalogProductId: string) {
   const { resolveCheckIdRequirement } = await import("./check-id-requirements");
   // raw supplier payloads are column-restricted; read server-side only.
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  void supabase;
   const { data: service } = await (supabaseAdmin as any)
     .from("supplier_services")
     .select(
