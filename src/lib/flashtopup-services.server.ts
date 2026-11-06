@@ -1,23 +1,36 @@
 /** Service catalogue sync for FlashTopup (server-only). */
 
 import { fetchAllServices, normalizeService, extractAvailability, extractDescription } from "./flashtopup.server";
-import { DEFAULT_SUPPLIER_PRICING, hasSupplierPriceChanged, proposeSellPrice, type SupplierPricingSettings } from "./supplier-pricing";
+import { DEFAULT_ALERT_THRESHOLDS, DEFAULT_SUPPLIER_PRICING, type AlertThresholds, type SupplierPricingSettings } from "./supplier-pricing";
+import { decidePriceAlert } from "./supplier-price-decisions";
 
 type AdminClient = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
-type ExistingService = { id: string; service_code: string; supplier_price: number | null; sell_price_inr: number | null };
+type ExistingService = {
+  id: string;
+  service_code: string;
+  supplier_price: number | null;
+  customer_price_inr: number | null;
+  priced_at_supplier_usd: number | null;
+};
 
-async function loadPricingSettings(admin: AdminClient): Promise<SupplierPricingSettings> {
+async function loadPricingSettings(admin: AdminClient): Promise<{ pricing: SupplierPricingSettings; thresholds: AlertThresholds }> {
   const { data } = await admin.from("supplier_pricing_settings").select("*").eq("id", 1).maybeSingle();
-  if (!data) return DEFAULT_SUPPLIER_PRICING;
+  if (!data) return { pricing: DEFAULT_SUPPLIER_PRICING, thresholds: DEFAULT_ALERT_THRESHOLDS };
   return {
-    usd_inr_rate: Number(data.usd_inr_rate),
-    markup_pct: Number(data.markup_pct),
-    rounding_step: Number(data.rounding_step) as 1 | 5 | 10,
+    pricing: {
+      usd_inr_rate: Number(data.usd_inr_rate),
+      markup_pct: Number(data.markup_pct),
+      rounding_step: Number(data.rounding_step) as 1 | 5 | 10,
+    },
+    thresholds: { min_change_pct: Number((data as any).min_change_pct), min_change_usd: Number((data as any).min_change_usd) },
   };
 }
 
-/** Queue pending price proposals for packages whose USD supplier price moved. */
+/**
+ * Queue admin-reviewed alerts for priced packages whose supplier cost moved
+ * meaningfully since their price was approved. Never writes customer prices.
+ */
 async function recordPriceChanges(
   admin: AdminClient,
   product: { id: string; product_code: string },
@@ -25,39 +38,50 @@ async function recordPriceChanges(
   rows: Array<{ service_code: string; service_name: string; supplier_price: number | null; currency: string | null }>,
 ) {
   const byCode = new Map(existing.map((e) => [e.service_code, e]));
-  const changed = rows
+  const priced = rows
     .filter((r) => !r.currency || r.currency.toUpperCase() === "USD")
     .map((r) => ({ r, prev: byCode.get(r.service_code) }))
-    .filter(({ r, prev }) => prev && hasSupplierPriceChanged(prev.supplier_price, r.supplier_price));
-  if (!changed.length) return;
+    .filter(({ prev }) => prev && prev.customer_price_inr != null);
+  if (!priced.length) return;
 
-  const settings = await loadPricingSettings(admin);
-  const { data: prod } = await admin.from("supplier_products").select("display_name, name").eq("id", product.id).maybeSingle();
-  const ids = changed.map(({ prev }) => prev!.id);
-  // Older pending proposals for the same package are replaced by the newest one.
-  await admin.from("supplier_price_changes").update({ status: "superseded" }).in("supplier_service_id", ids).eq("status", "pending");
+  const { pricing, thresholds } = await loadPricingSettings(admin);
+  const { data: prod } = await admin.from("supplier_products").select("display_name, name, supplier_key").eq("id", product.id).maybeSingle();
 
-  await admin.from("supplier_price_changes").insert(
-    changed.map(({ r, prev }) => {
-      const p = proposeSellPrice(Number(r.supplier_price), settings);
-      return {
-        supplier_service_id: prev!.id,
-        product_name: prod?.display_name ?? prod?.name ?? product.product_code,
-        service_name: r.service_name,
-        service_code: r.service_code,
-        old_supplier_price_usd: prev!.supplier_price,
-        new_supplier_price_usd: Number(r.supplier_price),
-        usd_inr_rate: settings.usd_inr_rate,
-        markup_pct: settings.markup_pct,
-        rounding_step: settings.rounding_step,
-        acquisition_cost_inr: p.acquisitionCostInr,
-        current_sell_price_inr: prev!.sell_price_inr,
-        proposed_sell_price_inr: p.proposedSellPriceInr,
-        expected_profit_inr: p.expectedProfitInr,
-        expected_margin_pct: p.expectedMarginPct,
-      };
-    }),
-  );
+  for (const { r, prev } of priced) {
+    let decision;
+    try {
+      decision = decidePriceAlert(prev!, r.supplier_price == null ? null : Number(r.supplier_price), pricing, thresholds);
+    } catch (e) {
+      console.error("[pricing] invalid calculation skipped", r.service_code, e instanceof Error ? e.message : e);
+      continue;
+    }
+    if (decision.kind === "none") continue;
+    // Any older pending alert for this package is replaced (or cleared when the move reverted).
+    await admin.from("supplier_price_changes").update({ status: "superseded" })
+      .eq("supplier_service_id", prev!.id).eq("status", "pending").eq("kind", "change");
+    if (decision.kind !== "alert") continue;
+    await admin.from("supplier_price_changes").insert({
+      supplier_service_id: prev!.id,
+      supplier_key: prod?.supplier_key ?? "flashtopup",
+      kind: "change",
+      product_name: prod?.display_name ?? prod?.name ?? product.product_code,
+      service_name: r.service_name,
+      service_code: r.service_code,
+      old_supplier_price_usd: prev!.supplier_price,
+      baseline_supplier_usd: decision.baselineUsd,
+      new_supplier_price_usd: decision.newUsd,
+      change_pct: decision.changePct,
+      usd_inr_rate: pricing.usd_inr_rate,
+      markup_pct: pricing.markup_pct,
+      rounding_step: pricing.rounding_step,
+      acquisition_cost_inr: decision.proposal.acquisitionCostInr,
+      current_sell_price_inr: decision.previousCustomerPriceInr,
+      previous_customer_price_inr: decision.previousCustomerPriceInr,
+      proposed_sell_price_inr: decision.proposal.proposedSellPriceInr,
+      expected_profit_inr: decision.proposal.expectedProfitInr,
+      expected_margin_pct: decision.proposal.expectedMarginPct,
+    } as never);
+  }
 }
 
 /** Structured, sanitized failure record shown to admins. */
@@ -118,7 +142,7 @@ export async function syncServicesForProduct(
 
   const { data: existing } = await admin
     .from("supplier_services")
-    .select("id, service_code, supplier_price, sell_price_inr")
+    .select("id, service_code, supplier_price, customer_price_inr, priced_at_supplier_usd")
     .eq("supplier_product_id", product.id);
   const existingCodes = new Set((existing ?? []).map((r: { service_code: string }) => r.service_code));
 
