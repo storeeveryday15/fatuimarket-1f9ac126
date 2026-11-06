@@ -75,16 +75,18 @@ export const listPublicGames = createServerFn({ method: "GET" }).handler(async (
 
   // Page through every package: a single read stops at 1,000 rows.
   const services = await fetchAllRows<any>(() =>
-    supabase.from("supplier_services").select("supplier_product_id, sell_price_inr, available").order("id"),
+    supabase.from("supplier_services").select("supplier_product_id, customer_price_inr, available").order("id"),
   );
 
   const byGame = new Map<string, { count: number; available: boolean; from: number | null }>();
   for (const s of services ?? []) {
     const entry = byGame.get(s.supplier_product_id) ?? { count: 0, available: false, from: null };
     entry.count += 1;
-    if (s.available) entry.available = true;
-    if (typeof s.sell_price_inr === "number" && (entry.from === null || s.sell_price_inr < entry.from)) {
-      entry.from = s.sell_price_inr;
+    // Unpriced packages are never purchasable.
+    if (s.available && s.customer_price_inr != null) entry.available = true;
+    const price = s.customer_price_inr == null ? null : Number(s.customer_price_inr);
+    if (price !== null && (entry.from === null || price < entry.from)) {
+      entry.from = price;
     }
     byGame.set(s.supplier_product_id, entry);
   }
@@ -122,7 +124,7 @@ export const getPublicGame = createServerFn({ method: "GET" })
     const { data: services } = await supabase
       .from("supplier_services")
       .select(
-        "id, service_code, service_name, description, sell_price_inr, currency, min_quantity, max_quantity, available, requires_validation, input_fields, sort_order",
+        "id, service_code, service_name, description, customer_price_inr, min_quantity, max_quantity, available, requires_validation, input_fields, sort_order, catalog_product_id",
       )
       .eq("supplier_product_id", game.id)
       .order("sort_order", { ascending: true });
@@ -144,11 +146,11 @@ export const getPublicGame = createServerFn({ method: "GET" })
       service_code: s.service_code,
       service_name: s.service_name,
       description: s.description,
-      price: s.sell_price_inr,
-      currency: s.currency ?? "INR",
+      price: s.customer_price_inr == null ? null : Number(s.customer_price_inr),
+      currency: "INR",
       min_quantity: s.min_quantity,
       max_quantity: s.max_quantity,
-      available: Boolean(s.available),
+      available: Boolean(s.available) && s.customer_price_inr != null,
       requires_validation: Boolean(s.requires_validation),
       input_fields: toStringArray(s.input_fields),
       checkout_slug: s.catalog_product_id ? (slugById.get(s.catalog_product_id) ?? null) : null,
@@ -189,10 +191,12 @@ export const getCatalogOverview = createServerFn({ method: "GET" })
       .select("id, supplier_key, product_code, slug, name, display_name, region, category, icon_url, active, enabled, featured, hidden, validation_code, updated_at")
       .order("name", { ascending: true });
 
+    // Supplier costs are column-restricted; read them with the service client after the admin check.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const services = await fetchAllRows<any>(() =>
-      context.supabase
+      (supabaseAdmin as any)
         .from("supplier_services")
-        .select("supplier_product_id, supplier_price, sell_price_inr, available, active")
+        .select("supplier_product_id, supplier_price, customer_price_inr, available, active")
         .order("id"),
     );
 
@@ -208,7 +212,7 @@ export const getCatalogOverview = createServerFn({ method: "GET" })
       e.packages += 1;
       if (s.available && s.active) e.available += 1;
       if (typeof s.supplier_price === "number" && (e.cost === null || s.supplier_price < e.cost)) e.cost = s.supplier_price;
-      if (typeof s.sell_price_inr === "number" && (e.sell === null || s.sell_price_inr < e.sell)) e.sell = s.sell_price_inr;
+      if (s.customer_price_inr != null && (e.sell === null || Number(s.customer_price_inr) < e.sell)) e.sell = Number(s.customer_price_inr);
       agg.set(s.supplier_product_id, e);
     }
 
