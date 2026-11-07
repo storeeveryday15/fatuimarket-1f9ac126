@@ -19,7 +19,7 @@ describe("pricing input validation", () => {
   it.each([0, -5, NaN])("rejects exchange rate %s", (rate) => {
     expect(() => proposeSellPrice(10, { ...S, usd_inr_rate: rate })).toThrow();
   });
-  it("$38.89 Steam card becomes ₹4,980, never ₹38.89", () => {
+  it("$38.89 Steam card becomes ₹4,970, never ₹38.89", () => {
     expect(proposeSellPrice(38.89, S).proposedSellPriceInr).toBe(4970);
   });
 });
